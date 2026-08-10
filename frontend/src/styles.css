@@ -725,3 +725,201 @@ html[data-theme="light"] .auth-card .text-white\/70 { color: inherit !important;
 .route-loading {
   min-height: 100svh;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   IN-APP BROWSER NOTICE (InAppBrowserNotice.tsx)
+   Only ever rendered inside an embedded web view (TikTok / Instagram /
+   Facebook / Telegram …), where Google's OAuth consent screen refuses to
+   load. Styled with the same glass + cyan/gold brand language as the auth
+   card, fully RTL, and readable in both the dark and light palettes.
+   ══════════════════════════════════════════════════════════════════ */
+.inapp-notice {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 2rem);
+  overflow-y: auto;
+}
+.inapp-notice__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 9, 17, .78);
+  backdrop-filter: blur(10px) saturate(115%);
+}
+html[data-theme="light"] .inapp-notice__backdrop { background: rgba(8, 21, 33, .55); }
+
+.inapp-notice__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 34rem;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 1px solid rgba(110, 231, 220, .22);
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(18, 36, 50, .97), rgba(7, 19, 31, .97));
+  box-shadow: 0 35px 100px rgba(0, 0, 0, .5), inset 0 1px rgba(255, 255, 255, .1);
+  text-align: right;
+  animation: inapp-notice-in .45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.inapp-notice__panel:focus { outline: none; }
+html[data-theme="light"] .inapp-notice__panel {
+  border-color: rgba(11, 131, 119, .28);
+  background: linear-gradient(145deg, #ffffff, #eef4fc);
+  box-shadow: 0 30px 80px rgba(8, 21, 33, .22), inset 0 1px rgba(255, 255, 255, .9);
+}
+
+.inapp-notice__glow {
+  position: absolute;
+  right: 1.5rem;
+  top: -2rem;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  background: rgba(110, 231, 220, .18);
+  filter: blur(60px);
+  pointer-events: none;
+}
+html[data-theme="light"] .inapp-notice__glow { background: rgba(11, 131, 119, .14); }
+
+.inapp-notice__icon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 18px;
+  border: 1px solid rgba(110, 231, 220, .24);
+  background: linear-gradient(145deg, rgba(110, 231, 220, .16), rgba(255, 255, 255, .03));
+  color: var(--cyan);
+}
+html[data-theme="light"] .inapp-notice__icon {
+  border-color: rgba(11, 131, 119, .22);
+  background: rgba(11, 131, 119, .09);
+}
+
+.inapp-notice__title {
+  margin: 1.4rem 0 0;
+  font: 800 clamp(1.35rem, 4.4vw, 1.75rem)/1.55 "Noto Kufi Arabic", "Tajawal", sans-serif;
+  letter-spacing: -.03em;
+  color: var(--text-strong);
+}
+.inapp-notice__body {
+  margin: .9rem 0 0;
+  font-size: 1rem;
+  line-height: 2;
+  color: var(--text-base);
+}
+.inapp-notice__reason {
+  margin: .7rem 0 0;
+  font-size: .9rem;
+  line-height: 1.9;
+  color: var(--text-muted);
+}
+
+.inapp-notice__steps {
+  margin: 1.3rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: inapp-step;
+  display: grid;
+  gap: .6rem;
+}
+.inapp-notice__steps li {
+  counter-increment: inapp-step;
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .75rem .9rem;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: .92rem;
+  line-height: 1.75;
+  color: var(--text-base);
+}
+.inapp-notice__steps li::before {
+  content: counter(inapp-step);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: rgba(239, 196, 122, .16);
+  color: var(--gold);
+  font: 800 .8rem/1 "Noto Kufi Arabic", "Tajawal", sans-serif;
+}
+
+.inapp-notice__url {
+  margin: 1.2rem 0 0;
+  padding: .8rem .9rem;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .78rem;
+  line-height: 1.6;
+  word-break: break-all;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.inapp-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin-top: 1.3rem;
+}
+.inapp-notice__copy,
+.inapp-notice__dismiss {
+  flex: 1 1 auto;
+  min-height: 3rem;
+  padding: .85rem 1.2rem;
+  border-radius: 999px;
+  font: 700 .95rem/1.4 "Tajawal", sans-serif;
+  cursor: pointer;
+  transition: transform .25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow .25s ease, background-color .25s ease;
+}
+.inapp-notice__copy {
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--cyan), #9df8ee);
+  color: #06121d;
+  box-shadow: 0 14px 34px rgba(110, 231, 220, .22);
+}
+.inapp-notice__copy:hover { transform: translateY(-2px); }
+.inapp-notice__copy:active { transform: translateY(0); }
+.inapp-notice__dismiss {
+  border: 1px solid var(--hairline-strong);
+  background: transparent;
+  color: var(--text-muted);
+}
+.inapp-notice__dismiss:hover { background: var(--surface); color: var(--text-base); }
+.inapp-notice__copy:focus-visible,
+.inapp-notice__dismiss:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+@keyframes inapp-notice-in {
+  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Respect the OS "reduce motion" setting: the notice appears instantly and
+   the buttons stop lifting on hover. Content and behaviour are unchanged. */
+@media (prefers-reduced-motion: reduce) {
+  .inapp-notice__panel { animation: none; }
+  .inapp-notice__copy,
+  .inapp-notice__copy:hover,
+  .inapp-notice__copy:active,
+  .inapp-notice__dismiss,
+  .inapp-notice__dismiss:hover { transform: none; transition: none; }
+}
+
+@media (max-width: 420px) {
+  .inapp-notice__actions { flex-direction: column; }
+  .inapp-notice__copy,
+  .inapp-notice__dismiss { width: 100%; }
+}

@@ -890,6 +890,9 @@ html[data-theme="light"] .gd-body {
   transition: transform var(--duration-base, 200ms) var(--ease-out, ease);
 }
 .gd-modal-overlay.is-open .gd-modal { transform: none; }
+/* The modal now carries a price block as well as the copy, so guarantee it can
+   always scroll instead of overflowing on short/landscape phone viewports. */
+.gd-modal { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; }
 .gd-modal-head {
   display: flex;
   align-items: center;
@@ -912,6 +915,46 @@ html[data-theme="light"] .gd-body {
 .gd-modal-body { padding: 8px 24px 4px; }
 .gd-modal-lede { margin: 0; font-size: 0.95rem; line-height: 1.55; color: var(--gd-text-2); }
 .gd-modal-lede strong { color: var(--gd-text); }
+
+/* ── Subscription price (DISPLAY ONLY) ─────────────────────────────────────
+   Shows the previous 3000DA struck through next to the current 2000DA price.
+   Purely cosmetic: the subscription gate itself is enforced server-side and is
+   not affected by anything in this block. RTL-safe (the modal sets dir="rtl",
+   so the row simply flows right-to-left) and themed with the same brand gold /
+   cyan accents the rest of the library uses. */
+.gd-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--gd-line);
+  border-radius: var(--gd-radius-lg, 16px);
+  background: var(--gd-blue-soft);
+}
+.gd-price-old {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--gd-text-3);
+  text-decoration: none; /* the <s> element carries the strike itself */
+}
+.gd-price-old s { text-decoration-thickness: 2px; }
+.gd-price-new {
+  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--gd-gold, #efc47a);
+}
+.gd-price-note {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--gd-text-2);
+}
+
 .gd-modal-foot {
   display: flex;
   align-items: center;

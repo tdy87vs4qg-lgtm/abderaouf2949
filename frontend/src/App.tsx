@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import AmbientBackdrop from './components/AmbientBackdrop'
+import InAppBrowserNotice from './components/InAppBrowserNotice'
 import ScrollToTop from './components/ScrollToTop'
 import SiteHeader from './components/SiteHeader'
 import { LazyAnimatePresence } from './lib/lazyMotion'
@@ -22,6 +23,10 @@ export default function App() {
     <div className="app-shell min-h-screen overflow-x-hidden bg-ink text-white" dir="rtl">
       <ScrollToTop />
       <AmbientBackdrop />
+      {/* Shown ONLY inside an in-app browser (TikTok / Instagram / Facebook /
+          Telegram web views), where Google's OAuth screen refuses to load.
+          Renders null everywhere else and touches no auth logic. */}
+      <InAppBrowserNotice />
       <SiteHeader />
       <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
         <LazyAnimatePresence mode="wait">

@@ -100,6 +100,23 @@ const subscribeModal = `
     </div>
     <div class="gd-modal-body">
       <p class="gd-modal-lede" id="subscribe-modal-lede">هذا الملف متاح للمشتركين فقط. للاشتراك تواصل مع المالك عبر تيك توك لفتح جميع الملفات داخل الموقع.</p>
+
+      <!-- PRICE BLOCK (display only).
+           This is PURE PRESENTATION: the real entitlement check stays entirely
+           server-side (requireActiveSubscriber / gateContent in
+           src/routes/library.ts). Nothing here unlocks, prices or grants
+           anything — it only tells the visitor what the subscription costs.
+
+           Rendered as a separate sibling of #subscribe-modal-lede on purpose:
+           library.js rewrites ONLY the lede's innerHTML when a specific file
+           name is known, so keeping the price outside it means the price and
+           the copy below survive that rewrite untouched. -->
+      <div class="gd-price" aria-label="سعر الاشتراك">
+        <span class="gd-price-old"><s>3000DA</s></span>
+        <span class="gd-price-new">2000DA</span>
+      </div>
+
+      <p class="gd-price-note">بعد الدفع تحصل على جميع الملفات والتمارين المصححة والمصادر اللازمة التي توفّر وقتك وتساعدك على رفع معدّلك.</p>
     </div>
     <div class="gd-modal-foot">
       <button type="button" class="gd-btn gd-btn-text js-modal-close">لاحقًا</button>
