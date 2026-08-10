@@ -29,11 +29,11 @@ export const spaShell = `<!doctype html>
         }
       })();
     </script>
-    <script type="module" crossorigin src="/react/assets/index-tL2I7DPW.js"></script>
+    <script type="module" crossorigin src="/react/assets/index-Dla06M37.js"></script>
     <link rel="modulepreload" crossorigin href="/react/assets/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/assets/react-vendor-C5_X-1Nf.js">
-    <link rel="modulepreload" crossorigin href="/react/assets/icons-B6JvvCp5.js">
-    <link rel="stylesheet" crossorigin href="/react/assets/index-D5G-cI6s.css">
+    <link rel="modulepreload" crossorigin href="/react/assets/icons-DFv0dkUs.js">
+    <link rel="stylesheet" crossorigin href="/react/assets/index-ow5UO3Sz.css">
     <link rel="stylesheet" crossorigin href="/react/assets/vendor-0prxbah9.css">
   </head>
   <body>
