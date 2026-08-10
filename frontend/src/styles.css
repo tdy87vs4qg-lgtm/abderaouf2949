@@ -390,15 +390,44 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 .auth-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(115deg, rgba(255,255,255,.08), transparent 22%); pointer-events: none; }
 .auth-card__glow { position: absolute; left: 0; top: 0; width: 12rem; height: 12rem; border-radius: 50%; background: rgba(110,231,220,.14); filter: blur(60px); pointer-events: none; }
 .auth-card h2 { font-family: "Noto Kufi Arabic"; letter-spacing: -.045em; }
-.auth-field { display: block; }
-.auth-field__label { display: block; margin: 0 .2rem .55rem; color: rgba(255,255,255,.55); font-size: .76rem; font-weight: 700; }
-.auth-field__control { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .75rem; padding: 0 1rem; min-height: 3.7rem; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; background: rgba(3,12,21,.38); transition: border-color .25s, box-shadow .25s, background .25s; }
-.auth-field__control:focus-within { border-color: rgba(110,231,220,.5); background: rgba(3,12,21,.58); box-shadow: 0 0 0 4px rgba(110,231,220,.055); }
-/* font-size MUST stay >=16px to prevent iOS Safari's focus auto-zoom.
-   Using an explicit 16px (not 1rem) guarantees the threshold even if the root
-   font-size is ever reduced. */
-.auth-field input { width: 100%; outline: none; border: 0; background: transparent; color: white; font-size: 16px; line-height: 1.4; }
-.auth-field input::placeholder { color: rgba(255,255,255,.22); }
+/* GOOGLE-ONLY SIGN-IN (step 3): the card no longer contains a form, so it can
+   breathe a little more and centre its single action. The email/password field
+   styles (.auth-field*) were removed with the form itself. */
+.auth-card--google { padding-block: clamp(2rem, 5vw, 3.4rem); }
+
+/* ── "سجّل الدخول بحساب Google" button ───────────────────────
+   A plain <a href="/api/auth/google">, so the click is a real top-level
+   navigation (required for the 302 to Google and for the SameSite=Lax
+   `bac_oauth_state` cookie). Styled to match the site's pill buttons while
+   keeping Google's own white-surface + four-colour "G" identity. */
+.google-signin-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .85rem;
+  width: 100%;
+  min-height: 3.7rem;
+  padding: .95rem 1.4rem;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  background: linear-gradient(160deg, #ffffff, #eef3f8);
+  color: #10202f;
+  font-size: 1rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 14px 40px rgba(0,0,0,.32), inset 0 1px rgba(255,255,255,.9);
+  transition: transform .28s ease, box-shadow .28s ease, filter .28s ease;
+}
+.google-signin-button:hover { transform: translateY(-3px); box-shadow: 0 20px 52px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.9); }
+.google-signin-button:active { transform: translateY(-1px); }
+.google-signin-button:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(110,231,220,.35), 0 14px 40px rgba(0,0,0,.32); }
+.google-signin-button[aria-disabled="true"] { pointer-events: none; filter: saturate(.55) opacity(.72); }
+/* The glyph keeps its own LTR box so the RTL page never mirrors the mark. */
+.google-signin-button__glyph { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.google-signin-button__label { line-height: 1.4; }
+@media (prefers-reduced-motion: reduce) {
+  .google-signin-button, .google-signin-button:hover, .google-signin-button:active { transform: none; transition: none; }
+}
 
 /* ── Eye-tracking mascot (code-drawn SVG fox) ───────────────── */
 /* Promoted to its own compositor layer so it stays crisp and never re-lays-out
