@@ -32,7 +32,11 @@
 //     This is only safe because Google itself asserted `email_verified` — an
 //     unverified address is refused back in Part B-1.
 //  3. No row at all → CREATE one:
-//        role     = 'subscriber'   (never admin — a role can't be self-chosen)
+//        role     = 'subscriber'   (never admin by self-selection — the ONLY
+//                                   exception is the address configured in the
+//                                   ADMIN_SEED_EMAIL binding, promoted by
+//                                   promoteSeedAdminIfNeeded() below; a role
+//                                   still can't be chosen by the user)
 //        status   = 'active'       (they can sign in and browse immediately)
 //        approved = 0              (LOCKED — identical to open self-signup:
 //                                   every file stays behind the subscription /
@@ -194,6 +198,75 @@ export async function findUserByEmail(
 }
 
 // ---------------------------------------------------------------------------
+// Seed-admin promotion for the Google sign-in path
+// ---------------------------------------------------------------------------
+
+/**
+ * Is this (already normalised) email the configured first admin?
+ *
+ * The address is read from the EXISTING `ADMIN_SEED_EMAIL` binding — the very
+ * same one the password login path already consults (src/routes/auth.ts) — so
+ * there is exactly ONE source of truth for "who is the admin" and nothing is
+ * hardcoded in the repository. Returns false when the binding is absent/blank,
+ * which keeps every other account on the normal 'subscriber' path.
+ */
+export function isSeedAdminEmail(env: Env, emailLower: string): boolean {
+  const configured = normalizeEmail(String(env.ADMIN_SEED_EMAIL || ''))
+  return !!configured && !!emailLower && configured === emailLower
+}
+
+/**
+ * Grant admin to the seed-admin account on the Google sign-in path.
+ *
+ * WHY THIS EXISTS (and why seedAdminFromEnv alone is not enough):
+ * `seedAdminFromEnv()` bootstraps the first admin from ADMIN_SEED_EMAIL **and**
+ * ADMIN_SEED_PASSWORD, and returns `{ action: 'skipped' }` the moment either
+ * secret is missing or the password fails `isValidPassword`. A Google-only
+ * account has NO password by design (`GOOGLE_ONLY_PASSWORD_HASH` is an
+ * intentionally unusable placeholder), so on a Google-only deployment that
+ * bootstrap silently no-ops and the admin dashboard would stay unreachable
+ * forever. This function closes exactly that gap, using Google's own verified
+ * email as the proof of identity.
+ *
+ * It reuses the project's EXISTING admin system verbatim — the `users.role`
+ * column, set to 'admin', which is precisely what `requireRole('admin')` in
+ * src/lib/guards.ts checks to gate /admin and every /api/admin/* route. No new
+ * flag, table or parallel permission concept is introduced.
+ *
+ * Alongside the role it asserts `status = 'active'` and `approved = 1`, mirroring
+ * `seedAdminFromEnv()`'s own UPDATE, so the admin can never be locked out by the
+ * subscription/approval gate or by a stale suspension.
+ *
+ * Safety properties:
+ *   • Only ever runs for an email Google reported as VERIFIED and that matches
+ *     ADMIN_SEED_EMAIL exactly — an unverified address is refused back in
+ *     Part B-1, so this cannot be self-claimed.
+ *   • Idempotent: when the row is already an approved, active admin it performs
+ *     ZERO writes and simply returns the row.
+ *   • Applies to BOTH a freshly created row and an existing account signing in.
+ *   • Never touches the password hash, google_id, or any other account.
+ *   • Best-effort at the call site: a failure must not break a valid sign-in.
+ */
+export async function promoteSeedAdminIfNeeded(
+  env: Env,
+  row: GoogleUserRow
+): Promise<GoogleUserRow> {
+  if (!env.DB) return row
+  if (!isSeedAdminEmail(env, normalizeEmail(String(row.email || '')))) return row
+
+  // Already exactly right → no write at all (steady-state no-op).
+  if (row.role === 'admin' && row.status === 'active' && !!row.approved) return row
+
+  await env.DB.prepare(
+    `UPDATE users SET role = 'admin', status = 'active', approved = 1 WHERE id = ?`
+  )
+    .bind(row.id)
+    .run()
+
+  return { ...row, role: 'admin', status: 'active', approved: 1 }
+}
+
+// ---------------------------------------------------------------------------
 // Find-or-create (the whole of Part B-2's data work, in one call)
 // ---------------------------------------------------------------------------
 
@@ -290,6 +363,22 @@ export async function findOrCreateGoogleUser(
   } catch (e) {
     console.error('[googleLogin] lookup/creation failed:', e)
     return { ok: false, error: 'DB_ERROR' }
+  }
+
+  // 4. Seed-admin promotion — applies to BOTH branches above: a row that was
+  //    just CREATED in this request and an EXISTING account signing in again
+  //    (found by google_id or linked by email). Runs before the suspension
+  //    check on purpose, so the configured admin can never be locked out of
+  //    their own dashboard by a stale 'suspended' status.
+  //
+  //    Uses the project's existing role system (users.role = 'admin'), which is
+  //    what requireRole('admin') in src/lib/guards.ts gates the admin dashboard
+  //    on. Idempotent: zero writes once the account is already an active,
+  //    approved admin. Best-effort: a failure must not block a valid sign-in.
+  try {
+    row = await promoteSeedAdminIfNeeded(env, row)
+  } catch (e) {
+    console.error('[googleLogin] seed-admin promotion failed:', e)
   }
 
   // Suspension is enforced identically to the password login path.
