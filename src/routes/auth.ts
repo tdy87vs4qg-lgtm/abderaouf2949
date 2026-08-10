@@ -14,11 +14,12 @@
 //                           flow: mints a CSRF `state`, stores it, and 302s the
 //                           browser to Google's consent screen.
 //   GET  /api/auth/google/callback
-//                           RECEIVE half of the flow (PART B-1): validates the
-//                           CSRF `state`, exchanges the `code` for tokens, and
-//                           reads the VERIFIED email + Google id (`sub`). It
-//                           STOPS there — no user lookup/creation and no
-//                           session issuing (that is PART B-2).
+//                           RECEIVE half of the flow: PART B-1 validates the
+//                           CSRF `state`, exchanges the `code` for tokens and
+//                           reads the VERIFIED email + Google id (`sub`); PART
+//                           B-2 then looks the user up (or creates them),
+//                           issues a session with the EXISTING mechanism and
+//                           redirects to the app home.
 //
 // Robustness: both signup and login call ensureSchema() first, so they work
 // even against a deployed D1 whose migrations were never (fully) applied — this
@@ -35,6 +36,7 @@ import { cors } from 'hono/cors'
 import { getCookie } from 'hono/cookie'
 import type { Env } from '../lib/drive'
 import { verifyPassword } from '../lib/crypto'
+import { GOOGLE_ONLY_PASSWORD_HASH } from '../lib/google-users'
 import { createSession, destroySession, type SessionUser } from '../lib/session'
 import {
   seedAdminFromEnv,
@@ -60,6 +62,7 @@ import {
   storeOAuthState,
 } from '../lib/google-oauth'
 import { resolveGoogleCallbackIdentity } from '../lib/google-oauth-callback'
+import { appHomePathFor, findOrCreateGoogleUser } from '../lib/google-users'
 
 export const authApi = new Hono<{ Bindings: Env }>()
 
@@ -189,7 +192,21 @@ authApi.post('/login', async (c) => {
     'pbkdf2$SHA-256$210000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
   const passwordOk = await verifyPassword(password, storedHash)
 
-  if (!row || !passwordOk) {
+  // ── PART B-2: password login is DISABLED for Google-only accounts ─────────
+  // An account created through "Sign in with Google" has no password: its
+  // `password_hash` holds the deliberately unusable placeholder
+  // GOOGLE_ONLY_PASSWORD_HASH (see src/lib/google-users.ts). That value is not
+  // in the `pbkdf2$…` format, so verifyPassword() already returns false for it
+  // and this route ALREADY refuses such logins — the explicit check below just
+  // makes the intent unmistakable and guards against any future change to the
+  // hash format. The refusal is folded into the SAME uniform
+  // INVALID_CREDENTIALS answer, so we never reveal that the address exists or
+  // that it is a Google-only account. Password accounts are completely
+  // unaffected: this route, its rate limiting, its admin bootstrap and its
+  // session issuing are otherwise untouched.
+  const isGoogleOnlyAccount = row?.passwordHash === GOOGLE_ONLY_PASSWORD_HASH
+
+  if (!row || !passwordOk || isGoogleOnlyAccount) {
     return c.json({ ok: false, error: 'INVALID_CREDENTIALS' }, 401)
   }
   if (row.status !== 'active') {
@@ -386,7 +403,7 @@ authApi.get('/google', async (c) => {
 })
 
 // ---------------------------------------------------------------------------
-// GET /api/auth/google/callback — RECEIVE half of the flow (PART B-1 ONLY)
+// GET /api/auth/google/callback — RECEIVE half of the flow (PART B-1 + B-2)
 //
 // Google sends the browser here as a top-level GET after the consent screen,
 // with `?code=…&state=…` (or `?error=…` when the user declined). Everything the
@@ -409,24 +426,33 @@ authApi.get('/google', async (c) => {
 // failure) inside that helper. GET — because it must be reachable by Google's
 // plain top-level navigation.
 //
-// ── WHERE PART B-1 STOPS ───────────────────────────────────────────────────
-// On success we DO NOT look up or create a user, and DO NOT issue a session.
-// The verified identity is returned as a temporary JSON placeholder:
+// ── PART B-2: FINISHING THE LOGIN ──────────────────────────────────────────
+// Steps 1–4 above are UNCHANGED. What B-2 adds is only what happens with the
+// in-process `result.identity` ({ googleId, email, emailVerified, name?,
+// picture? }) on the success branch:
 //
-//     { ok: true, pending: 'B2', email, googleId }
+//   5. src/lib/google-users.ts → findOrCreateGoogleUser(env, identity):
+//        • look the account up by `google_id` (Google's stable `sub`);
+//        • else by `email_lower` → LINK `google_id` onto that existing row
+//          (no duplicate account for someone who signed up with a password);
+//        • else CREATE an active 'subscriber' that starts LOCKED
+//          (approved = 0), exactly like open self-signup, so Google sign-in
+//          grants a SESSION and never entitlement;
+//        • a 'suspended' account is refused, same as the password path.
+//   6. Issue the session with the EXISTING, UNMODIFIED mechanism — the very
+//      same two calls POST /login and POST /signup above already make:
+//          createSession(c.env, user, getSessionSecret(c.env))
+//          setSessionCookie(c, token, expiresAt)
+//      Nothing about how the cookie is issued or persisted is changed here.
+//   7. 302-redirect to the app home (/library, or /admin for an admin) — the
+//      same destination the existing password form navigates to. The target is
+//      computed server-side from the account's role; no user-supplied `next`
+//      parameter is honoured, so this can never become an open redirect.
 //
-// Nothing is persisted: the identity lives only in this request's memory (no KV
-// record, no D1 row, no cookie carries it), which is the safest handoff
-// possible. PART B-2 replaces ONLY the marked block below — it takes the same
-// in-process `identity` object ({ googleId, email, emailVerified, name?,
-// picture? }) and adds: find-or-create the user by `identity.email` (linking
-// `identity.googleId`), then createSession() + setSessionCookie() + redirect.
-// Steps 1–4 above stay untouched.
-//
-// UNTOUCHED BY THIS ROUTE: the session cookie (`bac_session`) and its KV/D1
-// store, the device cookie, the subscription/approval gate, Drive, the PDF
-// viewer guard, the IndexedDB cache and every piece of Arabic UI copy. An
-// already-signed-in visitor's session is neither read nor modified here.
+// UNTOUCHED BY THIS ROUTE: the session cookie MECHANISM itself and its KV/D1
+// store (reused verbatim), the device cookie, the subscription/approval gate,
+// Drive, the PDF viewer guard, the IndexedDB cache and every piece of Arabic UI
+// copy. There are no frontend changes: the browser simply lands on /library.
 // ---------------------------------------------------------------------------
 authApi.get('/google/callback', async (c) => {
   const result = await resolveGoogleCallbackIdentity(c)
@@ -444,16 +470,36 @@ authApi.get('/google/callback', async (c) => {
     return c.json({ ok: false, error: result.error }, result.status)
   }
 
-  // ===== PART B-1 STOPS HERE =================================================
-  // PART B-2 replaces this single block (user lookup/creation + session issuing
-  // + redirect). Until then we only echo back the verified identity: the email
-  // and Google id belong to the very person who just authenticated at Google in
-  // this same browser, so returning them to them leaks nothing.
-  return c.json({
-    ok: true,
-    pending: 'B2',
-    email: result.identity.email,
-    googleId: result.identity.googleId,
-  })
+  // ===== PART B-2: user lookup / creation → session → redirect ===============
+
+  // 5. Resolve the verified identity to a D1 account (found, linked, or newly
+  //    created as a LOCKED active subscriber). No cookies/KV/Drive touched.
+  const lookup = await findOrCreateGoogleUser(c.env, result.identity)
+  if (!lookup.ok) {
+    //   AUTH_UNAVAILABLE   503  no D1 binding / schema unusable
+    //   INVALID_EMAIL      400  defensive — the email failed normalisation
+    //   ACCOUNT_SUSPENDED  403  same refusal as the password login path
+    //   DB_ERROR           503  a D1 read/write failed
+    const status =
+      lookup.error === 'ACCOUNT_SUSPENDED'
+        ? 403
+        : lookup.error === 'INVALID_EMAIL'
+          ? 400
+          : 503
+    return c.json({ ok: false, error: lookup.error }, status)
+  }
+
+  // 6. Issue the session with the EXISTING mechanism — byte-for-byte the same
+  //    two calls the password login/signup handlers above use. Nothing about
+  //    how the cookie is minted, stored (KV + D1) or persisted changes here.
+  const secret = getSessionSecret(c.env)
+  const { token, expiresAt } = await createSession(c.env, lookup.user, secret)
+  setSessionCookie(c, token, expiresAt)
+
+  // 7. Land the user in the app. 302 so the browser follows it as the normal
+  //    continuation of Google's top-level navigation, carrying the Set-Cookie
+  //    we just wrote. The path is derived server-side from the account's role
+  //    (never from a query parameter) → no open-redirect surface.
+  return c.redirect(appHomePathFor(lookup.user), 302)
   // ===========================================================================
 })
