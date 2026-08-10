@@ -1,0 +1,46 @@
+# Local development secrets for `wrangler pages dev` (NAMES only — no values).
+# Copy this file to `.dev.vars` and fill in your own values locally.
+# `.dev.vars` is git-ignored and must NEVER be committed.
+
+# --- Google Drive (server-side only — credentials are NEVER sent to the browser) ---
+# PREFERRED: the full Service Account JSON key, on ONE line. A service account
+# authenticates as a real Drive principal, so PRIVATE files display correctly
+# (share the library folder with the key's `client_email`, Viewer is enough).
+# Scope requested at runtime: https://www.googleapis.com/auth/drive.readonly
+GOOGLE_SERVICE_ACCOUNT_JSON=
+# FALLBACK ONLY: a plain API key. Used just when GOOGLE_SERVICE_ACCOUNT_JSON is
+# absent, and it can only ever read PUBLICLY shared files.
+GOOGLE_API_KEY=
+DRIVE_FOLDER_ID=1U1ZAJnNY6cZ9cC-sW05i7duZEPO-SL2M
+# Secondary Drive folder holding the shortcut targets (additional allowed source).
+SECONDARY_DRIVE_FOLDER_ID=1rLZJwRVGblUvAulzcEFT6T9xZ94ChzkQ
+SITE_ORIGIN=
+
+# --- Auth (Task 4A) ---
+# Random 32+ byte secret keying session-token digests. Generate one with:
+#   openssl rand -base64 48
+SESSION_SECRET=
+
+# --- Admin bootstrap (Task 11 / deploy) ---
+# First-admin credentials. On the first login with this email the account is
+# idempotently provisioned as an active admin in D1 (no hardcoded accounts).
+ADMIN_SEED_EMAIL=
+ADMIN_SEED_PASSWORD=
+
+# --- Google OAuth 2.0 "Sign in with Google" (Part A: start leg) ---
+# These are the OAuth 2.0 CLIENT ID credentials from Google Cloud Console
+# (APIs & Services → Credentials → OAuth 2.0 Client IDs). They are a DIFFERENT
+# credential from GOOGLE_SERVICE_ACCOUNT_JSON above, which is only used to read
+# Google Drive. Read from env bindings ONLY — never hardcoded, never logged.
+#
+# The OAuth client id. It is public by design (Google's spec puts it in the
+# authorization URL the browser is redirected to).
+GOOGLE_OAUTH_CLIENT_ID=
+# The exact callback URI registered on that OAuth client. It must match
+# byte-for-byte or Google answers with redirect_uri_mismatch. There is NO
+# hardcoded fallback: when unset, GET /api/auth/google returns 503
+# OAUTH_NOT_CONFIGURED. Example (local dev):
+#   http://localhost:3000/api/auth/google/callback
+GOOGLE_OAUTH_REDIRECT_URI=
+# NOTE: the OAuth CLIENT SECRET is NOT needed by Part A (the start route never
+# uses it). It will be added in Part B, which performs the code→token exchange.

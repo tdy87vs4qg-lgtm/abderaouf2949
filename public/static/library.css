@@ -1,0 +1,1226 @@
+/* ==========================================================================
+   تيسير — Library, Google Drive–style UI
+   A self-contained stylesheet (only depends on tokens.css for a few vars).
+   Everything is namespaced `gd-*` so it never collides with the design system.
+   ========================================================================== */
+
+/* --------------------------------------------------------- local palette
+   RESTYLED to the exterior "تيسير" BRAND look — same deep ink-navy canvas,
+   luminous cyan + warm gold accents used across the public site — while the
+   Google-Drive LAYOUT and BEHAVIOUR stay completely unchanged. Only colours,
+   backgrounds and accents change here.
+
+   The library ships a DARK theme as its native default (matching the exterior
+   brand, which is dark-first / cinematic) plus a warm high-contrast LIGHT
+   theme. Both palettes read from the semantic `--gd-*` variables below; the
+   `html[data-theme="light"]` block simply re-points them. This block is scoped
+   so it NEVER leaks onto the admin page or the style-guide (which style the
+   bare <body>, not `.gd-body`) — their tokens.css values are left intact.
+
+   The JS-injected file/folder SVG glyphs read the base `--color-primary /
+   --color-accent / --color-success / --color-warning / --color-danger /
+   --color-ink-secondary` tokens, so those are re-pointed to the brand palette
+   *within the library scope only* further down, keeping the icons on-brand in
+   both themes. */
+
+/* ── Brand tokens shared by both library themes ─────────────────────────── */
+.gd-body {
+  /* Signature exterior-brand accents */
+  --gd-cyan:        #6ee7dc;   /* luminous teal — primary brand accent */
+  --gd-cyan-strong: #8ff3e9;
+  --gd-gold:        #efc47a;   /* warm gold — secondary brand accent */
+
+  --gd-topbar-h:    64px;
+  --gd-sidebar-w:   248px;
+  --gd-radius:      var(--radius-lg, 10px);
+  --gd-radius-sm:   var(--radius-md, 6px);
+  --gd-radius-lg:   16px;
+}
+
+/* ── DARK theme (native default — mirrors the exterior brand canvas) ─────── */
+.gd-body,
+html[data-theme="dark"] .gd-body {
+  /* Primary → brand cyan (the interactive/active colour on the dark canvas) */
+  --gd-blue:        #6ee7dc;
+  --gd-blue-hover:  #8ff3e9;
+  --gd-blue-soft:   rgba(110, 231, 220, .14);
+  --gd-blue-tint:   rgba(110, 231, 220, .42);
+
+  /* Text → cool off-white on deep navy */
+  --gd-text:        #f7fbff;
+  --gd-text-2:      rgba(247, 251, 255, .70);
+  --gd-text-3:      rgba(247, 251, 255, .48);
+
+  /* Lines + surfaces → deep ink-navy, translucent hairlines */
+  --gd-line:        rgba(255, 255, 255, .12);
+  --gd-line-soft:   rgba(255, 255, 255, .07);
+  --gd-surface:     #0b1725;   /* cards / panels / main pane */
+  --gd-surface-2:   #0e1c2c;   /* viewer stage */
+  --gd-bg:          #06101c;   /* page / topbar / sidebar canvas */
+  --gd-hover:       rgba(255, 255, 255, .06);
+  --gd-hover-2:     rgba(255, 255, 255, .10);
+  --gd-selected:    rgba(110, 231, 220, .14);
+  --gd-chip:        rgba(255, 255, 255, .07);
+  --gd-scrim:       rgba(3, 9, 17, .62);
+  --gd-shimmer:     rgba(255, 255, 255, .14);
+  --gd-lock-veil:   rgba(4, 10, 18, .34);
+  --gd-on-accent:   #07131d;   /* dark ink text ON the cyan/gold accents */
+  --gd-tooltip-bg:  #12283a;   /* elevated navy chip */
+  --gd-tooltip-fg:  #f7fbff;
+
+  /* Type glyph accents, themed to the brand palette */
+  --gd-folder:      #6ee7dc;
+  --gd-red:         #efc47a;    /* PDF-ish docs → warm gold */
+  --gd-green:       #6ee7dc;
+  --gd-yellow:      #efc47a;
+
+  --gd-shadow-1:    0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.35);
+  --gd-shadow-2:    0 6px 20px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
+  --gd-shadow-menu: 0 20px 60px rgba(0,0,0,.6), 0 6px 16px rgba(0,0,0,.4);
+
+  /* Re-point the base tokens the JS-injected icon SVGs read, so file/folder
+     glyphs stay on-brand — SCOPED to the library, admin is untouched. */
+  --color-primary:        #6ee7dc;
+  --color-accent:         #efc47a;
+  --color-success:        #6ee7dc;
+  --color-warning:        #efc47a;
+  --color-danger:         #f0a58f;
+  --color-ink-secondary:  rgba(247, 251, 255, .70);
+  --color-on-primary:     #07131d;
+  --color-on-accent:      #07131d;
+  /* Soft/support tokens used by a few library atoms (sample note, log-out
+     hover, scrollbar) — brand-tinted so nothing falls back to a light chip. */
+  --color-accent-soft:    rgba(239, 196, 122, .14);
+  --color-warning-soft:   rgba(239, 196, 122, .28);
+  --color-danger-soft:    rgba(240, 165, 143, .16);
+  --color-border-strong:  rgba(255, 255, 255, .20);
+}
+
+/* ── LIGHT theme — warm, high-contrast daylight version of the brand ─────── */
+html[data-theme="light"] .gd-body {
+  /* Primary → deeper teal that reads on light backgrounds */
+  --gd-blue:        #0d7d72;
+  --gd-blue-hover:  #0a5f57;
+  --gd-blue-soft:   rgba(13, 148, 136, .12);
+  --gd-blue-tint:   rgba(13, 148, 136, .42);
+
+  /* Text → deep ink-navy on soft off-white */
+  --gd-text:        #0b1a27;
+  --gd-text-2:      rgba(11, 26, 39, .66);
+  --gd-text-3:      rgba(11, 26, 39, .46);
+
+  --gd-line:        rgba(11, 26, 39, .12);
+  --gd-line-soft:   rgba(11, 26, 39, .07);
+  --gd-surface:     #ffffff;
+  --gd-surface-2:   #eef3fb;
+  --gd-bg:          #eef3fb;
+  --gd-hover:       rgba(11, 26, 39, .05);
+  --gd-hover-2:     rgba(11, 26, 39, .09);
+  --gd-selected:    rgba(13, 148, 136, .12);
+  --gd-chip:        rgba(11, 26, 39, .06);
+  --gd-scrim:       rgba(6, 16, 28, .45);
+  --gd-shimmer:     rgba(255, 255, 255, .7);
+  --gd-lock-veil:   rgba(6, 16, 28, .08);
+  --gd-on-accent:   #ffffff;
+  --gd-tooltip-bg:  #0b1a27;   /* deep ink chip on light canvas */
+  --gd-tooltip-fg:  #f7fbff;
+
+  --gd-folder:      #0d7d72;
+  --gd-red:         #b57e28;    /* PDF-ish docs → warm gold (darkened for light) */
+  --gd-green:       #0d7d72;
+  --gd-yellow:      #b57e28;
+
+  --gd-shadow-1:    0 1px 3px rgba(6,16,28,.09), 0 1px 2px rgba(6,16,28,.05);
+  --gd-shadow-2:    0 4px 14px rgba(6,16,28,.10), 0 2px 5px rgba(6,16,28,.06);
+  --gd-shadow-menu: 0 14px 40px rgba(6,16,28,.16), 0 4px 10px rgba(6,16,28,.08);
+
+  /* On-brand icon glyphs for the light theme */
+  --color-primary:        #0d7d72;
+  --color-accent:         #b57e28;
+  --color-success:        #0d7d72;
+  --color-warning:        #b57e28;
+  --color-danger:         #a63d2f;
+  --color-ink-secondary:  rgba(11, 26, 39, .66);
+  --color-on-primary:     #ffffff;
+  --color-on-accent:      #ffffff;
+  --color-accent-soft:    rgba(181, 126, 40, .12);
+  --color-warning-soft:   rgba(181, 126, 40, .20);
+  --color-danger-soft:    rgba(166, 61, 47, .12);
+  --color-border-strong:  rgba(11, 26, 39, .28);
+}
+
+/* ------------------------------------------------------------------ reset */
+* { box-sizing: border-box; }
+
+.gd-body {
+  margin: 0;
+  font-family: var(--font-body, 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  color: var(--gd-text);
+  background: var(--gd-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden; /* the scroll region handles scrolling */
+}
+
+.gd-body button { font-family: inherit; }
+
+/* ========================================================================== */
+/* TOP BAR                                                                    */
+/* ========================================================================== */
+.gd-topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--gd-topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--gd-bg);
+  border-bottom: 1px solid var(--gd-line);
+  z-index: 40;
+  width: 100%;
+  max-width: 100%;
+}
+
+.gd-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.gd-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--gd-blue);
+  padding: 4px 10px;
+  border-radius: var(--gd-radius-sm);
+  transition: background var(--duration-fast, 150ms) ease;
+}
+.gd-brand:hover { background: var(--gd-hover); }
+.gd-brand-name {
+  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--gd-blue);
+  letter-spacing: var(--tracking-tight, -0.015em);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* icon button (menu, home, etc.) */
+.gd-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--gd-text-2);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) ease;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+.gd-icon-btn:hover { background: var(--gd-hover); }
+.gd-icon-btn:active { background: var(--gd-hover-2); }
+
+.gd-menu-toggle { display: none; }
+
+/* ------------------------------------------------------------- search */
+.gd-search {
+  flex: 1 1 640px;
+  min-width: 0;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 46px;
+  background: var(--gd-surface);
+  border: 1px solid var(--gd-line);
+  border-radius: 999px;
+  padding: 0 8px 0 4px;
+  transition: background var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
+  margin: 0 8px;
+}
+.gd-search:focus-within {
+  background: var(--gd-surface);
+  border-color: var(--gd-blue-tint);
+  box-shadow: var(--gd-shadow-1);
+}
+.gd-search-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--gd-text-2);
+  border-radius: 50%;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.gd-search-icon:hover { background: var(--gd-hover); }
+.gd-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1rem;
+  color: var(--gd-text);
+  height: 100%;
+}
+.gd-search-input::placeholder { color: var(--gd-text-2); }
+.gd-search-input::-webkit-search-cancel-button { display: none; }
+.gd-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--gd-text-2);
+  border-radius: 50%;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.gd-search-clear:hover { background: var(--gd-hover); }
+
+.gd-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: 2px;
+}
+.gd-account {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--gd-blue), var(--color-accent, #B97E2C));
+  color: var(--color-on-primary, #F7FAFC);
+  flex: 0 0 auto;
+  margin: 0 2px;
+}
+.gd-account:hover { box-shadow: var(--shadow-focus, 0 0 0 3px rgba(22,50,79,.18)); }
+
+/* Log-out — quiet ghost icon button that reads on hover, always inside frame */
+.gd-logout { color: var(--gd-text-2); }
+.gd-logout:hover { background: var(--color-danger-soft, #F6E7E4); color: var(--color-danger, #A63D2F); }
+
+/* ========================================================================== */
+/* SHELL: sidebar + main                                                      */
+/* ========================================================================== */
+.gd-shell {
+  position: fixed;
+  inset: var(--gd-topbar-h) 0 0 0;
+  display: flex;
+}
+
+/* ----------------------------------------------------------- sidebar */
+.gd-sidebar {
+  flex: 0 0 var(--gd-sidebar-w);
+  width: var(--gd-sidebar-w);
+  padding: 8px 0 12px 8px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.gd-nav { display: flex; flex-direction: column; gap: 1px; }
+
+.gd-subject {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px 0 20px;
+  height: 40px;
+  border-radius: 0 999px 999px 0;
+  color: var(--gd-text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background var(--duration-fast, 150ms) ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+.gd-subject:hover { background: var(--gd-hover); }
+.gd-subject.is-active {
+  background: var(--gd-blue-soft);
+  color: var(--gd-blue-hover);
+  font-weight: 600;
+}
+.gd-subject.is-active .gd-subject-icon { color: var(--gd-blue); }
+.gd-subject-icon { flex: 0 0 auto; display: inline-flex; color: var(--gd-text-2); }
+.gd-subject-label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+
+.gd-nav-skeleton { display: flex; flex-direction: column; gap: 8px; padding: 6px 16px; }
+.gd-skel-nav { height: 20px; border-radius: 6px; width: 82%; }
+.gd-skel-nav:nth-child(2) { width: 68%; }
+.gd-skel-nav:nth-child(3) { width: 74%; }
+.gd-skel-nav:nth-child(4) { width: 60%; }
+.gd-skel-nav:nth-child(5) { width: 70%; }
+
+/* storage/promo card at bottom of sidebar */
+.gd-storage {
+  margin: auto 12px 4px 12px;
+  padding: 16px;
+  border-radius: var(--gd-radius);
+  background: var(--gd-bg);
+  border: 1px solid var(--gd-line);
+}
+.gd-storage-title {
+  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
+  color: var(--gd-blue);
+}
+.gd-storage-title { margin: 0 0 4px; font-size: 0.8125rem; font-weight: 600; color: var(--gd-text); }
+.gd-storage-text { margin: 0 0 12px; font-size: 0.78rem; color: var(--gd-text-2); line-height: 1.45; }
+.gd-storage-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gd-blue);
+  text-decoration: none;
+  padding: 8px 14px;
+  border: 1px solid var(--gd-line);
+  border-radius: 999px;
+  background: var(--gd-surface);
+  transition: background var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
+}
+.gd-storage-cta:hover { background: var(--gd-blue-soft); border-color: var(--gd-blue-tint); }
+
+.gd-scrim {
+  position: fixed;
+  inset: var(--gd-topbar-h) 0 0 0;
+  background: var(--gd-scrim, rgba(31,41,51,.4));
+  z-index: 29;
+  opacity: 0;
+  transition: opacity var(--duration-base, 200ms) ease;
+}
+.gd-scrim.is-open { opacity: 1; }
+
+/* ----------------------------------------------------------- main */
+.gd-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--gd-surface);
+  border-radius: 16px 0 0 0;
+  border-top: 1px solid var(--gd-line-soft);
+  border-left: 1px solid var(--gd-line-soft);
+  overflow: hidden;
+}
+
+/* toolbar: breadcrumb + view toggle */
+.gd-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 8px 24px;
+  min-height: 56px;
+}
+.gd-breadcrumb {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+/* Toolbar navigation icon buttons (back / home). Reuse the shared icon-button
+   look so they inherit the brand colours and dark/light theming automatically. */
+.gd-nav-btn {
+  color: var(--gd-text);
+  width: 40px;
+  height: 40px;
+}
+.gd-nav-btn svg { display: block; }
+.gd-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--gd-text);
+  font-size: 1.375rem;
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42vw;
+  transition: background var(--duration-fast, 150ms) ease;
+}
+.gd-crumb:hover { background: var(--gd-hover); }
+.gd-crumb-current { font-weight: 400; cursor: default; }
+.gd-crumb-current:hover { background: transparent; }
+.gd-crumb-sep { display: inline-flex; color: var(--gd-text-3); flex: 0 0 auto; }
+.gd-skel-crumb { width: 180px; height: 28px; border-radius: 8px; }
+
+.gd-toolbar-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+.gd-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--gd-line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.gd-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--gd-text-2);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
+}
+.gd-view-btn:hover { background: var(--gd-hover); }
+.gd-view-btn.is-active { background: var(--gd-blue-soft); color: var(--gd-blue); }
+
+/* sample note */
+.gd-samplenote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 24px 4px;
+  padding: 10px 14px;
+  background: var(--color-accent-soft, #F7EEDD);
+  border: 1px solid var(--color-warning-soft, #F8EDDE);
+  border-radius: var(--gd-radius-sm);
+  font-size: 0.8125rem;
+  color: var(--color-warning, #A9631A);
+}
+.gd-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-accent, #B97E2C);
+  color: var(--color-on-accent, #FFFDF7);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+/* ----------------------------------------------------------- scroller */
+.gd-scroller {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 24px 32px;
+  scrollbar-width: thin;
+}
+.gd-scroller::-webkit-scrollbar { width: 12px; }
+.gd-scroller::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong, #C9C2B4); border-radius: 999px; border: 3px solid var(--gd-bg);
+}
+.gd-scroller::-webkit-scrollbar-thumb:hover { background: var(--gd-text-3); }
+
+.gd-section-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gd-text);
+  margin: 20px 2px 14px;
+  letter-spacing: .1px;
+}
+.gd-section-label:first-child { margin-top: 8px; }
+
+/* ========================================================================== */
+/* GRID VIEW — bigger, nicer Drive-style cards                                */
+/* ========================================================================== */
+.gd-grid {
+  display: grid;
+  /* Larger minimum → comfortable cards on phones, more (still large) columns
+     on wide screens. auto-fill keeps them stretched across the full width. */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 10px;
+}
+
+.gd-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--gd-surface);
+  border: 1px solid var(--gd-line);
+  border-radius: var(--gd-radius-lg, 16px);
+  cursor: pointer;
+  overflow: hidden;
+  text-align: right; /* RTL-friendly */
+  text-decoration: none;
+  color: var(--gd-text);
+  padding: 0;
+  font-family: inherit;
+  transition: background var(--duration-fast, 150ms) ease,
+              box-shadow var(--duration-base, 220ms) ease,
+              border-color var(--duration-fast, 150ms) ease,
+              transform var(--duration-fast, 150ms) ease;
+  width: 100%;
+}
+.gd-card:hover {
+  background: var(--gd-hover);
+  border-color: var(--gd-blue-tint);
+  box-shadow: var(--gd-shadow-2);
+  transform: translateY(-3px);
+}
+.gd-card:focus-visible { outline: 2px solid var(--gd-blue); outline-offset: 2px; }
+.gd-card:active { transform: translateY(-1px); }
+
+.gd-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px 14px;
+}
+.gd-card-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--gd-blue-soft);
+  color: var(--gd-blue);
+}
+.gd-card-icon svg { width: 26px; height: 26px; }
+.gd-card-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--gd-text);
+  /* allow up to two lines for long Arabic names, then ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.gd-card-lock {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gd-line-soft);
+  color: var(--gd-text-3);
+}
+.gd-card-lock svg { width: 18px; height: 18px; }
+
+/* ---- folder card = large, comfortable clickable tile ---- */
+.gd-card.gd-folder { flex-direction: row; align-items: center; }
+.gd-card.gd-folder .gd-card-head {
+  padding: 22px 20px;
+  width: 100%;
+  min-height: 84px;
+}
+.gd-card.gd-folder .gd-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--gd-blue-soft);
+  background: color-mix(in srgb, var(--gd-folder) 18%, transparent);
+  color: var(--gd-folder);
+}
+.gd-card.gd-folder .gd-card-icon svg { width: 30px; height: 30px; }
+.gd-card.gd-folder .gd-card-icon svg path { fill: currentColor !important; }
+.gd-card.gd-folder .gd-card-name { font-size: 1.125rem; }
+/* chevron pointer on folders — flips to point "into" the folder in RTL */
+.gd-card.gd-folder .gd-card-lock {
+  background: transparent;
+  color: var(--gd-text-3);
+  transform: scaleX(-1);
+  transition: transform var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
+}
+.gd-card.gd-folder:hover .gd-card-lock { color: var(--gd-blue); transform: scaleX(-1) translateX(-3px); }
+
+/* ---- file card = header + larger thumbnail preview area ---- */
+.gd-card-thumb {
+  position: relative;
+  margin: 0 18px 18px;
+  border-radius: var(--gd-radius, 12px);
+  background: var(--gd-line-soft);
+  height: 200px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gd-card-thumb .gd-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gd-text-3);
+  opacity: .8;
+}
+.gd-card-thumb .gd-thumb-fallback svg { width: 64px; height: 64px; }
+.gd-thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--duration-base, 200ms) ease;
+}
+.gd-card-thumb.has-thumb .gd-thumb-img { opacity: 1; }
+.gd-card-thumb.has-thumb .gd-thumb-fallback { display: none; }
+
+/* locked file: subtle overlay lock on the thumbnail */
+.gd-card.is-locked .gd-card-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, var(--gd-lock-veil, rgba(31,41,51,.08)));
+}
+.gd-card.is-locked .gd-card-lock { background: var(--gd-blue-soft); color: var(--gd-blue); }
+
+/* ========================================================================== */
+/* LIST VIEW — Drive-style rows                                               */
+/* ========================================================================== */
+.gd-list { display: flex; flex-direction: column; }
+
+.gd-list-header {
+  display: grid;
+  grid-template-columns: minmax(0,2.4fr) 1fr 1fr 44px;
+  gap: 16px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gd-text-2);
+  border-bottom: 1px solid var(--gd-line-soft);
+  position: sticky;
+  top: 0;
+  background: var(--gd-surface);
+  z-index: 2;
+}
+.gd-row {
+  display: grid;
+  grid-template-columns: minmax(0,2.4fr) 1fr 1fr 44px;
+  gap: 16px;
+  align-items: center;
+  padding: 0 16px;
+  height: 48px;
+  border-bottom: 1px solid var(--gd-line-soft);
+  border-radius: 10px;
+  cursor: pointer;
+  background: transparent;
+  border-left: none; border-right: none; border-top: none;
+  color: var(--gd-text);
+  text-decoration: none;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-fast, 150ms) ease;
+}
+.gd-row:hover { background: var(--gd-hover); }
+.gd-row:focus-visible { outline: 2px solid var(--gd-blue); outline-offset: -2px; }
+.gd-row-name {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.gd-row-name .gd-card-icon { flex: 0 0 auto; }
+.gd-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gd-row-meta { font-size: 0.8125rem; color: var(--gd-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gd-row-end { display: flex; align-items: center; justify-content: flex-end; }
+.gd-row-lock { display: inline-flex; color: var(--gd-text-3); }
+.gd-row-open { display: inline-flex; color: var(--gd-text-3); }
+.gd-row:hover .gd-row-open { color: var(--gd-blue); }
+
+.gd-hide-narrow { }
+
+/* ========================================================================== */
+/* VIRTUALIZATION spacers                                                     */
+/* ========================================================================== */
+.gd-virtual { position: relative; }
+.gd-virtual-spacer { width: 100%; }
+
+/* ========================================================================== */
+/* SEARCH RESULTS                                                             */
+/* ========================================================================== */
+.gd-search-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+}
+.gd-search-summary { margin: 0; font-size: 0.9rem; color: var(--gd-text-2); }
+.gd-search-group {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gd-text-2);
+  margin: 18px 2px 10px;
+}
+.gd-result-path {
+  font-size: 0.75rem;
+  color: var(--gd-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========================================================================== */
+/* EMPTY / ERROR                                                              */
+/* ========================================================================== */
+.gd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--gd-text-2);
+}
+.gd-empty-art { color: var(--gd-line); margin-bottom: 16px; }
+.gd-empty-title { margin: 0 0 6px; font-family: var(--font-heading, 'Fraunces', Georgia, serif); font-size: 1.15rem; font-weight: 600; color: var(--gd-blue); }
+.gd-empty-text { margin: 0 0 16px; font-size: 0.9rem; color: var(--gd-text-2); max-width: 34ch; }
+
+/* ========================================================================== */
+/* SKELETONS                                                                  */
+/* ========================================================================== */
+.gd-skel {
+  position: relative;
+  background: var(--gd-line-soft);
+  overflow: hidden;
+  display: inline-block;
+}
+.gd-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--gd-shimmer, rgba(255,255,255,.65)), transparent);
+  animation: gd-shimmer 1.3s infinite;
+}
+@keyframes gd-shimmer { 100% { transform: translateX(100%); } }
+.gd-skel-line { height: 14px; border-radius: 7px; }
+.gd-skel-dot { width: 46px; height: 46px; border-radius: 12px; flex: 0 0 auto; }
+.gd-card.is-skeleton { cursor: default; }
+.gd-card.is-skeleton:hover { box-shadow: none; background: var(--gd-surface); transform: none; }
+.gd-card.is-skeleton .gd-card-thumb { margin-top: 0; }
+
+/* ========================================================================== */
+/* BUTTONS (modal / retry)                                                    */
+/* ========================================================================== */
+.gd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease;
+  text-decoration: none;
+}
+.gd-btn-primary { background: var(--gd-blue); color: var(--gd-on-accent, #fff); }
+.gd-btn-primary:hover { background: var(--gd-blue-hover); box-shadow: var(--gd-shadow-1); }
+.gd-btn-text { background: transparent; color: var(--gd-blue); padding: 0 12px; }
+.gd-btn-text:hover { background: var(--gd-blue-soft); }
+
+/* ========================================================================== */
+/* MODAL                                                                      */
+/* ========================================================================== */
+.gd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--gd-scrim, rgba(31,41,51,.5));
+  opacity: 0;
+  transition: opacity var(--duration-base, 200ms) ease;
+}
+.gd-modal-overlay.is-open { opacity: 1; }
+.gd-modal-overlay[hidden] { display: none; }
+.gd-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--gd-surface);
+  border-radius: 16px;
+  box-shadow: var(--gd-shadow-menu);
+  transform: translateY(8px) scale(.98);
+  transition: transform var(--duration-base, 200ms) var(--ease-out, ease);
+}
+.gd-modal-overlay.is-open .gd-modal { transform: none; }
+.gd-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 16px 4px 24px;
+}
+.gd-modal-lock {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gd-blue-soft);
+  color: var(--gd-blue);
+}
+.gd-modal-title { flex: 1 1 auto; margin: 0; font-family: var(--font-heading, 'Fraunces', Georgia, serif); font-size: 1.25rem; font-weight: 600; color: var(--gd-blue); }
+.gd-modal-close { flex: 0 0 auto; }
+.gd-modal-body { padding: 8px 24px 4px; }
+.gd-modal-lede { margin: 0; font-size: 0.95rem; line-height: 1.55; color: var(--gd-text-2); }
+.gd-modal-lede strong { color: var(--gd-text); }
+.gd-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px 20px;
+}
+
+/* ========================================================================== */
+/* TOOLTIP (native title fallback + simple data-tooltip)                      */
+/* ========================================================================== */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--gd-tooltip-bg, #0F2438);
+  color: var(--gd-tooltip-fg, #fff);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 5px 9px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast,150ms) ease, transform var(--duration-fast,150ms) ease;
+  z-index: 500;
+}
+[data-tooltip]:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ========================================================================== */
+/* RESPONSIVE                                                                 */
+/* ========================================================================== */
+@media (max-width: 1000px) {
+  :root { --gd-sidebar-w: 240px; }
+  .gd-menu-toggle { display: inline-flex; }
+  .gd-sidebar {
+    position: fixed;
+    top: var(--gd-topbar-h);
+    bottom: 0;
+    left: 0;
+    width: 280px;
+    background: var(--gd-surface);
+    box-shadow: var(--gd-shadow-menu);
+    transform: translateX(-100%);
+    transition: transform var(--duration-base,200ms) var(--ease-out, ease);
+    z-index: 30;
+    padding-top: 12px;
+  }
+  .gd-sidebar.is-open { transform: none; }
+  .gd-main { border-radius: 0; border-left: none; }
+}
+
+@media (min-width: 1001px) {
+  .gd-scrim { display: none !important; }
+}
+
+@media (max-width: 640px) {
+  .gd-topbar { padding: 0 6px; height: 60px; gap: 2px; }
+  :root { --gd-topbar-h: 60px; }
+  .gd-search { height: 44px; margin: 0 4px; flex-basis: 0; }
+  .gd-brand { padding: 4px 4px; }
+  .gd-brand-name { font-size: 1.25rem; }
+  .gd-icon-btn { width: 38px; height: 38px; }
+  .gd-hide-mobile { display: none; }
+  .gd-crumb { font-size: 1.125rem; max-width: 52vw; }
+  .gd-toolbar { padding: 6px 10px; min-height: 50px; }
+  .gd-scroller { padding: 4px 12px 28px; }
+  /* Mobile: comfortable large cards. One roomy column on narrow phones,
+     two once there's room — never the old cramped tiny tiles. */
+  .gd-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .gd-card-thumb { height: 170px; margin: 0 14px 14px; }
+  .gd-card-head { padding: 15px 15px 12px; gap: 12px; }
+  .gd-card-icon { width: 42px; height: 42px; }
+  .gd-card-icon svg { width: 24px; height: 24px; }
+  .gd-card.gd-folder .gd-card-head { padding: 18px 16px; min-height: 74px; }
+  .gd-card.gd-folder .gd-card-icon { width: 46px; height: 46px; }
+  .gd-card-name { font-size: 1rem; }
+  /* list view: hide the modified/size columns on phones */
+  .gd-list-header { grid-template-columns: minmax(0,1fr) 88px 40px; }
+  .gd-row { grid-template-columns: minmax(0,1fr) 88px 40px; }
+  .gd-row-meta.gd-col-modified { display: none; }
+  .gd-list-header .gd-col-modified { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* very narrow phones: one big, easy-to-tap card per row */
+  .gd-grid { grid-template-columns: 1fr; gap: 14px; }
+  .gd-card-thumb { height: 190px; }
+}
+
+@media (max-width: 420px) {
+  .gd-list-header { grid-template-columns: minmax(0,1fr) 40px; }
+  .gd-row { grid-template-columns: minmax(0,1fr) 40px; }
+  .gd-row-meta { display: none; }
+  .gd-list-header .gd-col-type,
+  .gd-list-header .gd-col-modified { display: none; }
+}
+
+/* ========================================================================== */
+/* IN-APP FILE VIEWER OVERLAY (SPA)                                           */
+/* Opening/switching/closing files renders here without a full page reload,   */
+/* so navigation stays instant. Access is still gated server-side.            */
+/* ========================================================================== */
+.gd-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 450;
+  display: flex;
+  flex-direction: column;
+  background: var(--gd-surface-2, #f2ede3);
+  opacity: 0;
+  transition: opacity var(--duration-base, 200ms) ease;
+}
+.gd-viewer-overlay.is-open { opacity: 1; }
+.gd-viewer-overlay[hidden] { display: none; }
+.gd-viewer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--gd-surface);
+  border-bottom: 1px solid var(--gd-line);
+}
+.gd-viewer-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--gd-blue, #16324F);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gd-viewer-meta { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+
+/* Zoom control cluster in the viewer bar (PDF / image only). */
+.gd-viewer-zoom {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--gd-blue-soft, #e7edf3);
+}
+.gd-viewer-zoom[hidden] { display: none; }
+.gd-viewer-zoom .gd-icon-btn { width: 34px; height: 34px; }
+.gd-zoom-level {
+  min-width: 4.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gd-blue, #16324F);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.gd-viewer-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--gd-blue-soft, #e7edf3);
+  color: var(--gd-blue, #16324F);
+}
+.gd-viewer-stage {
+  flex: 1 1 auto;
+  /* min-height:0 lets this flex child actually shrink inside the column so the
+     inner scroller gets a real, bounded height instead of collapsing (which
+     caused the blank screen on desktop). */
+  min-height: 0;
+  position: relative;
+  /* The stage is only a positioning context now. Its scrollable children
+     (.gd-pdf-scroll / .gd-media-scroll) fill it via position:absolute inset:0
+     and do the scrolling themselves — a SINGLE scroll container, no flex
+     centering that would push overflowing content out of reach at the top. */
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  background: var(--gd-surface-2, #f2ede3);
+}
+/* Center-only content (spinner, message, unsupported note, iframe/video) that
+   is placed directly in the stage without its own scroller. Applied to any
+   direct child that isn't one of the full-size scroll/frame layers. */
+.gd-viewer-stage > .gd-viewer-spinner,
+.gd-viewer-stage > .gd-viewer-msg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+.gd-viewer-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* PDF/doc iframes render on white internally — keep a white canvas so
+     document pages stay legible regardless of the app theme. */
+  background: #fff;
+}
+/* Video sits centered in the stage (which is no longer a flex container). */
+.gd-viewer-stage > .gd-viewer-video {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+/* ---- In-page PDF.js renderer -------------------------------------------
+   A vertical, scrollable column of page canvases that fills the full stage
+   width. Because pages are drawn onto <canvas> in-page, iOS/Safari keeps the
+   document INSIDE this viewer instead of handing it to the system PDF app. */
+.gd-pdf-scroll {
+  position: absolute;
+  inset: 0;
+  /* The single, bounded scroll container. Vertical scroll through all pages;
+     horizontal auto so a zoomed-in (wider-than-viewport) page can be reached
+     too instead of being clipped. */
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Momentum / smooth touch scrolling that doesn't chain to the page behind. */
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  display: flex;
+  flex-direction: column;
+  /* Center pages horizontally only while they fit; when a page is wider than
+     the viewport (zoomed in), flex-start keeps its start edge reachable so it
+     is not cut off. */
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  scroll-behavior: smooth;
+}
+.gd-pdf-page {
+  position: relative;
+  /* Do NOT cap at max-width:100% here — the canvas is explicitly sized to the
+     fit-to-width (or zoomed) scale in JS. A max-width cap combined with the old
+     flex centering was clipping pages / collapsing them to blank on desktop. */
+  flex: 0 0 auto;
+  line-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0,0,0,.16);
+}
+.gd-pdf-page canvas {
+  display: block;
+  /* Canvas CSS width/height are set explicitly in JS to the rendered size;
+     let it use those dimensions verbatim so nothing is scaled/clipped by CSS. */
+}
+
+/* ---- Zoomable image ----------------------------------------------------- */
+.gd-media-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Keep the image centered while it fits; when zoomed larger than the
+     viewport, allow scrolling to its edges without clipping. */
+  min-height: min-content;
+  padding: 16px;
+}
+.gd-viewer-img {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: var(--gd-shadow-menu, 0 6px 24px rgba(0,0,0,.12));
+}
+.gd-viewer-video { max-width: 100%; max-height: 100%; border-radius: 12px; background: #000; margin: auto; }
+.gd-viewer-msg { max-width: 34rem; margin: auto; text-align: center; color: var(--gd-text-2, #7A6A52); line-height: 1.6; padding: 24px; }
+.gd-viewer-spinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.gd-spin {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid var(--gd-blue-soft, #e7edf3);
+  border-top-color: var(--gd-blue, #16324F);
+  animation: gd-spin 0.8s linear infinite;
+}
+@keyframes gd-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gd-spin { animation-duration: 1.6s; } }
+
+/* Compact the viewer bar on phones so the zoom cluster always fits, while the
+   file title truncates gracefully. Kept lightweight and RTL-safe. */
+@media (max-width: 640px) {
+  .gd-viewer-bar { gap: 8px; padding: 8px 10px; }
+  .gd-viewer-title { font-size: 0.92rem; }
+  .gd-viewer-meta { display: none; }
+  .gd-viewer-zoom .gd-icon-btn { width: 32px; height: 32px; }
+  .gd-zoom-level { min-width: 3.6rem; font-size: 0.74rem; }
+  .gd-pdf-scroll { padding: 10px; gap: 10px; }
+  .gd-media-scroll { padding: 8px; }
+}
+@media (max-width: 420px) {
+  /* Hide the explicit fit button on the tightest screens; "0" key / zooming
+     out to baseline still returns to fit-to-width. */
+  .gd-zoom-fit { display: none; }
+}

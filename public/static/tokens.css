@@ -1,0 +1,155 @@
+/* ==========================================================================
+   تيسير — Design Tokens
+   The single source of truth for the visual language.
+   Import this file before components.css on every page.
+   ========================================================================== */
+
+:root {
+
+  /* ------------------------------------------------------------------
+     1. COLOR — restrained, academic, warm-neutral
+     Primary: deep ink blue. Accent: warm ochre (use sparingly: CTAs,
+     highlights, active states — never large surfaces).
+     ------------------------------------------------------------------ */
+
+  /* Brand — Ink Blue */
+  --color-primary:        #16324F;  /* deep ink blue — headings, primary buttons, links */
+  --color-primary-hover:  #0F2438;  /* darker for hover/active */
+  --color-primary-soft:   #E9EFF5;  /* tint for selected rows, subtle backgrounds */
+  --color-primary-border: #B9C9D8;  /* borders on primary-tinted elements */
+
+  /* Accent — Warm Ochre (sparingly!) */
+  --color-accent:         #B97E2C;  /* warm ochre — key CTAs, active markers, prices */
+  --color-accent-hover:   #9A6822;
+  --color-accent-soft:    #F7EEDD;  /* tint for accent badges/callouts */
+
+  /* Neutrals — warm-tinted, never pure black/white */
+  --color-bg:             #FAF7F2;  /* page background — warm off-white */
+  --color-surface:        #FFFEFB;  /* cards, panels, modals */
+  --color-surface-sunken: #F2EEE7;  /* wells, code blocks, table stripes */
+  --color-border:         #E3DED4;  /* default hairline borders */
+  --color-border-strong:  #C9C2B4;  /* input borders, dividers that must read */
+  --color-ink:            #1F2933;  /* primary text — near-black warm gray */
+  --color-ink-secondary:  #52606D;  /* secondary text, descriptions */
+  --color-ink-muted:      #8A94A0;  /* captions, placeholders, metadata */
+
+  /* State colors */
+  --color-success:        #2F7D52;  /* subscription active, confirmations */
+  --color-success-soft:   #E5F1EA;
+  --color-lock:           #6E6455;  /* locked-file state — quiet, warm bronze-gray */
+  --color-lock-soft:      #EFEAE1;
+  --color-warning:        #A9631A;  /* expiring soon, cautions */
+  --color-warning-soft:   #F8EDDE;
+  --color-danger:         #A63D2F;  /* errors, destructive actions */
+  --color-danger-soft:    #F6E7E4;
+
+  /* On-color text */
+  --color-on-primary:     #F7FAFC;
+  --color-on-accent:      #FFFDF7;
+
+  /* ------------------------------------------------------------------
+     2. TYPOGRAPHY
+     Headings: Fraunces (editorial serif — credible, distinctive)
+     Body:     Public Sans (neutral, highly readable)
+     ------------------------------------------------------------------ */
+
+  --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body:    'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Type scale — 1.250 major-third ratio, fluid on large headings */
+  --text-h1:      clamp(2.25rem, 1.55rem + 2.6vw, 3.25rem);  /* 36→52px */
+  --text-h2:      clamp(1.75rem, 1.35rem + 1.5vw, 2.375rem); /* 28→38px */
+  --text-h3:      clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem);  /* 22→28px */
+  --text-h4:      1.25rem;    /* 20px */
+  --text-h5:      1.0625rem;  /* 17px */
+  --text-h6:      0.9375rem;  /* 15px — used as eyebrow/overline */
+  --text-body-lg: 1.125rem;   /* 18px — lede paragraphs */
+  --text-body:    1rem;       /* 16px */
+  --text-body-sm: 0.875rem;   /* 14px — metadata, table cells */
+  --text-caption: 0.8125rem;  /* 13px — captions, badges */
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* Line heights */
+  --leading-tight:  1.15;  /* h1–h2 */
+  --leading-snug:   1.3;   /* h3–h6 */
+  --leading-body:   1.6;   /* paragraphs */
+  --leading-loose:  1.75;  /* long-form lesson text */
+
+  /* Letter spacing */
+  --tracking-tight:  -0.015em;  /* large serif headings */
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;    /* overlines, small caps labels */
+
+  /* ------------------------------------------------------------------
+     3. SPACING — 4px base scale
+     ------------------------------------------------------------------ */
+
+  --space-1:  0.25rem;   /*  4px */
+  --space-2:  0.5rem;    /*  8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.5rem;    /* 24px */
+  --space-6:  2rem;      /* 32px */
+  --space-7:  3rem;      /* 48px */
+  --space-8:  4rem;      /* 64px */
+  --space-9:  6rem;      /* 96px */
+
+  /* Layout */
+  --container-max:   72rem;   /* 1152px */
+  --container-text:  42rem;   /* 672px — reading width */
+  --container-pad:   clamp(1rem, 4vw, 2rem);
+
+  /* ------------------------------------------------------------------
+     4. RADII — modest, never pill-everything
+     ------------------------------------------------------------------ */
+
+  --radius-sm:   4px;   /* badges, tags, inputs */
+  --radius-md:   6px;   /* buttons, small cards */
+  --radius-lg:   10px;  /* cards, modals */
+  --radius-full: 999px; /* avatars & dot indicators ONLY */
+
+  /* ------------------------------------------------------------------
+     5. ELEVATION — soft, low-contrast, warm shadows
+     ------------------------------------------------------------------ */
+
+  --shadow-xs: 0 1px 2px rgba(31, 41, 51, 0.05);
+  --shadow-sm: 0 1px 3px rgba(31, 41, 51, 0.07), 0 1px 2px rgba(31, 41, 51, 0.04);
+  --shadow-md: 0 4px 12px rgba(31, 41, 51, 0.08), 0 2px 4px rgba(31, 41, 51, 0.04);
+  --shadow-lg: 0 12px 32px rgba(31, 41, 51, 0.12), 0 4px 8px rgba(31, 41, 51, 0.05);
+  --shadow-focus: 0 0 0 3px rgba(22, 50, 79, 0.18);
+
+  /* ------------------------------------------------------------------
+     6. MOTION — subtle, decisive, never bouncy
+     ------------------------------------------------------------------ */
+
+  --duration-fast:   150ms;  /* hovers, color/border changes */
+  --duration-base:   200ms;  /* card lift, dropdowns, tooltips */
+  --duration-slow:   250ms;  /* modals, page-level transitions */
+
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);     /* entrances */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);    /* moves/resizes */
+  --ease-in:     cubic-bezier(0.55, 0, 1, 0.45);    /* exits */
+
+  /* ------------------------------------------------------------------
+     7. Z-INDEX
+     ------------------------------------------------------------------ */
+
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-overlay:  300;
+  --z-modal:    400;
+  --z-tooltip:  500;
+}
+
+/* Respect users who prefer no motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

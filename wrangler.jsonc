@@ -1,0 +1,64 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tayseer-bac",
+  "compatibility_date": "2026-04-26",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+
+  // ------------------------------------------------------------------
+  // DEPLOY NOTE — existing project "tayseer-bac"
+  //
+  // Env vars / secrets are ALREADY configured on the existing Pages project
+  // (production environment) and are intentionally NOT redeclared here, so the
+  // deploy inherits them without the "Binding name already in use" collision
+  // and without clearing anything:
+  //
+  //   env vars (plain_text):  GOOGLE_API_KEY, DRIVE_FOLDER_ID
+  //   secrets  (encrypted):   SESSION_SECRET, ADMIN_SEED_EMAIL, ADMIN_SEED_PASSWORD
+  //
+  // REQUIRED for PRIVATE Drive files — GOOGLE_SERVICE_ACCOUNT_JSON:
+  //   The full Google Service Account JSON key, stored as an ENCRYPTED SECRET on
+  //   the Pages project (production environment), on a single line:
+  //
+  //     npx wrangler pages secret put GOOGLE_SERVICE_ACCOUNT_JSON --project-name tayseer-bac
+  //
+  //   src/lib/drive.ts exchanges it for an OAuth2 bearer token (RS256-signed JWT
+  //   via Web Crypto — see src/lib/google-auth.ts) with scope
+  //   https://www.googleapis.com/auth/drive.readonly, so the app authenticates
+  //   as a real Drive principal and PRIVATE files display. Share the library
+  //   folder (and the secondary folder) with the key's `client_email` — Viewer
+  //   access is sufficient. GOOGLE_API_KEY is used ONLY as a fallback when this
+  //   secret is absent (public files only). It is deliberately NOT declared as a
+  //   binding here so the deploy inherits the dashboard/secret value without a
+  //   "Binding name already in use" collision, exactly like the vars above.
+  //   Read server-side only; NEVER logged, NEVER sent to the browser.
+  //
+  // OPTIONAL: SECONDARY_DRIVE_FOLDER_ID — an additional allowed Drive folder
+  // that holds the real targets of the shortcut items placed in the main
+  // folder. If not set on the Pages project, the app falls back to the known
+  // folder id baked into src/lib/drive.ts (driveSecondaryId), so shortcuts
+  // keep resolving without any dashboard change. Read server-side only.
+  //
+  // All are read server-side only and NEVER sent to the browser. For local dev
+  // the same names live in `.dev.vars` (see .dev.vars.example).
+  //
+  // The D1 binding MUST be declared here: unlike dashboard env vars, a Pages
+  // deploy does NOT auto-inherit the D1 binding, so omitting it produces a
+  // deployment with no DB (login → AUTH_UNAVAILABLE). It points at the EXISTING
+  // production database — no new database is created.
+  //
+  // KV namespaces (SESSIONS + DRIVE_CACHE) are intentionally omitted: D1 is the
+  // source of truth for sessions (KV is only a hot-path cache) and the Drive
+  // listing cache falls back to a per-isolate in-memory cache when DRIVE_CACHE
+  // is absent, so the app runs without them.
+  // ------------------------------------------------------------------
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bacyeswecan-production",
+      "database_id": "be0dbb10-1f7a-4e9a-ad83-46a1a9795d5e"
+    }
+  ]
+}

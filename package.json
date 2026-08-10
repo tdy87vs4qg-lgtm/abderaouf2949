@@ -1,0 +1,37 @@
+{
+  "name": "webapp",
+  "type": "module",
+  "scripts": {
+    "sync:env": "node scripts/sync-env.mjs",
+    "predev": "node scripts/sync-env.mjs",
+    "dev": "vite",
+    "predev:sandbox": "node scripts/sync-env.mjs",
+    "dev:sandbox": "wrangler pages dev dist --local --ip 0.0.0.0 --port 3000",
+    "build:frontend": "npm --prefix frontend install --no-audit --no-fund && npm --prefix frontend run build",
+    "build:shell": "node scripts/generate-spa-shell.mjs",
+    "build:server": "vite build",
+    "prebuild": "node scripts/sync-env.mjs",
+    "build": "npm run build:frontend && npm run build:shell && npm run build:server",
+    "typecheck": "tsc --noEmit",
+    "preview": "wrangler pages dev",
+    "deploy": "npm run build && wrangler pages deploy",
+    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name taysir",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:migrate:local": "wrangler d1 migrations apply bacyeswecan-production --local",
+    "db:migrate:prod": "wrangler d1 migrations apply bacyeswecan-production",
+    "db:seed:local": "wrangler d1 execute bacyeswecan-production --local --file=./seed.sql",
+    "db:console:local": "wrangler d1 execute bacyeswecan-production --local",
+    "db:console:prod": "wrangler d1 execute bacyeswecan-production"
+  },
+  "dependencies": {
+    "hono": "^4.12.27"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "@hono/vite-build": "^1.2.0",
+    "@hono/vite-dev-server": "^0.25.2",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5",
+    "wrangler": "^4.4.0"
+  }
+}
