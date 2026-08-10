@@ -182,18 +182,39 @@
       // Per-row action buttons. The server independently re-authorises and
       // re-checks every one of these (incl. the self-guards); the UI just
       // hides the ones that would always be rejected for the current admin.
+      //
+      // LABELLING RULE (why the wording below is what it is):
+      //   • SUBSCRIPTION access  → /approve + /unapprove  (writes users.approved)
+      //     This is the ONLY pair that unlocks / re-locks the files, because the
+      //     paywall checks `approved` and nothing else.
+      //     → "تفعيل الاشتراك" / "إيقاف الاشتراك".
+      //   • LOGIN access        → /reactivate + /deactivate (writes users.status)
+      //     This only controls whether the person can SIGN IN. It never unlocks
+      //     a single file. → "استعادة الدخول" / "إيقاف الدخول".
+      // The two pairs must never read alike; that ambiguity is the bug this
+      // wording fixes. Endpoints, payloads and DB columns are untouched.
       var actions = '';
 
-      // Approve / Un-approve the account's FILE access. Admins are always
-      // entitled, so the control is only shown for subscriber rows.
-      if (a.role !== 'admin') {
-        if (a.approved) {
-          actions +=
-            '<button type="button" class="btn btn-ghost btn-sm js-unapprove">Un-approve</button>';
-        } else {
-          actions +=
-            '<button type="button" class="btn btn-approve btn-sm js-approve">Approve</button>';
-        }
+      // ── Subscription (file access) — the control that ACTUALLY unlocks ────
+      // Always rendered, for every row, so the admin can find and use the same
+      // control in the same place — including on their own row while testing.
+      // (Admins are entitled by role anyway, so we say so in the tooltip rather
+      // than hiding the button and leaving the admin hunting for it.)
+      var adminNote = a.role === 'admin'
+        ? ' — المشرف يملك وصولاً كاملاً بحكم دوره'
+        : '';
+      if (a.approved) {
+        actions +=
+          '<button type="button" lang="ar" dir="rtl"' +
+          ' title="إيقاف الاشتراك: إعادة قفل جميع الملفات. لا يزال بإمكانه تسجيل الدخول.' + adminNote + '"' +
+          ' aria-label="إيقاف الاشتراك — إعادة قفل الملفات"' +
+          ' class="btn btn-ghost btn-danger btn-sm js-unapprove">إيقاف الاشتراك</button>';
+      } else {
+        actions +=
+          '<button type="button" lang="ar" dir="rtl"' +
+          ' title="تفعيل الاشتراك: فتح جميع الملفات لهذا الحساب فوراً.' + adminNote + '"' +
+          ' aria-label="تفعيل الاشتراك — فتح جميع الملفات"' +
+          ' class="btn btn-approve btn-sm js-approve">تفعيل الاشتراك</button>';
       }
 
       actions += '<button type="button" class="btn btn-ghost btn-sm js-edit">Edit</button>';
@@ -205,16 +226,23 @@
           '<button type="button" class="btn btn-ghost btn-sm js-reset-device">Reset device</button>';
       }
 
+      // ── Login access (does NOT unlock files) ──────────────────────────────
       // Deactivate / Reactivate toggle. You cannot deactivate yourself (server
       // returns CANNOT_SUSPEND_SELF), so that control is hidden on your row.
       if (a.status === 'active') {
         if (!isSelf) {
           actions +=
-            '<button type="button" class="btn btn-ghost btn-danger btn-sm js-deactivate">Deactivate</button>';
+            '<button type="button" lang="ar" dir="rtl"' +
+            ' title="إيقاف الدخول: منع تسجيل الدخول وإنهاء الجلسات. لا علاقة له بتفعيل الاشتراك."' +
+            ' aria-label="إيقاف الدخول — منع تسجيل الدخول فقط"' +
+            ' class="btn btn-ghost btn-danger btn-sm js-deactivate">إيقاف الدخول</button>';
         }
       } else {
         actions +=
-          '<button type="button" class="btn btn-ghost btn-ok btn-sm js-reactivate">Reactivate</button>';
+          '<button type="button" lang="ar" dir="rtl"' +
+          ' title="استعادة الدخول: السماح بتسجيل الدخول مجدداً. لا يفتح الملفات — استخدم «تفعيل الاشتراك» لذلك."' +
+          ' aria-label="استعادة الدخول — لا يفتح الملفات"' +
+          ' class="btn btn-ghost btn-ok btn-sm js-reactivate">استعادة الدخول</button>';
       }
 
       return (
@@ -433,52 +461,56 @@
   // its own copy, endpoint, whether it is "destructive" (red styling), and the
   // label shown on the confirm button.
   var CONFIRM_ACTIONS = {
+    // SUBSCRIPTION pair → /approve + /unapprove → users.approved → the paywall.
     'approve': {
-      title: 'Approve account',
-      lead: 'Approve this account for full access?',
+      title: 'تفعيل الاشتراك',
+      lead: 'تفعيل الاشتراك وفتح جميع الملفات لهذا الحساب؟',
       detail: function (a) {
-        return 'This unlocks every file for ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
-          '. They keep their login and the change takes effect immediately — they don\u2019t need to sign in again.';
+        return 'سيتم فتح جميع الملفات فوراً لـ ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
+          '. يحتفظ بتسجيل دخوله ولا يحتاج إلى إعادة تسجيل الدخول. (هذا هو الزر الذي يفتح المحتوى فعلياً.)';
       },
       endpoint: function (a) { return '/api/admin/accounts/' + encodeURIComponent(a.id) + '/approve'; },
-      confirmLabel: 'Approve',
-      pendingLabel: 'Approving…',
+      confirmLabel: 'تفعيل الاشتراك',
+      pendingLabel: 'جارٍ التفعيل…',
       danger: false
     },
     'unapprove': {
-      title: 'Un-approve account',
-      lead: 'Re-lock this account\u2019s files?',
+      title: 'إيقاف الاشتراك',
+      lead: 'إيقاف الاشتراك وإعادة قفل الملفات؟',
       detail: function (a) {
-        return 'This re-locks every file for ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
-          '. They stay signed in and can keep browsing, but files will show the contact popup again until you approve them once more.';
+        return 'سيتم إعادة قفل جميع الملفات لـ ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
+          '. يبقى مسجّل الدخول ويمكنه التصفح، لكن الملفات ستظهر نافذة التواصل مجدداً حتى تُفعّل اشتراكه من جديد.';
       },
       endpoint: function (a) { return '/api/admin/accounts/' + encodeURIComponent(a.id) + '/unapprove'; },
-      confirmLabel: 'Un-approve',
-      pendingLabel: 'Updating…',
+      confirmLabel: 'إيقاف الاشتراك',
+      pendingLabel: 'جارٍ الإيقاف…',
       danger: true
     },
+    // LOGIN pair → /deactivate + /reactivate → users.status → sign-in only.
     'deactivate': {
-      title: 'Deactivate account',
-      lead: 'Deactivate this account?',
+      title: 'إيقاف الدخول',
+      lead: 'منع هذا الحساب من تسجيل الدخول؟',
       detail: function (a) {
-        return 'This suspends ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
-          ' and immediately signs them out of every device. They will not be able to sign in until you reactivate the account.';
+        return 'سيتم تعليق ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
+          ' وتسجيل خروجه من جميع الأجهزة فوراً، ولن يتمكن من تسجيل الدخول حتى تستعيد دخوله. ' +
+          'هذا لا يغيّر حالة الاشتراك — لإيقاف المحتوى استخدم «إيقاف الاشتراك».';
       },
       endpoint: function (a) { return '/api/admin/accounts/' + encodeURIComponent(a.id) + '/deactivate'; },
-      confirmLabel: 'Deactivate',
-      pendingLabel: 'Deactivating…',
+      confirmLabel: 'إيقاف الدخول',
+      pendingLabel: 'جارٍ الإيقاف…',
       danger: true
     },
     'reactivate': {
-      title: 'Reactivate account',
-      lead: 'Reactivate this account?',
+      title: 'استعادة الدخول',
+      lead: 'السماح لهذا الحساب بتسجيل الدخول مجدداً؟',
       detail: function (a) {
-        return 'This re-enables login for ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
-          '. They can sign in again on a fresh device (previous sessions were already revoked).';
+        return 'سيتمكن ' + '<span class="confirm-target">' + esc(a.email) + '</span>' +
+          ' من تسجيل الدخول مرة أخرى على جهاز جديد (الجلسات السابقة أُلغيت). ' +
+          'تنبيه: هذا لا يفتح الملفات — لفتح المحتوى استخدم زر «تفعيل الاشتراك».';
       },
       endpoint: function (a) { return '/api/admin/accounts/' + encodeURIComponent(a.id) + '/reactivate'; },
-      confirmLabel: 'Reactivate',
-      pendingLabel: 'Reactivating…',
+      confirmLabel: 'استعادة الدخول',
+      pendingLabel: 'جارٍ الاستعادة…',
       danger: false
     },
     'reset-device': {
