@@ -3,8 +3,14 @@
 //
 // PART A (this file) covers ONLY the *start* half of the Authorization Code
 // flow: build Google's consent-screen URL and remember a CSRF `state` value so
-// the callback can validate it. The callback itself (code→token exchange, user
-// lookup/creation, session issuing) is PART B and is deliberately NOT here.
+// the callback can validate it.
+//
+// The *receive* half (PART B-1) now lives in src/lib/google-oauth-callback.ts —
+// it reuses the helpers exported below (getGoogleOAuthConfig,
+// readOAuthStateCookie, clearOAuthStateCookie, consumeOAuthState) verbatim, so
+// the two legs can never drift apart. Nothing in THIS file changed for B-1.
+// User lookup/creation and session issuing remain absent from both files: that
+// is PART B-2.
 //
 // ⚠️  These credentials are the OAuth 2.0 **Client ID** credentials — a totally
 //     different thing from the Drive **Service Account** key handled in

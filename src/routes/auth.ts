@@ -12,9 +12,13 @@
 //   GET  /api/auth/me       report the current session (safe, no secrets)
 //   GET  /api/auth/google    START of the Google OAuth 2.0 Authorization Code
 //                           flow: mints a CSRF `state`, stores it, and 302s the
-//                           browser to Google's consent screen. The CALLBACK
-//                           (code exchange, user lookup/creation, session
-//                           issuing) is PART B and is intentionally absent.
+//                           browser to Google's consent screen.
+//   GET  /api/auth/google/callback
+//                           RECEIVE half of the flow (PART B-1): validates the
+//                           CSRF `state`, exchanges the `code` for tokens, and
+//                           reads the VERIFIED email + Google id (`sub`). It
+//                           STOPS there — no user lookup/creation and no
+//                           session issuing (that is PART B-2).
 //
 // Robustness: both signup and login call ensureSchema() first, so they work
 // even against a deployed D1 whose migrations were never (fully) applied — this
@@ -55,6 +59,7 @@ import {
   setOAuthStateCookie,
   storeOAuthState,
 } from '../lib/google-oauth'
+import { resolveGoogleCallbackIdentity } from '../lib/google-oauth-callback'
 
 export const authApi = new Hono<{ Bindings: Env }>()
 
@@ -378,4 +383,77 @@ authApi.get('/google', async (c) => {
 
   // 302 so the browser follows it as a normal navigation to Google.
   return c.redirect(buildGoogleAuthUrl(config, state), 302)
+})
+
+// ---------------------------------------------------------------------------
+// GET /api/auth/google/callback — RECEIVE half of the flow (PART B-1 ONLY)
+//
+// Google sends the browser here as a top-level GET after the consent screen,
+// with `?code=…&state=…` (or `?error=…` when the user declined). Everything the
+// receive half does lives in src/lib/google-oauth-callback.ts →
+// resolveGoogleCallbackIdentity(c), which performs, in order:
+//
+//   1. read GOOGLE_OAUTH_CLIENT_ID + GOOGLE_OAUTH_CLIENT_SECRET +
+//      GOOGLE_OAUTH_REDIRECT_URI from env (never hardcoded, never logged);
+//   2. validate `state` against the authoritative httpOnly `bac_oauth_state`
+//      cookie using the constant-time comparator from src/lib/crypto.ts, then
+//      burn the optional KV record `oauth:state:<state>` (replay protection);
+//   3. POST the `code` to Google's token endpoint with client_id +
+//      client_secret + redirect_uri (confidential-client Authorization Code
+//      grant). The secret goes ONLY into that server-side request body;
+//   4. read the VERIFIED email and the Google id (`sub`) from the returned
+//      id_token (aud/iss/exp checked), falling back to the OIDC userinfo
+//      endpoint. An unverified email is refused.
+//
+// The `bac_oauth_state` cookie is cleared on EVERY exit path (success and
+// failure) inside that helper. GET — because it must be reachable by Google's
+// plain top-level navigation.
+//
+// ── WHERE PART B-1 STOPS ───────────────────────────────────────────────────
+// On success we DO NOT look up or create a user, and DO NOT issue a session.
+// The verified identity is returned as a temporary JSON placeholder:
+//
+//     { ok: true, pending: 'B2', email, googleId }
+//
+// Nothing is persisted: the identity lives only in this request's memory (no KV
+// record, no D1 row, no cookie carries it), which is the safest handoff
+// possible. PART B-2 replaces ONLY the marked block below — it takes the same
+// in-process `identity` object ({ googleId, email, emailVerified, name?,
+// picture? }) and adds: find-or-create the user by `identity.email` (linking
+// `identity.googleId`), then createSession() + setSessionCookie() + redirect.
+// Steps 1–4 above stay untouched.
+//
+// UNTOUCHED BY THIS ROUTE: the session cookie (`bac_session`) and its KV/D1
+// store, the device cookie, the subscription/approval gate, Drive, the PDF
+// viewer guard, the IndexedDB cache and every piece of Arabic UI copy. An
+// already-signed-in visitor's session is neither read nor modified here.
+// ---------------------------------------------------------------------------
+authApi.get('/google/callback', async (c) => {
+  const result = await resolveGoogleCallbackIdentity(c)
+
+  if (!result.ok) {
+    // Stable, non-sensitive codes only: they never disclose which env binding
+    // is missing, what Google replied, or whether an account exists.
+    //   OAUTH_NOT_CONFIGURED       503  bindings missing/invalid
+    //   OAUTH_DENIED               400  user declined at Google
+    //   OAUTH_BAD_REQUEST          400  code/state missing or malformed
+    //   OAUTH_STATE_INVALID        400  CSRF mismatch / expired / replayed
+    //   OAUTH_EXCHANGE_FAILED      502  Google refused the code→token exchange
+    //   OAUTH_IDENTITY_UNAVAILABLE 502  no usable sub/email came back
+    //   OAUTH_EMAIL_UNVERIFIED     403  Google says the email is not verified
+    return c.json({ ok: false, error: result.error }, result.status)
+  }
+
+  // ===== PART B-1 STOPS HERE =================================================
+  // PART B-2 replaces this single block (user lookup/creation + session issuing
+  // + redirect). Until then we only echo back the verified identity: the email
+  // and Google id belong to the very person who just authenticated at Google in
+  // this same browser, so returning them to them leaks nothing.
+  return c.json({
+    ok: true,
+    pending: 'B2',
+    email: result.identity.email,
+    googleId: result.identity.googleId,
+  })
+  // ===========================================================================
 })
