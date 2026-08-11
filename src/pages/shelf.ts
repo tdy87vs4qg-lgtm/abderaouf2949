@@ -1,5 +1,5 @@
 // ============================================================================
-// تيسير — Shelf (home) page  ·  merge step 5/10
+// تيسير — Shelf (home) page  ·  merge steps 5/10 + 6/10
 //
 // Server-rendered shell for the cartoon "library room" shelf, adapted from the
 // staged design source at library-src/index.html so it can be served by Hono
@@ -24,14 +24,26 @@
 //     The served config.js also has its 8 cover paths repointed at the real
 //     asset location, /static/shelf/covers/*.png.
 //
-//   • TOGGLE CLASS — the day/night button is `class="shelf-theme-toggle"`, the
+//   • TOGGLE CLASS — the theme button is `class="shelf-theme-toggle"`, the
 //     renamed class from step 3/10 (taysir already owns a `.theme-toggle`).
 //     Its `id` is unchanged: app.js binds the button via
 //     document.getElementById("theme-toggle"), not via a class selector.
 //
-// NOT DONE HERE (later steps): day/night theme unification (6/10), the
-// subscription gate wiring, Drive wiring, and the folder pages — the books
-// still point wherever the staged config.js points them.
+// STEP 6/10 — THEME UNIFICATION (this step):
+//   The shelf now speaks taysir's theme language. ONE source of truth for the
+//   whole site: localStorage["taysir-theme"] = "dark" | "light", applied as
+//   <html data-theme="dark"> / <html data-theme="light"> — exactly what
+//   frontend/src/components/ThemeProvider.tsx stores and sets. Previously the
+//   shelf wrote "day"/"night" into the SAME key and removed the attribute for
+//   day, so each side misread the other and the theme flip-flopped between
+//   pages. Changed here: the inline pre-paint script below; in app.js the
+//   theme read/write; in shelf.css the night rules now key off
+//   html[data-theme="dark"] (attribute value only — no colors touched).
+//   "dark" is the shelf's night scene (lamps on).
+//
+// NOT DONE HERE (later steps): the subscription gate wiring, Drive wiring, and
+// the folder pages — the books still point wherever the staged config.js
+// points them.
 // ============================================================================
 
 export const shelfPage = `<!DOCTYPE html>
@@ -42,15 +54,24 @@ export const shelfPage = `<!DOCTYPE html>
   <title>تيسير</title>
   <meta name="description" content="تيسير — مكتبة كرتونية (RTL)" />
 
-  <!-- تطبيق الوضع المحفوظ قبل الرسم لتجنّب وميض التبديل -->
+  <!-- تطبيق الوضع المحفوظ قبل الرسم لتجنّب وميض التبديل
+       يستعمل نفس مفتاح تيسير وقيمه: taysir-theme = "dark" | "light" -->
   <script>
     (function () {
-      try {
-        var t = localStorage.getItem("taysir-theme");
-        if (t === "night") {
-          document.documentElement.setAttribute("data-theme", "night");
-        }
-      } catch (e) { /* storage unavailable */ }
+      // Mirrors taysir's ThemeProvider: same key ("taysir-theme"), same
+      // values ("dark" / "light"), same fallback order (stored → OS →
+      // dark) and the same application (data-theme is always set, for
+      // BOTH values — never removed).
+      var t;
+      try { t = localStorage.getItem("taysir-theme"); } catch (e) { /* storage unavailable */ }
+
+      if (t !== "dark" && t !== "light") {
+        t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)
+          ? "light" : "dark";
+      }
+
+      document.documentElement.setAttribute("data-theme", t);
+      document.documentElement.style.colorScheme = t;
     })();
   </script>
 

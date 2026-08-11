@@ -5,7 +5,8 @@
    - NOT-SUBSCRIBED glass banner (glassmorphism) before entering
    - inner book page = cozy shelf scene with plants (EMPTY on purpose)
    - gentle tilt on hover (disabled with reduced motion)
-   - day/night theme with shelf lamps (choice persisted)
+   - dark/light theme with shelf lamps, shared with taysir
+     (localStorage "taysir-theme" = "dark" | "light")
    ============================================================ */
 
 (function () {
@@ -296,14 +297,42 @@
   }
 
   /* ------------------------------------------------------------
-     5) THEME — day / night (unchanged logic)
+     5) THEME — unified with taysir (merge step 6/10)
+
+     ONE source of truth for the whole site:
+       localStorage["taysir-theme"] = "dark" | "light"
+       <html data-theme="dark">   /   <html data-theme="light">
+
+     This mirrors taysir's ThemeProvider exactly (STORAGE_KEY
+     "taysir-theme", Theme = 'dark' | 'light', applyTheme() does
+     root.setAttribute('data-theme', theme) for BOTH values — the
+     attribute is never removed). The old shelf convention
+     ("day"/"night" + attribute removed for day) shared the same key
+     with different meanings, which made the two sides misread each
+     other and the theme flip-flop between pages.
+
+     Visually, "dark" is the shelf's night scene (lamps on) — the
+     shelf CSS night rules are keyed on html[data-theme="dark"].
      ------------------------------------------------------------ */
   var THEME_KEY = "taysir-theme";
   var themeSwitching = false;
 
+  /** Current theme as taysir spells it: "dark" | "light". */
   function currentTheme() {
-    return document.documentElement.getAttribute("data-theme") === "night"
-      ? "night" : "day";
+    var attr = document.documentElement.getAttribute("data-theme");
+    if (attr === "dark" || attr === "light") return attr;
+
+    // Attribute missing (pre-paint script blocked) — same fallback
+    // order taysir's readInitialTheme() uses: stored → OS → dark.
+    try {
+      var stored = localStorage.getItem(THEME_KEY);
+      if (stored === "dark" || stored === "light") return stored;
+    } catch (e) { /* storage unavailable */ }
+
+    if (window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches) return "light";
+
+    return "dark";
   }
 
   function storeTheme(mode) {
@@ -314,16 +343,16 @@
     var html = document.documentElement;
     var btn  = document.getElementById("theme-toggle");
 
-    if (mode === "night") html.setAttribute("data-theme", "night");
-    else html.removeAttribute("data-theme");
+    // taysir sets the attribute for BOTH values (never removes it).
+    html.setAttribute("data-theme", mode);
 
     storeTheme(mode);
-    if (btn) btn.setAttribute("aria-pressed", mode === "night" ? "true" : "false");
+    if (btn) btn.setAttribute("aria-pressed", mode === "dark" ? "true" : "false");
   }
 
   function toggleTheme() {
     if (themeSwitching) return;
-    var next = currentTheme() === "night" ? "day" : "night";
+    var next = currentTheme() === "dark" ? "light" : "dark";
     var veil = document.getElementById("night-veil");
 
     if (reducedMotion.matches || !veil) { applyTheme(next); return; }
@@ -331,7 +360,7 @@
     themeSwitching = true;
 
     veil.className = "night-veil " +
-      (next === "night" ? "night-veil--dark" : "night-veil--light") +
+      (next === "dark" ? "night-veil--dark" : "night-veil--light") +
       " is-covering";
 
     window.setTimeout(function () {
@@ -349,7 +378,7 @@
   function initTheme() {
     var btn = document.getElementById("theme-toggle");
     if (!btn) return;
-    btn.setAttribute("aria-pressed", currentTheme() === "night" ? "true" : "false");
+    btn.setAttribute("aria-pressed", currentTheme() === "dark" ? "true" : "false");
     btn.addEventListener("click", toggleTheme);
   }
 
