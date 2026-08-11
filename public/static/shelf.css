@@ -1,0 +1,1410 @@
+/* ============================================================
+   تيسير (Taysir) — SHELF LIBRARY SKIN
+   ------------------------------------------------------------
+   ISOLATED BUILD (merge step 2/10).
+
+   Source: taysir_subscribe_ui/css/style.css (1332 lines).
+
+   This stylesheet is FULLY SCOPED under the single root class
+   ".shelf-root". It contains NO global selectors: no ":root",
+   no "html { }", no "body { }", no "body::before", and no bare
+   universal "*" reset. Nothing in this file can leak into the
+   rest of the taysir application.
+
+   NOT DONE YET (deliberately deferred to step 3/10):
+     - the ".theme-toggle" class-name collision is NOT resolved
+       (only scoped under .shelf-root for now)
+     - the CSS variable names (--wall, --ink, --wood, ...) are
+       UNCHANGED; they were only MOVED from :root onto .shelf-root
+     - @keyframes names are unchanged (keyframe names are global
+       by spec and cannot be scoped by a selector)
+
+   This file is not loaded anywhere yet.
+   ============================================================ */
+
+
+/* ============================================================
+   VARIABLES — moved off the global ":root" and declared on the
+   ".shelf-root" container instead. Names intentionally unchanged.
+   ============================================================ */
+.shelf-root {
+  /* warm palette */
+  --wall:        #e8ddd2;
+  --wall-deep:   #e0d3c5;
+  --ink:         #8a3d20;
+  --ink-soft:    #9c6b52;
+  --wood:        #5b3a27;
+  --wood-dark:   #452a19;
+  --wood-light:  #71492f;
+  --cream:       #f6efe2;
+  --cream-deep:  #eadfcb;
+  --terracotta:  #c07856;
+  --sage:        #a8b39a;
+  --dusty-blue:  #8d9bb0;
+  --wine:        #7e3b47;
+
+  /* soft diffuse shadows only */
+  --shadow-soft:  0 10px 22px rgba(96, 62, 38, 0.16);
+  --shadow-tiny:  0 4px 10px rgba(96, 62, 38, 0.14);
+  --shadow-board: 0 14px 26px rgba(80, 50, 28, 0.22);
+
+  --slot-w: clamp(72px, 17vw, 112px);
+  --radius: 14px;
+
+  /* shelf-lamp light (night) */
+  --lamp-warm:      #ffd98e;
+  --lamp-warm-soft: rgba(255, 209, 132, 0.55);
+
+  /* surfaces used by the folder contents page */
+  --panel:        rgba(255, 252, 245, 0.55);
+  --panel-line:   rgba(150, 112, 82, 0.30);
+
+  /* ---- glass banner palette (was a 2nd global :root) ---- */
+  --glass-bg:      rgba(255, 251, 243, 0.42);
+  --glass-bg-2:    rgba(255, 240, 220, 0.22);
+  --glass-line:    rgba(255, 255, 255, 0.62);
+  --glass-edge:    rgba(150, 112, 82, 0.28);
+  --glass-text:    #6b4224;
+  --glass-title:   #8a3d20;
+  --glass-shadow:  0 26px 60px rgba(96, 62, 38, 0.28);
+  --glass-chip:    rgba(255, 255, 255, 0.42);
+}
+
+/* ============ NIGHT MODE (variable overrides) ============
+   was: html[data-theme="night"] { ...vars... }  -> global.
+   now: the overrides land on the .shelf-root container only. */
+html[data-theme="night"] .shelf-root {
+  --wall:        #2e2842;
+  --wall-deep:   #201b32;
+  --ink:         #f2c380;
+  --ink-soft:    #bfae9a;
+  --wood:        #46311f;
+  --wood-dark:   #2e1f11;
+  --wood-light:  #5a4026;
+  --cream:       #efe4cd;
+  --cream-deep:  #dccdb0;
+
+  --shadow-soft:  0 10px 22px rgba(8, 6, 18, 0.45);
+  --shadow-tiny:  0 4px 10px rgba(8, 6, 18, 0.40);
+  --shadow-board: 0 14px 26px rgba(5, 4, 12, 0.55);
+
+  --panel:        rgba(58, 50, 82, 0.45);
+  --panel-line:   rgba(150, 130, 190, 0.28);
+
+  /* ---- glass banner, night ---- */
+  --glass-bg:      rgba(64, 56, 96, 0.42);
+  --glass-bg-2:    rgba(120, 96, 160, 0.18);
+  --glass-line:    rgba(220, 205, 255, 0.30);
+  --glass-edge:    rgba(160, 140, 210, 0.30);
+  --glass-text:    #ecdfc9;
+  --glass-title:   #f2c380;
+  --glass-shadow:  0 26px 60px rgba(6, 4, 16, 0.62);
+  --glass-chip:    rgba(255, 255, 255, 0.10);
+}
+
+/* ============================================================
+   RESET — was the site-wide "* { ... }". Now it can only touch
+   .shelf-root and its descendants.
+   ============================================================ */
+.shelf-root,
+.shelf-root *,
+.shelf-root *::before,
+.shelf-root *::after { box-sizing: border-box; }
+
+.shelf-root *,
+.shelf-root *::before,
+.shelf-root *::after { margin: 0; padding: 0; }
+
+/* NOTE: the source also had `html { scroll-behavior: smooth; }`.
+   That is a document-level rule with no meaningful scoped form,
+   so it was REMOVED rather than re-scoped. */
+
+/* ============================================================
+   CONTAINER — replaces the global `body { ... }` rule.
+   All the page-level layout/background moves onto .shelf-root.
+   ============================================================ */
+.shelf-root {
+  font-family: "Cairo", "Segoe UI", Tahoma, sans-serif;
+  /* SAME background for every page (shelf page + folder contents page) */
+  background:
+    radial-gradient(120% 90% at 50% 0%, var(--wall) 0%, var(--wall-deep) 100%);
+  background-attachment: fixed;
+  color: var(--ink-soft);
+  min-height: 100vh;
+  direction: rtl;
+  overflow-x: hidden;
+  transition: color 0.6s ease;
+}
+
+/* cartoon stars + moon, night only (both pages)
+   was: body::before  ->  now a pseudo-element of .shelf-root, so
+   it only ever exists on pages that actually render .shelf-root
+   and can never cover any other taysir page. */
+.shelf-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.1s ease;
+  background-image:
+    radial-gradient(circle at 12% 10%, rgba(246, 233, 200, 0.95) 0 22px, rgba(246, 233, 200, 0.18) 26px, transparent 52px),
+    radial-gradient(2.2px 2.2px at 26% 16%, rgba(255, 244, 214, 0.9), transparent 60%),
+    radial-gradient(1.8px 1.8px at 42% 8%,  rgba(255, 244, 214, 0.8), transparent 60%),
+    radial-gradient(2.4px 2.4px at 58% 14%, rgba(255, 244, 214, 0.9), transparent 60%),
+    radial-gradient(1.6px 1.6px at 72% 6%,  rgba(255, 244, 214, 0.75), transparent 60%),
+    radial-gradient(2px 2px at 88% 12%,     rgba(255, 244, 214, 0.85), transparent 60%),
+    radial-gradient(1.6px 1.6px at 8% 34%,  rgba(255, 244, 214, 0.7), transparent 60%),
+    radial-gradient(2px 2px at 94% 30%,     rgba(255, 244, 214, 0.75), transparent 60%),
+    radial-gradient(1.5px 1.5px at 80% 46%, rgba(255, 244, 214, 0.55), transparent 60%),
+    radial-gradient(1.5px 1.5px at 18% 52%, rgba(255, 244, 214, 0.5), transparent 60%);
+}
+html[data-theme="night"] .shelf-root::before { opacity: 1; }
+
+/* ===== room ===== */
+.shelf-root .room {
+  position: relative;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: clamp(20px, 4vw, 44px) clamp(12px, 3vw, 24px) 40px;
+  overflow: hidden;
+}
+
+/* ===== header ===== */
+.shelf-root .room-header { text-align: center; margin-bottom: clamp(26px, 5vw, 48px); }
+
+.shelf-root .title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2.5vw, 20px);
+}
+
+.shelf-root .room-title {
+  font-family: "Marhey", "Cairo", sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 6.5vw, 3.2rem);
+  color: var(--ink);
+  letter-spacing: 0.5px;
+  transition: color 0.6s ease;
+}
+
+.shelf-root .room-subtitle {
+  margin-top: 6px;
+  font-size: clamp(0.85rem, 2.6vw, 1rem);
+  color: var(--ink-soft);
+  transition: color 0.6s ease;
+}
+
+/* ---- EMPTY TEXT PLACEHOLDERS -------------------------------
+   Arabic UI wording is removed for now; these keep the exact
+   space/rhythm so dropping the text back in changes nothing. */
+.shelf-root [data-placeholder]:empty { display: block; }
+.shelf-root .room-title[data-placeholder]:empty    { min-height: clamp(2.4rem, 8vw, 3.8rem); min-width: 34%; }
+.shelf-root .room-subtitle[data-placeholder]:empty { min-height: 1.4em; }
+.shelf-root .footer-line[data-placeholder]:empty   { min-height: 1.3em; }
+.shelf-root .item-name[data-placeholder]:empty {
+  display: block;
+  height: 0.85em;
+  width: clamp(90px, 42%, 260px);
+  border-radius: 999px;
+  background: var(--panel-line);
+  opacity: 0.55;
+}
+
+
+/* ===== theme toggle =====
+   NOTE (step 3/10): ".theme-toggle" collides with a taysir class
+   name. It is only SCOPED here; renaming happens in step 3. */
+.shelf-root .theme-toggle {
+  display: grid;
+  place-items: center;
+  width: clamp(40px, 9vw, 50px);
+  height: clamp(40px, 9vw, 50px);
+  border-radius: 50%;
+  border: 3px solid rgba(246, 239, 226, 0.55);
+  background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood) 55%, var(--wood-dark) 100%);
+  box-shadow: var(--shadow-tiny);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+.shelf-root .theme-toggle:hover,
+.shelf-root .theme-toggle:focus-visible { transform: rotate(-10deg) scale(1.07); box-shadow: var(--shadow-soft); }
+.shelf-root .theme-toggle:active { transform: scale(0.94); }
+
+.shelf-root .toggle-icon {
+  grid-area: 1 / 1;
+  width: clamp(20px, 4.6vw, 26px);
+  height: clamp(20px, 4.6vw, 26px);
+  transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.shelf-root .icon-moon { opacity: 0; transform: rotate(-100deg) scale(0.4); }
+html[data-theme="night"] .shelf-root .icon-sun  { opacity: 0; transform: rotate(100deg) scale(0.4); }
+html[data-theme="night"] .shelf-root .icon-moon { opacity: 1; transform: none; }
+
+/* ===== shelves ===== */
+.shelf-root .library {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(40px, 8vw, 66px);
+  padding-top: clamp(30px, 7vw, 44px);
+}
+
+.shelf-root .shelf-unit { position: relative; }
+
+/* ---- SHELF SEATING FIX ----------------------------------------
+   Everything on a shelf is bottom-aligned and the row sits flush
+   on the board: no bottom padding, no line-height leak, no
+   caption pushing the covers up, no idle float animation. */
+.shelf-root .shelf-items {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(6px, 2vw, 18px);
+  padding: 0 clamp(6px, 2vw, 20px);
+  margin-bottom: 0;
+  min-height: 130px;
+  position: relative;
+  z-index: 2;
+  font-size: 0;          /* kills inline-gap under svg/img children */
+  line-height: 0;
+}
+.shelf-root .shelf-items > * { margin-bottom: 0; }
+
+/* wooden board */
+.shelf-root .shelf-board {
+  position: relative;
+  height: clamp(12px, 2.6vw, 17px);
+  margin-inline: clamp(0px, 1vw, 8px);
+  margin-top: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood) 45%, var(--wood-dark) 100%);
+  box-shadow: var(--shadow-board);
+}
+.shelf-root .shelf-board::after {
+  content: "";
+  position: absolute;
+  inset-inline: 6%;
+  bottom: -5px;
+  height: 6px;
+  border-radius: 0 0 8px 8px;
+  background: var(--wood-dark);
+  opacity: 0.85;
+}
+
+/* ===== slot wrapper (so the lamp does not tilt with the book) ===== */
+.shelf-root .slot-wrap {
+  position: relative;
+  width: var(--slot-w);
+  flex-shrink: 0;
+  line-height: 0;
+}
+.shelf-root .slot-wrap .book-slot { width: 100%; }
+
+/* ===== cartoon shelf lamp above each book ===== */
+.shelf-root .shelf-lamp {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% - clamp(3px, 0.8vw, 5px));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 0;
+  z-index: 3;
+}
+.shelf-root .lamp-svg { width: clamp(38px, 9vw, 54px); height: auto; }
+
+.shelf-root .lamp-mount { fill: var(--wood-dark); transition: fill 0.6s ease; }
+.shelf-root .lamp-arm   { fill: #3f2a1a; }
+.shelf-root .lamp-shade { fill: #c9a15a; transition: fill 0.6s ease; }
+.shelf-root .lamp-rim   { fill: #8a6a4a; transition: fill 0.6s ease; }
+
+.shelf-root .lamp-bulb { fill: #e9dcc3; transition: fill 0.35s ease; }
+.shelf-root .lamp-halo {
+  --on: 0.9;
+  fill: #ffcf7e;
+  opacity: 0;
+  filter: blur(3px);
+  transition: opacity 0.4s ease;
+}
+
+/* light cone falling on the book — now reaches the board */
+.shelf-root .lamp-beam {
+  --on: 1;
+  position: absolute;
+  top: calc(-1 * clamp(8px, 2vw, 12px));
+  left: -12%;
+  right: -12%;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: linear-gradient(180deg,
+    var(--lamp-warm-soft) 0%,
+    rgba(255, 205, 130, 0.22) 55%,
+    rgba(255, 205, 130, 0.05) 85%,
+    transparent 100%);
+  clip-path: polygon(37% 0%, 63% 0%, 100% 100%, 0% 100%);
+}
+
+.shelf-root .lamp-pool {
+  --on: 0.95;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(130% 95% at 50% -12%,
+    rgba(255, 216, 150, 0.55) 0%,
+    rgba(255, 196, 120, 0.20) 55%,
+    transparent 78%);
+}
+
+html[data-theme="night"] .shelf-root .lamp-bulb {
+  fill: #ffe3a1;
+  transition-delay: calc(var(--lamp-delay, 0s) + 0.55s);
+}
+html[data-theme="night"] .shelf-root .lamp-halo,
+html[data-theme="night"] .shelf-root .lamp-beam,
+html[data-theme="night"] .shelf-root .lamp-pool {
+  animation: lamp-ignite 1.1s ease-out both;
+  animation-delay: var(--lamp-delay, 0s);
+}
+html[data-theme="night"] .shelf-root .lamp-shade { fill: #d8ab5c; }
+html[data-theme="night"] .shelf-root .lamp-rim   { fill: #a07c4e; }
+
+@keyframes lamp-ignite {
+  0%, 45% { opacity: 0; }
+  55%     { opacity: calc(var(--on, 1) * 0.9); }
+  65%     { opacity: calc(var(--on, 1) * 0.18); }
+  75%     { opacity: var(--on, 1); }
+  85%     { opacity: calc(var(--on, 1) * 0.55); }
+  100%    { opacity: var(--on, 1); }
+}
+
+/* ============================================================
+   BOOK COVER SLOTS — 8 slots, strict 3:4, image-ready
+   ============================================================ */
+.shelf-root .book-slot {
+  position: relative;         /* caption is absolutely placed below */
+  width: var(--slot-w);
+  flex-shrink: 0;
+  perspective: 700px;
+  cursor: pointer;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shelf-root .slot-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;            /* cover proportion — ready for the image */
+  border-radius: 8px 8px 6px 6px;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--cream) 0%, var(--cream-deep) 100%);
+  border: 2.5px solid rgba(150, 112, 82, 0.35);
+  box-shadow: var(--shadow-tiny);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease,
+              filter 0.8s ease, border-color 0.8s ease;
+  transform-origin: bottom center; /* lifts from the shelf, never floats */
+}
+
+html[data-theme="night"] .shelf-root .slot-inner {
+  filter: brightness(0.84);
+  border-color: rgba(70, 52, 96, 0.55);
+}
+
+/* cartoon spine edge */
+.shelf-root .slot-inner::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 9px;
+  background: linear-gradient(180deg, var(--terracotta), #a75f3f);
+  opacity: 0.9;
+  z-index: 2;
+}
+/* soft binding line */
+.shelf-root .slot-inner::after {
+  content: "";
+  position: absolute;
+  inset-block: 10px;
+  inset-inline-start: 12px;
+  width: 2px;
+  border-radius: 2px;
+  background: rgba(150, 112, 82, 0.25);
+  z-index: 2;
+}
+
+/* simple cartoon fallback while no cover image is set */
+.shelf-root .slot-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline-start: 10px;
+}
+.shelf-root .fallback-art {
+  width: 62%;
+  height: auto;
+  opacity: 0.9;
+}
+
+/* the cover image (fills the 3:4 slot) */
+.shelf-root .slot-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 1;
+}
+.shelf-root .book-slot.has-cover .slot-fallback,
+.shelf-root .folder-cover.has-cover .slot-fallback { display: none; }
+.shelf-root .book-slot.has-cover .slot-inner::after { display: none; }
+
+/* caption under a book: the English subject labels were REMOVED.
+   The element stays in the markup but renders nothing. */
+.shelf-root .slot-caption { display: none; }
+
+/* gentle hover lift */
+.shelf-root .book-slot:hover .slot-inner,
+.shelf-root .book-slot:focus-visible .slot-inner {
+  transform: translateY(-9px) rotate(-1.4deg);
+  box-shadow: var(--shadow-soft);
+}
+.shelf-root .book-slot:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; border-radius: 10px; }
+
+/* ===== decorative spines ===== */
+.shelf-root .spine-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 1;
+  min-width: 0;
+  line-height: 0;
+}
+
+.shelf-root .spine {
+  display: block;
+  width: clamp(13px, 3vw, 20px);
+  height: var(--h, 110px);
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, var(--c, #999) 0%, var(--c2, #777) 100%);
+  position: relative;
+  box-shadow: var(--shadow-tiny);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s ease;
+  transform-origin: bottom center;
+}
+.shelf-root .spine-wide { width: clamp(18px, 3.8vw, 26px); }
+
+.shelf-root .spine::before,
+.shelf-root .spine::after {
+  content: "";
+  position: absolute;
+  inset-inline: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 248, 235, 0.55);
+}
+.shelf-root .spine::before { top: 12px; }
+.shelf-root .spine::after  { bottom: 14px; }
+
+/* leaning book — pivots on the shelf surface, stays in contact */
+.shelf-root .spine-lean {
+  transform: rotate(-9deg);
+  transform-origin: bottom center;
+  margin-inline-start: clamp(6px, 1.6vw, 12px);
+}
+
+.shelf-root .spine:hover { transform: translateY(-6px); }
+.shelf-root .spine-lean:hover { transform: rotate(-9deg) translateY(-4px); }
+
+html[data-theme="night"] .shelf-root .spine { filter: brightness(0.62) saturate(0.85); }
+
+.shelf-root .spine-group-lg { flex-wrap: nowrap; }
+
+/* ===== decorations (SVG) — flush on the board, no idle float ===== */
+.shelf-root .deco {
+  flex-shrink: 0;
+  line-height: 0;
+  display: block;
+  filter: drop-shadow(0 6px 8px rgba(96, 62, 38, 0.18));
+  transition: filter 0.8s ease;
+}
+.shelf-root .deco-svg { display: block; height: auto; vertical-align: bottom; }
+
+html[data-theme="night"] .shelf-root .deco {
+  filter: brightness(0.58) saturate(0.8) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+}
+
+.shelf-root .deco-dome    .deco-svg { width: clamp(52px, 11vw, 80px); }
+.shelf-root .deco-cat     .deco-svg { width: clamp(86px, 19vw, 140px); }
+.shelf-root .deco-bust    .deco-svg { width: clamp(46px, 10vw, 70px); }
+.shelf-root .deco-globe   .deco-svg { width: clamp(84px, 17vw, 126px); }
+.shelf-root .deco-camera  .deco-svg { width: clamp(56px, 12vw, 92px); }
+.shelf-root .deco-frame   .deco-svg { width: clamp(50px, 11vw, 78px); }
+.shelf-root .deco-letters .deco-svg { width: clamp(54px, 11.5vw, 88px); }
+
+/* ===== globe spin ===== */
+.shelf-root .globe-land {
+  animation: globe-spin 14s linear infinite;
+  will-change: transform;
+}
+@keyframes globe-spin {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-68px); }
+}
+
+/* ============================================================
+   SLEEPING CAT — side view, lying on the shelf, back to viewer
+   ============================================================ */
+.shelf-root .deco-cat { align-self: flex-end; }
+
+/* slow sleeping breath — a tiny squash, the body never leaves the board */
+.shelf-root .cat-body {
+  transform-origin: 62px 70px;   /* the contact line with the shelf */
+  animation: cat-breathe 4.4s ease-in-out infinite;
+}
+@keyframes cat-breathe {
+  0%, 100% { transform: scaleY(1)     scaleX(1); }
+  50%      { transform: scaleY(1.035) scaleX(0.995); }
+}
+
+/* tail flicks gently while asleep */
+.shelf-root .cat-tail {
+  transform-origin: 22px 66px;
+  animation: cat-tail-sway 5s ease-in-out infinite;
+}
+@keyframes cat-tail-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(5deg); }
+}
+
+/* floating Zzz */
+.shelf-root .zzz {
+  font-family: "Marhey", "Cairo", sans-serif;
+  font-weight: 700;
+  fill: #8a6a4a;
+  opacity: 0;
+}
+.shelf-root .zzz-1 { font-size: 13px; animation: zzz-float 3.6s ease-in-out infinite; }
+.shelf-root .zzz-2 { font-size: 16px; animation: zzz-float 3.6s ease-in-out infinite 0.6s; }
+.shelf-root .zzz-3 { font-size: 19px; animation: zzz-float 3.6s ease-in-out infinite 1.2s; }
+
+html[data-theme="night"] .shelf-root .zzz { fill: #d8bd8e; }
+
+@keyframes zzz-float {
+  0%   { opacity: 0;    transform: translate(0, 4px)   scale(0.85); }
+  25%  { opacity: 0.95; }
+  70%  { opacity: 0.5;  }
+  100% { opacity: 0;    transform: translate(6px, -14px) scale(1.12); }
+}
+
+/* ===== desk ===== */
+.shelf-root .shelf-board-desk {
+  height: clamp(15px, 3vw, 20px);
+  border-radius: 8px;
+}
+
+.shelf-root .desk-leg {
+  position: absolute;
+  top: 100%;
+  width: clamp(14px, 3vw, 20px);
+  height: clamp(38px, 8vw, 58px);
+  background: linear-gradient(180deg, var(--wood-dark), #33200f);
+  border-radius: 0 0 8px 8px;
+}
+.shelf-root .desk-leg-start { inset-inline-start: 9%; transform: skewX(6deg); }
+.shelf-root .desk-leg-end   { inset-inline-end: 9%;  transform: skewX(-6deg); }
+
+/* rug */
+.shelf-root .rug {
+  position: relative;
+  z-index: 1;
+  margin-top: clamp(30px, 6.5vw, 48px);
+  margin-inline: clamp(4px, 3vw, 30px);
+  height: clamp(56px, 12vw, 92px);
+  border-radius: 16px;
+  background:
+    repeating-linear-gradient(45deg,
+      rgba(160, 130, 100, 0.12) 0 14px,
+      rgba(160, 130, 100, 0.05) 14px 28px),
+    linear-gradient(180deg, #ddd3c2, #d3c7b3);
+  border: 3px solid rgba(150, 122, 92, 0.28);
+  box-shadow: inset 0 3px 8px rgba(120, 90, 60, 0.12);
+  transition: filter 0.8s ease;
+}
+.shelf-root .rug::after {
+  content: "";
+  position: absolute;
+  inset-inline: 8px;
+  bottom: -8px;
+  height: 8px;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(150, 122, 92, 0.5) 0 3px,
+      transparent 3px 9px);
+}
+html[data-theme="night"] .shelf-root .rug { filter: brightness(0.55) saturate(0.85); }
+
+/* ===== footer ===== */
+.shelf-root .room-footer {
+  margin-top: clamp(30px, 6vw, 52px);
+  text-align: center;
+  font-size: clamp(0.72rem, 2.2vw, 0.86rem);
+  color: var(--ink-soft);
+  opacity: 0.85;
+  transition: color 0.6s ease;
+}
+
+/* ============================================================
+   INSIDE A BOOK — cozy SHELF SCENE with plants
+   Same background + same wood/lamp language as the home shelf,
+   fully theme-aware (day / night).
+   ============================================================ */
+.shelf-root .folder-page { background: transparent; }   /* inherits the .shelf-root gradient */
+.shelf-root .folder-room { overflow: hidden; }
+
+.shelf-root .folder-header { margin-bottom: clamp(18px, 3.6vw, 30px); }
+.shelf-root .folder-title  { font-size: clamp(1.5rem, 5.4vw, 2.5rem); }
+.shelf-root .folder-crumb  { font-weight: 600; opacity: 0.9; }
+
+.shelf-root .back-btn {
+  display: grid;
+  place-items: center;
+  width: clamp(38px, 8.5vw, 46px);
+  height: clamp(38px, 8.5vw, 46px);
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--cream);
+  background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood) 55%, var(--wood-dark) 100%);
+  border: 3px solid rgba(246, 239, 226, 0.55);
+  box-shadow: var(--shadow-tiny);
+  text-decoration: none;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+}
+.shelf-root .back-btn svg { width: 55%; height: 55%; }
+.shelf-root .back-btn:hover,
+.shelf-root .back-btn:focus-visible { transform: scale(1.07); box-shadow: var(--shadow-soft); }
+
+.shelf-root .folder-main {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3.4vw, 26px);
+}
+
+/* ---- the book this page belongs to (small cover + Arabic name) ---- */
+.shelf-root .folder-hero {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 22px);
+  padding: clamp(12px, 3vw, 18px);
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 2.5px solid var(--panel-line);
+  box-shadow: var(--shadow-tiny);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background 0.6s ease, border-color 0.6s ease;
+}
+.shelf-root .folder-cover {
+  position: relative;
+  width: clamp(60px, 16vw, 88px);
+  flex-shrink: 0;
+  line-height: 0;
+}
+.shelf-root .folder-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.shelf-root .folder-mapping {
+  font-family: "Marhey", "Cairo", sans-serif;
+  font-size: clamp(0.95rem, 3vw, 1.25rem);
+  font-weight: 700;
+  color: var(--ink);
+  transition: color 0.6s ease;
+}
+.shelf-root .folder-state {
+  font-size: clamp(0.68rem, 2.1vw, 0.82rem);
+  color: var(--ink-soft);
+  transition: color 0.6s ease;
+}
+.shelf-root .folder-state:empty { display: none; }
+
+/* ---- the inner shelf stack ---- */
+.shelf-root .folder-library {
+  padding-top: clamp(34px, 8vw, 52px);
+  gap: clamp(46px, 9vw, 72px);
+}
+
+/* the mount where real Drive sub-folders will be dropped.
+   EMPTY on purpose — no sample/dummy content is generated. */
+.shelf-root .shelf-mount {
+  display: flex;
+  align-items: flex-end;      /* folders REST on the board, no floating gap */
+  justify-content: center;
+  gap: clamp(8px, 2.4vw, 20px);
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 0;
+}
+.shelf-root .shelf-mount:empty { min-width: clamp(40px, 14vw, 120px); }
+
+/* ---- one sub-folder standing ON the shelf ---- */
+.shelf-root .shelf-folder-wrap {
+  position: relative;
+  width: clamp(74px, 19vw, 116px);
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.shelf-root .shelf-folder {
+  position: relative;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shelf-root .shelf-folder-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  padding: 12% 8% 0;
+  overflow: hidden;
+  border-radius: 12px 12px 6px 6px;
+  background: linear-gradient(160deg, var(--cream) 0%, var(--cream-deep) 100%);
+  border: 2.5px solid rgba(150, 112, 82, 0.35);
+  box-shadow: var(--shadow-tiny);
+  transform-origin: bottom center;   /* lifts from the shelf, never floats */
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease,
+              filter 0.8s ease, border-color 0.8s ease;
+}
+.shelf-root .shelf-folder-art {
+  position: relative;
+  z-index: 1;
+  width: 78%;
+  height: auto;
+  display: block;
+}
+.shelf-root .shelf-folder:hover  .shelf-folder-inner,
+.shelf-root .shelf-folder:focus-visible .shelf-folder-inner {
+  transform: translateY(-8px) rotate(-1.2deg);
+  box-shadow: var(--shadow-soft);
+}
+.shelf-root .shelf-folder:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; border-radius: 12px; }
+
+.shelf-root .shelf-folder-caption {
+  position: absolute;
+  top: calc(100% + clamp(14px, 3vw, 22px));
+  inset-inline: -8px;
+  text-align: center;
+  font-size: clamp(0.66rem, 2vw, 0.84rem);
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transition: color 0.6s ease;
+}
+.shelf-root .shelf-folder-caption:empty { display: none; }
+
+html[data-theme="night"] .shelf-root .shelf-folder-inner {
+  filter: brightness(0.86);
+  border-color: rgba(70, 52, 96, 0.55);
+}
+
+/* ---- decorative plants sizing ---- */
+.shelf-root .deco-hanging  .deco-svg { width: clamp(46px, 10vw, 74px); }
+.shelf-root .deco-monstera .deco-svg { width: clamp(58px, 13vw, 96px); }
+.shelf-root .deco-succulent .deco-svg { width: clamp(44px, 10vw, 70px); }
+.shelf-root .deco-snake    .deco-svg { width: clamp(48px, 11vw, 78px); }
+.shelf-root .deco-stack    .deco-svg { width: clamp(58px, 13vw, 96px); }
+.shelf-root .deco-can      .deco-svg { width: clamp(52px, 12vw, 88px); }
+
+/* the hanging plant drops from above the board */
+.shelf-root .deco-hanging {
+  align-self: flex-start;
+  margin-bottom: auto;
+  transform: translateY(calc(-1 * clamp(6px, 2vw, 16px)));
+}
+
+/* gentle leaf sway (cartoon, subtle) */
+.shelf-root .leaf-sway {
+  transform-origin: 50% 92%;
+  animation: leaf-sway 6.5s ease-in-out infinite;
+}
+@keyframes leaf-sway {
+  0%, 100% { transform: rotate(-1.4deg); }
+  50%      { transform: rotate(1.6deg); }
+}
+.shelf-root .vine-a { animation: vine-sway 7.5s ease-in-out infinite; transform-origin: 34px 52px; }
+.shelf-root .vine-b { animation: vine-sway 7.5s ease-in-out infinite 0.9s; transform-origin: 60px 52px; }
+@keyframes vine-sway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50%      { transform: rotate(1.8deg); }
+}
+.shelf-root .mug-steam { animation: steam-rise 4.2s ease-in-out infinite; }
+@keyframes steam-rise {
+  0%, 100% { opacity: 0.25; transform: translateY(2px); }
+  50%      { opacity: 0.8;  transform: translateY(-2px); }
+}
+
+/* empty-state note under the shelves */
+.shelf-root .shelf-empty-note {
+  margin-top: clamp(46px, 9vw, 70px);
+  text-align: center;
+  font-size: clamp(0.78rem, 2.4vw, 0.95rem);
+  font-weight: 600;
+  color: var(--ink-soft);
+  opacity: 0.75;
+  transition: color 0.6s ease;
+}
+.shelf-root .shelf-empty-note:empty { display: none; }
+
+/* ============================================================
+   NIGHT MODE for the inner shelf page — warm lamp glow, cozy
+   ============================================================ */
+html[data-theme="night"] .shelf-root .folder-library {
+  position: relative;
+}
+/* a soft warm pool of light behind the shelves at night */
+html[data-theme="night"] .shelf-root .folder-library::before {
+  content: "";
+  position: absolute;
+  inset: -6% -8%;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 40px;
+  background:
+    radial-gradient(70% 46% at 50% 8%,  rgba(255, 205, 130, 0.16) 0%, transparent 70%),
+    radial-gradient(70% 46% at 50% 52%, rgba(255, 196, 120, 0.12) 0%, transparent 72%),
+    radial-gradient(70% 48% at 50% 94%, rgba(255, 188, 112, 0.14) 0%, transparent 74%);
+  animation: cozy-glow 7s ease-in-out infinite;
+}
+@keyframes cozy-glow {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+html[data-theme="night"] .shelf-root .folder-library .shelf-unit { position: relative; z-index: 1; }
+
+/* plants keep a little life at night instead of going flat grey */
+html[data-theme="night"] .shelf-root .deco-plant,
+html[data-theme="night"] .shelf-root .deco-hanging {
+  filter: brightness(0.72) saturate(0.9)
+          drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
+}
+html[data-theme="night"] .shelf-root .folder-hero {
+  box-shadow: var(--shadow-tiny), 0 0 26px rgba(255, 196, 120, 0.10);
+}
+html[data-theme="night"] .shelf-root .shelf-empty-note { opacity: 0.68; }
+html[data-theme="night"] .shelf-root .folder-crumb { opacity: 0.8; }
+
+
+/* ===== day/night transition veil ===== */
+.shelf-root .night-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-102%);
+}
+.shelf-root .night-veil--dark {
+  background:
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 244, 214, 0.9), transparent 60%),
+    radial-gradient(2.4px 2.4px at 60% 20%, rgba(255, 244, 214, 0.9), transparent 60%),
+    radial-gradient(1.8px 1.8px at 80% 40%, rgba(255, 244, 214, 0.8), transparent 60%),
+    radial-gradient(2px 2px at 40% 60%, rgba(255, 244, 214, 0.7), transparent 60%),
+    linear-gradient(180deg, #14101f 0%, #201b32 55%, #2e2842 100%);
+}
+.shelf-root .night-veil--light {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 240, 200, 0.9) 0%, transparent 55%),
+    linear-gradient(180deg, #fff6de 0%, #f5e6c6 55%, #e8ddd2 100%);
+}
+.shelf-root .night-veil.is-covering {
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform 0.5s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.25s ease;
+}
+.shelf-root .night-veil.is-fading {
+  opacity: 0;
+  transform: translateY(0);
+  transition: opacity 0.6s ease 0.05s;
+}
+
+/* ===== small screens ===== */
+@media (max-width: 560px) {
+  /* was `:root { --slot-w: ... }` -> now scoped to the container */
+  .shelf-root { --slot-w: clamp(64px, 21vw, 92px); }
+  .shelf-root .shelf-items { gap: 5px; min-height: 104px; }
+  .shelf-root .spine       { height: calc(var(--h) * 0.78); }
+  .shelf-root .lamp-svg    { width: clamp(32px, 10vw, 42px); }
+  .shelf-root .library     { gap: clamp(40px, 10vw, 58px); }
+  .shelf-root .folder-hero { flex-direction: row; }
+
+  /* inner shelf scene on phones */
+  .shelf-root .folder-library    { gap: clamp(42px, 11vw, 60px); }
+  .shelf-root .shelf-mount       { gap: 6px; }
+  .shelf-root .shelf-folder-wrap { width: clamp(66px, 22vw, 96px); }
+  .shelf-root .shelf-mount:empty { min-width: 34px; }
+}
+
+@media (max-width: 380px) {
+  /* was `:root { --slot-w: 60px; }` -> now scoped to the container */
+  .shelf-root { --slot-w: 60px; }
+  .shelf-root .shelf-folder-wrap    { width: 62px; }
+  .shelf-root .deco-monstera .deco-svg,
+  .shelf-root .deco-stack .deco-svg { width: 52px; }
+  .shelf-root .deco-snake .deco-svg,
+  .shelf-root .deco-can .deco-svg   { width: 46px; }
+  .shelf-root .deco-hanging .deco-svg,
+  .shelf-root .deco-succulent .deco-svg { width: 40px; }
+  .shelf-root .deco-dome .deco-svg,
+  .shelf-root .deco-frame .deco-svg { width: 44px; }
+  .shelf-root .deco-camera .deco-svg,
+  .shelf-root .deco-letters .deco-svg { width: 48px; }
+  .shelf-root .deco-cat .deco-svg { width: 78px; }
+  .shelf-root .deco-globe .deco-svg { width: 72px; }
+  .shelf-root .lamp-svg { width: 30px; }
+}
+
+/* ===== reduced motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  /* was a bare `*, *::before, *::after` — now confined to .shelf-root */
+  .shelf-root,
+  .shelf-root *,
+  .shelf-root *::before,
+  .shelf-root *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+  .shelf-root .globe-land,
+  .shelf-root .cat-tail,
+  .shelf-root .cat-body { animation: none; }
+  .shelf-root .zzz { animation: none; opacity: 0.85; }
+  .shelf-root .book-slot:hover .slot-inner,
+  .shelf-root .spine:hover { transform: none; }
+  .shelf-root .spine-lean:hover { transform: rotate(-9deg); }
+  .shelf-root .lamp-halo,
+  .shelf-root .lamp-beam,
+  .shelf-root .lamp-pool { animation: none !important; }
+  html[data-theme="night"] .shelf-root .lamp-halo { opacity: 0.9; }
+  html[data-theme="night"] .shelf-root .lamp-beam { opacity: 1; }
+  html[data-theme="night"] .shelf-root .lamp-pool { opacity: 0.95; }
+  .shelf-root .night-veil { display: none !important; }
+}
+
+/* ============================================================
+   NOT-SUBSCRIBED GLASS BANNER  —  لوحة الاشتراك الزجاجية
+   Glassmorphism: frosted glass, backdrop-blur, premium + cartoon.
+   Fully theme-aware (day / night).
+
+   NOTE: the `--glass-*` variables that lived in a SECOND global
+   ":root" (and its html[data-theme="night"] twin) were hoisted to
+   the ".shelf-root" / `html[data-theme="night"] .shelf-root`
+   blocks at the top of this file. Names unchanged.
+   ============================================================ */
+
+/* was: body.gate-locked { overflow: hidden; }
+   Re-scoped onto the container. Locking the DOCUMENT scroll is a
+   behaviour concern and will be handled in a later step, not by a
+   global `body` rule in this stylesheet. */
+.shelf-root.gate-locked { overflow: hidden; }
+
+.shelf-root .gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* extra top space so the lock badge above the card is FULLY visible */
+  padding: clamp(52px, 9vw, 68px) clamp(12px, 4vw, 32px) clamp(20px, 5vw, 36px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.shelf-root .gate-overlay.is-open { opacity: 1; }
+.shelf-root .gate-overlay[hidden] { display: none; }
+
+.shelf-root .gate-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 214, 160, 0.18), transparent 60%),
+    rgba(58, 38, 24, 0.42);
+  -webkit-backdrop-filter: blur(9px) saturate(1.05);
+  backdrop-filter: blur(9px) saturate(1.05);
+}
+html[data-theme="night"] .shelf-root .gate-backdrop {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 196, 120, 0.14), transparent 60%),
+    rgba(10, 8, 22, 0.62);
+}
+
+/* ---------- the frosted glass card ---------- */
+.shelf-root .gate-card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  margin: auto;
+  /* NOTE: no overflow here — it used to clip the lock badge in half */
+  overflow: visible;
+  padding: clamp(34px, 6vw, 46px) clamp(18px, 5vw, 36px) clamp(20px, 4.4vw, 30px);
+  text-align: center;
+  border-radius: clamp(20px, 4.4vw, 30px);
+  border: 2px solid var(--glass-edge);
+  color: var(--glass-text);
+  background:
+    linear-gradient(150deg, var(--glass-bg) 0%, var(--glass-bg-2) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 var(--glass-line),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.shelf-root .gate-overlay.is-open .gate-card { transform: translateY(0) scale(1); }
+
+/* glossy sheen across the glass */
+.shelf-root .gate-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.06) 38%,
+    transparent 62%);
+  mix-blend-mode: screen;
+}
+html[data-theme="night"] .shelf-root .gate-card::before {
+  background: linear-gradient(120deg,
+    rgba(255, 224, 178, 0.16) 0%,
+    rgba(255, 224, 178, 0.03) 42%,
+    transparent 66%);
+}
+
+/* cartoon lock badge sitting on the rim */
+.shelf-root .gate-badge {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+  line-height: 0;
+}
+.shelf-root .gate-badge svg {
+  width: clamp(58px, 13vw, 74px);
+  height: auto;
+  padding: 8px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--cream) 0%, var(--cream-deep) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  box-shadow: var(--shadow-soft);
+  animation: gate-badge-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html[data-theme="night"] .shelf-root .gate-badge svg {
+  border-color: rgba(220, 200, 255, 0.35);
+  background: linear-gradient(160deg, #4a4068 0%, #362e52 100%);
+}
+@keyframes gate-badge-pop {
+  0%   { transform: scale(0.4) rotate(-14deg); opacity: 0; }
+  70%  { transform: scale(1.1) rotate(5deg);   opacity: 1; }
+  100% { transform: scale(1)   rotate(0deg); }
+}
+
+.shelf-root .gate-close {
+  position: absolute;
+  top: clamp(10px, 2.4vw, 16px);
+  inset-inline-end: clamp(10px, 2.4vw, 16px);
+  display: grid;
+  place-items: center;
+  width: clamp(32px, 7vw, 38px);
+  height: clamp(32px, 7vw, 38px);
+  border: 2px solid var(--glass-edge);
+  border-radius: 50%;
+  color: var(--glass-text);
+  background: var(--glass-chip);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), background 0.25s ease;
+}
+.shelf-root .gate-close svg { width: 58%; height: 58%; }
+.shelf-root .gate-close:hover,
+.shelf-root .gate-close:focus-visible { transform: rotate(90deg) scale(1.06); }
+
+.shelf-root .gate-title {
+  margin-top: clamp(14px, 3vw, 20px);
+  font-family: "Marhey", "Cairo", sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 5.6vw, 2.15rem);
+  color: var(--glass-title);
+  line-height: 1.25;
+}
+.shelf-root .gate-lead {
+  margin-top: 8px;
+  font-size: clamp(0.86rem, 2.8vw, 1.02rem);
+  font-weight: 600;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+.shelf-root .gate-sub {
+  margin-top: clamp(16px, 3.4vw, 22px);
+  font-size: clamp(0.82rem, 2.6vw, 0.96rem);
+  font-weight: 700;
+  color: var(--glass-title);
+  opacity: 0.95;
+}
+
+/* ---------- feature list ---------- */
+.shelf-root .gate-features {
+  list-style: none;
+  margin-top: clamp(12px, 2.6vw, 16px);
+  display: grid;
+  gap: clamp(7px, 1.8vw, 10px);
+  text-align: start;
+}
+.shelf-root .gate-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(8px, 2.2vw, 12px) clamp(11px, 2.8vw, 15px);
+  border-radius: 14px;
+  border: 1.5px solid var(--glass-edge);
+  background: var(--glass-chip);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+  animation: gate-feature-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.shelf-root .gate-feature:nth-child(1) { animation-delay: 0.06s; }
+.shelf-root .gate-feature:nth-child(2) { animation-delay: 0.12s; }
+.shelf-root .gate-feature:nth-child(3) { animation-delay: 0.18s; }
+.shelf-root .gate-feature:nth-child(4) { animation-delay: 0.24s; }
+.shelf-root .gate-feature:nth-child(5) { animation-delay: 0.30s; }
+.shelf-root .gate-feature:nth-child(6) { animation-delay: 0.36s; }
+.shelf-root .gate-feature:hover { transform: translateX(-4px); }
+@keyframes gate-feature-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.shelf-root .gate-tick {
+  width: clamp(20px, 4.6vw, 24px);
+  height: clamp(20px, 4.6vw, 24px);
+  flex-shrink: 0;
+  color: #f6efe2;
+}
+.shelf-root .gate-tick-disc { fill: #7d9668; }
+html[data-theme="night"] .shelf-root .gate-tick-disc { fill: #6f8c5b; }
+
+.shelf-root .gate-feature-text {
+  font-size: clamp(0.8rem, 2.5vw, 0.94rem);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+/* ---------- price: 5000DA struck through → 3000DA ---------- */
+.shelf-root .gate-price {
+  position: relative;
+  margin-top: clamp(18px, 3.8vw, 24px);
+  padding: clamp(14px, 3.2vw, 20px) clamp(12px, 3vw, 20px) clamp(12px, 2.8vw, 16px);
+  border-radius: 18px;
+  border: 2px dashed var(--glass-edge);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.30), rgba(255, 235, 205, 0.12));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+html[data-theme="night"] .shelf-root .gate-price {
+  background: linear-gradient(150deg, rgba(255, 224, 178, 0.10), rgba(120, 96, 160, 0.14));
+}
+
+.shelf-root .gate-price-flag {
+  position: absolute;
+  top: 0;
+  inset-inline-start: clamp(14px, 4vw, 24px);
+  transform: translateY(-52%) rotate(-3deg);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: clamp(0.66rem, 2.1vw, 0.78rem);
+  font-weight: 700;
+  color: #fff6e6;
+  background: linear-gradient(180deg, #d2896a, #a75f3f);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-tiny);
+  animation: gate-flag-wobble 3.2s ease-in-out infinite;
+}
+@keyframes gate-flag-wobble {
+  0%, 100% { transform: translateY(-52%) rotate(-3deg); }
+  50%      { transform: translateY(-52%) rotate(3deg); }
+}
+
+.shelf-root .gate-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(10px, 3vw, 18px);
+}
+
+.shelf-root .gate-price-old {
+  font-size: clamp(1rem, 3.4vw, 1.3rem);
+  font-weight: 700;
+  opacity: 0.65;
+}
+.shelf-root .gate-price-old s {
+  position: relative;
+  text-decoration: none;               /* custom, thicker cartoon strike */
+  color: inherit;
+}
+.shelf-root .gate-price-old s::after {
+  content: "";
+  position: absolute;
+  inset-inline: -6%;
+  top: 52%;
+  height: 3px;
+  border-radius: 3px;
+  background: #b8503a;
+  transform: rotate(-7deg);
+}
+html[data-theme="night"] .shelf-root .gate-price-old s::after { background: #e08a6a; }
+.shelf-root .gate-price-old i { font-style: normal; font-size: 0.72em; margin-inline-start: 2px; }
+
+.shelf-root .gate-price-new {
+  font-family: "Marhey", "Cairo", sans-serif;
+  font-size: clamp(2.1rem, 8.2vw, 3.1rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--glass-title);
+  text-shadow: 0 3px 0 rgba(255, 255, 255, 0.35);
+}
+html[data-theme="night"] .shelf-root .gate-price-new { text-shadow: 0 0 22px rgba(255, 196, 120, 0.35); }
+.shelf-root .gate-price-new i {
+  font-style: normal;
+  font-size: 0.38em;
+  font-weight: 700;
+  margin-inline-start: 4px;
+  vertical-align: super;
+}
+
+.shelf-root .gate-price-period {
+  display: block;
+  margin-top: 8px;
+  font-size: clamp(0.7rem, 2.2vw, 0.82rem);
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+/* ---------- actions ---------- */
+.shelf-root .gate-actions {
+  margin-top: clamp(16px, 3.6vw, 22px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 2.2vw, 12px);
+}
+.shelf-root .gate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 clamp(18px, 4.6vw, 30px);
+  border: none;
+  border-radius: 999px;
+  font-family: "Cairo", sans-serif;
+  font-size: clamp(0.86rem, 2.7vw, 1rem);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease;
+}
+.shelf-root .gate-btn-main {
+  color: #fff8ec;
+  background: linear-gradient(180deg, #d2896a 0%, #c07856 50%, #a75f3f 100%);
+  border: 2.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-soft);
+}
+.shelf-root .gate-btn-main:hover,
+.shelf-root .gate-btn-main:focus-visible { transform: translateY(-3px) scale(1.03); }
+.shelf-root .gate-btn-main:active { transform: scale(0.97); }
+
+.shelf-root .gate-btn-ghost {
+  color: var(--glass-text);
+  background: var(--glass-chip);
+  border: 2px solid var(--glass-edge);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.shelf-root .gate-btn-ghost:hover,
+.shelf-root .gate-btn-ghost:focus-visible { transform: translateY(-2px); }
+
+.shelf-root .gate-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+/* blur the page behind the banner on the inner page
+   was: body.is-gated .folder-main / .room-header / .room-footer
+   now: the state class is expected on the .shelf-root container. */
+.shelf-root.is-gated .folder-main,
+.shelf-root.is-gated .room-header,
+.shelf-root.is-gated .room-footer {
+  filter: blur(3px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* fallback for browsers without backdrop-filter */
+@supports not ((-webkit-backdrop-filter: blur(4px)) or (backdrop-filter: blur(4px))) {
+  .shelf-root .gate-backdrop { background: rgba(48, 32, 20, 0.72); }
+  .shelf-root .gate-card     { background: linear-gradient(150deg, rgba(255, 250, 240, 0.96), rgba(250, 236, 216, 0.94)); }
+  html[data-theme="night"] .shelf-root .gate-card { background: linear-gradient(150deg, rgba(62, 54, 92, 0.97), rgba(44, 38, 68, 0.96)); }
+}
+
+@media (max-width: 420px) {
+  .shelf-root .gate-card    { padding-inline: 15px; }
+  .shelf-root .gate-actions .gate-btn { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-root .gate-badge svg,
+  .shelf-root .gate-feature,
+  .shelf-root .gate-price-flag,
+  .shelf-root .leaf-sway,
+  .shelf-root .vine-a,
+  .shelf-root .vine-b,
+  .shelf-root .mug-steam { animation: none !important; }
+  .shelf-root .gate-card { transform: none !important; }
+  .shelf-root .shelf-folder:hover .shelf-folder-inner { transform: none; }
+  html[data-theme="night"] .shelf-root .folder-library::before { animation: none; }
+}
