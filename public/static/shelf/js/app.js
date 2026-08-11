@@ -8,7 +8,11 @@
      src/pages/shelf.ts). It grants nothing: the authoritative gate is
      server-side (requireActiveSubscriber → 402 SUBSCRIPTION_REQUIRED on
      /api/library/file/:id/meta|content) and is NOT touched by the shelf.
-   - inner book page = cozy shelf scene with plants (EMPTY on purpose)
+   - inner book page = cozy shelf scene with plants, filled from the
+     REAL Drive listing (merge step 10/10): GET /api/library/list
+     ?folder=<id> with credentials:"same-origin". Sub-folders open
+     deeper in the same shelf UI, files open taysir's own gated route
+     /api/library/file/:id/content (still 402 for non-subscribers).
    - gentle tilt on hover (disabled with reduced motion)
    - dark/light theme with shelf lamps, shared with taysir
      (localStorage "taysir-theme" = "dark" | "light")
@@ -464,9 +468,11 @@
   /* ============================================================
      6) INSIDE A BOOK — the cozy shelf scene
         The title ALWAYS reflects the folder actually opened.
-        The shelves start EMPTY on purpose: no sample folders,
-        no dummy items. Real sub-folders arrive from Drive later
-        via window.TAYSIR_FOLDER_ITEMS / TAYSIR_RENDER_FOLDER_ITEMS.
+        Still no sample / dummy content: everything on the boards
+        comes from the server (see 6b), injected through the same
+        TAYSIR_RENDER_FOLDER_ITEMS entry point that was reserved
+        for it. An explicit window.TAYSIR_FOLDER_ITEMS array, if a
+        page sets one, still overrides the fetch.
      ============================================================ */
 
   /* build ONE sub-folder standing on a shelf */
@@ -553,6 +559,153 @@
   /* public: called once the Drive listing is available */
   window.TAYSIR_RENDER_FOLDER_ITEMS = renderFolderItems;
 
+  /* ============================================================
+     6b) REAL DRIVE CONTENTS  —  merge step 10/10
+     ------------------------------------------------------------
+     The shelves above are a pure renderer: give it
+     [{ id, name, href }, …] and it stands them on the boards.
+     This section is the only thing that decides WHAT to give it,
+     and it gets that from taysir's OWN, ALREADY-EXISTING library
+     API — no new endpoint, no new server code, no shortcut:
+
+       GET /api/library/list?folder=<driveFolderId>
+         → src/routes/library.ts  (libraryApi.get('/list'))
+         → src/lib/drive.ts       (listFolder)
+
+     RESPONSE SHAPE (verified in src/lib/drive.ts → FolderListing):
+       {
+         ok: true,
+         subscriber: boolean,          // isApproved(c) for THIS request
+         folder:     { id, name, isRoot },
+         breadcrumb: [{ id, name }],
+         folders:    DriveNode[],      // kind === "folder"
+         files:      DriveNode[],      // kind === "file"
+         sample:     boolean           // true when Drive isn't configured
+       }
+     DriveNode = { id, name, kind:"folder"|"file", mimeType?, fileType?,
+                   size?, modified?, hasThumb?, locked }
+
+     So folders and files arrive in TWO SEPARATE, ALREADY-SORTED
+     arrays and there is no mimeType sniffing to do on the client:
+     the server has already normalised Drive's
+     application/vnd.google-apps.folder (and resolved shortcuts to
+     their real target file) into `folders` vs `files` for us.
+
+     ⚠️  ACCESS IS NOT DECIDED HERE, AND CANNOT BE.
+     /list is deliberately browsable by everyone (guests included):
+     it answers 200 with `subscriber:false` and every file carrying
+     `locked:true`. That is taysir's existing behaviour — titles are
+     free, BYTES ARE NOT. Opening a file goes to the gated route
+       GET /api/library/file/:id/content   (gateContent →
+       requireActiveSubscriber → 402 SUBSCRIPTION_REQUIRED)
+     which re-decides access from the validated httpOnly session on
+     every single request. This file only renders links to it. A
+     forged `locked:false`, a hand-typed href, or anything else done
+     in the console still yields 402 and zero bytes.
+     ============================================================ */
+
+  var LIBRARY_API = "/api/library";
+
+  /** Deeper navigation INSIDE the themed shelf UI (same page, new folder). */
+  function shelfFolderHref(subjectKey, folderId) {
+    var url = "/shelf/folder";
+    var q = [];
+    if (subjectKey) q.push("subject=" + encodeURIComponent(subjectKey));
+    if (folderId)   q.push("folder="  + encodeURIComponent(folderId));
+    return q.length ? url + "?" + q.join("&") : url;
+  }
+
+  /** taysir's REAL, subscriber-gated file route — identical to what the
+      main library uses (public/static/library.js builds the same URL).
+      Non-subscribers get taysir's 402 here; that is the point. */
+  function libraryFileHref(fileId) {
+    return LIBRARY_API + "/file/" + encodeURIComponent(fileId) + "/content";
+  }
+
+  /** Show an Arabic one-liner on the shelf with NO items, reusing the
+      existing empty-note element (#shelf-empty-note) and its styling.
+      Called for loading / unauthorized / error — the plain empty case
+      keeps renderFolderItems' own "لا توجد مجلدات هنا بعد." wording. */
+  function shelfMessage(text) {
+    renderFolderItems([]);                    /* clears boards + empty state */
+    var note = document.getElementById("shelf-empty-note");
+    if (note) {
+      note.textContent = text;
+      note.hidden = false;
+    }
+  }
+
+  /** Map ONE server DriveNode → the { id, name, href } the renderer wants. */
+  function mapNode(node, subjectKey) {
+    if (!node || !node.id) return null;
+    var isFolder = node.kind === "folder";
+    return {
+      id:   node.id,
+      name: node.name || "",
+      href: isFolder
+        /* sub-folder → stay in the themed shelf, one level deeper */
+        ? shelfFolderHref(subjectKey, node.id)
+        /* file (pdf, …) → taysir's own gated content route */
+        : libraryFileHref(node.id)
+    };
+  }
+
+  /**
+   * Fetch the folder's real contents and put them on the shelves.
+   * credentials:"same-origin" so the httpOnly session cookie rides along
+   * and the server can identify the viewer exactly as it does elsewhere.
+   */
+  function loadFolderContents(subjectKey, folderId) {
+    if (!folderId) {
+      /* No Drive folder mapped for this subject yet → existing empty state. */
+      renderFolderItems([]);
+      return;
+    }
+
+    shelfMessage("جارٍ تحميل المحتوى…");
+
+    var url = LIBRARY_API + "/list?folder=" + encodeURIComponent(folderId);
+
+    fetch(url, { credentials: "same-origin" })
+      .then(function (res) {
+        /* /list is browsable for guests today, but never assume: if a
+           deployment ever gates it, degrade politely instead of crashing. */
+        if (res.status === 401 || res.status === 402 || res.status === 403) {
+          var err = new Error("not-authorized");
+          err.notAuthorized = true;
+          throw err;
+        }
+        if (!res.ok) throw new Error("http-" + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || data.ok === false) throw new Error("api-error");
+
+        var folders = Array.isArray(data.folders) ? data.folders : [];
+        var files   = Array.isArray(data.files)   ? data.files   : [];
+
+        /* Folders first, then files — the same order taysir's library
+           shows, and each array is already name-sorted by the server. */
+        var items = folders.concat(files)
+          .map(function (n) { return mapNode(n, subjectKey); })
+          .filter(Boolean);
+
+        /* Empty folder → renderFolderItems paints the existing
+           "لا توجد مجلدات هنا بعد." message on its own. */
+        window.TAYSIR_RENDER_FOLDER_ITEMS(items);
+      })
+      .catch(function (err) {
+        if (err && err.notAuthorized) {
+          /* Reuse the banner already wired in step 7/10, and say why.
+             The REAL protection is, and stays, the server's. */
+          shelfMessage("هذا المحتوى متاح للمشتركين فقط.");
+          try { openGate(null); } catch (e) { /* banner optional */ }
+          return;
+        }
+        shelfMessage("تعذّر تحميل المحتوى، حاول مرة أخرى.");
+      });
+  }
+
   function initFolderPage() {
     var main = document.getElementById("folder-main");
     if (!main) return;
@@ -576,6 +729,12 @@
     var key     = params.get("subject") || "";
     var subject = FIND(key);
 
+    /* Merge step 10/10 — the Drive folder actually being viewed.
+       The URL wins over the subject's top-level driveId so that a
+       SUB-FOLDER link (built by shelfFolderHref, same subject, deeper
+       folder id) opens that sub-folder and not the subject root again. */
+    var folderId = params.get("folder") || (subject && subject.driveId) || "";
+
     var titleEl   = document.getElementById("folder-title");
     var crumbEl   = document.getElementById("folder-crumb");
     var mappingEl = document.getElementById("folder-mapping");
@@ -593,7 +752,10 @@
       if (mappingEl) mappingEl.textContent = "";
       if (stateEl) stateEl.textContent = "";
       if (heroEl) heroEl.hidden = true;
-      renderFolderItems(window.TAYSIR_FOLDER_ITEMS);
+      /* Unknown subject, but a folder id may still be in the URL (deep
+         link). Load it if so; otherwise the shelves stay empty. */
+      if (folderId) { loadFolderContents(key, folderId); }
+      else { renderFolderItems(window.TAYSIR_FOLDER_ITEMS); }
       return;
     }
 
@@ -631,8 +793,20 @@
       img.src = subject.cover;
     }
 
-    /* shelves start empty — real Drive folders are injected later */
-    renderFolderItems(window.TAYSIR_FOLDER_ITEMS);
+    /* ---- MERGE STEP 10/10 — REAL CONTENTS ----------------------
+       Was: renderFolderItems(window.TAYSIR_FOLDER_ITEMS) — an array
+       config.js deliberately left empty, so the shelves were always
+       bare. Now the page asks taysir's own GET /api/library/list for
+       this folder and stands whatever the SERVER returns on the
+       boards. An explicit window.TAYSIR_FOLDER_ITEMS is still honoured
+       as a manual override (useful for previews); otherwise we fetch.
+       ------------------------------------------------------------ */
+    var preset = window.TAYSIR_FOLDER_ITEMS;
+    if (Array.isArray(preset) && preset.length) {
+      renderFolderItems(preset);
+      return;
+    }
+    loadFolderContents(subject.key, folderId);
   }
 
   /* ------------------------------------------------------------ */

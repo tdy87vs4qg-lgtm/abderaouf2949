@@ -239,10 +239,30 @@ window.TAYSIR_SUBSCRIPTION = {
 };
 
 /* ------------------------------------------------------------
-   CONTENTS OF AN OPENED BOOK — intentionally EMPTY.
-   The real sub-folders will be injected here from Google Drive
-   later:  window.TAYSIR_FOLDER_ITEMS = [{ id, name }, ...]
-   or by returning them from window.TAYSIR_LOAD_FOLDER(ctx).
-   No sample / dummy items are defined on purpose.
+   CONTENTS OF AN OPENED BOOK — still EMPTY here, and it should
+   stay that way.
+
+   MERGE STEP 10/10 — this array is no longer where the contents
+   come from. js/app.js → loadFolderContents() now fetches the
+   REAL listing from taysir's existing API:
+
+       GET /api/library/list?folder=<driveFolderId>
+       (src/routes/library.ts → src/lib/drive.ts → listFolder)
+
+   with credentials:"same-origin", and maps the server's already-
+   normalised `folders[]` + `files[]` (DriveNode: id, name,
+   kind:"folder"|"file", …) into the renderer's { id, name, href }:
+       folder → /shelf/folder?subject=<key>&folder=<its id>
+       file   → /api/library/file/<its id>/content   ← gated route
+
+   This array is kept ONLY as a manual override: set it to a
+   non-empty list and app.js renders it INSTEAD of fetching
+   (handy for a static preview). Left empty = use the real Drive
+   contents. No sample / dummy items are defined on purpose.
+
+   Nothing here affects ACCESS. /api/library/file/:id/content is
+   guarded server-side by gateContent → requireActiveSubscriber
+   and answers 402 SUBSCRIPTION_REQUIRED to anyone who isn't an
+   active subscriber, no matter what this file says.
    ------------------------------------------------------------ */
 window.TAYSIR_FOLDER_ITEMS = [];
