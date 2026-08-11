@@ -377,10 +377,15 @@
   //   1. Try the IndexedDB cache (only returns bytes stamped with the CURRENT
   //      session key — see file-cache.js). If present → build an in-memory Blob
   //      URL and render from that. The file never touches Downloads.
-  //   2. On a cache miss, fetch the bytes THROUGH the Worker (full server-side
-  //      auth/subscription/device gate applies exactly as before). If the fetch
-  //      is refused we reject so the caller pops the subscribe modal. On success
-  //      we render from a Blob URL and store the blob for instant reopen later.
+  //   2. On a cache miss, hand the viewer the GATED same-origin content URL
+  //      STRAIGHT AWAY so PDF.js / <img> / <video> can stream (and Range-request)
+  //      it — first paint no longer waits for 100% of the bytes. The full-file
+  //      download that feeds the IndexedDB cache is then kicked off in the
+  //      BACKGROUND and never blocks rendering.
+  // Auth is unchanged: every byte still travels through the gated Worker route,
+  // which re-decides the subscription/device gate on each request (including the
+  // viewer's own range requests). A gate rejection is already surfaced by the
+  // gated /meta call that runs before this, so the subscribe modal still pops.
   // If IndexedDB is unavailable we fall back to the direct gated content URL —
   // identical to the previous behaviour.
   function resolveContentUrl(meta) {
@@ -391,31 +396,41 @@
       // gated endpoint, exactly as before.
       return Promise.resolve(directUrl);
     }
-    // Miss path → fetch through the Worker (auth is re-decided server-side).
-    // The FULL bytes are pulled into a Blob (so the whole file is available for
-    // the persistent cache, not just a streamed range) and written to
-    // IndexedDB. The write is fired without blocking the first render, but it is
-    // now registered as a PENDING WRITE inside FileCache.putFile and flushed on
+    // Miss path → the viewer streams from `directUrl` immediately, and we warm
+    // the persistent cache behind it. The background fetch pulls the FULL bytes
+    // into a Blob (so the whole file is available for the cache, not just a
+    // streamed range) and writes them to IndexedDB. The write is registered as a
+    // PENDING WRITE inside FileCache.putFile and flushed on
     // pagehide/visibilitychange (see the unload hook below), so a file opened
     // once is durably cached even if the user closes the tab immediately — the
     // core "opens instantly next time, forever" guarantee.
-    function fetchFresh() {
-      return fetch(directUrl, { credentials: 'same-origin' }).then(function (r) {
-        if (!r.ok) {
-          var err = new Error('HTTP ' + r.status);
-          err.status = r.status;
-          throw err;
-        }
-        var ct = r.headers.get('content-type') || meta.contentType || 'application/octet-stream';
-        return r.blob().then(function (blob) {
-          // Persist for instant reopen. Best-effort (never blocks rendering) but
-          // the transaction is tracked so a quick unload still commits it.
-          if (blob && blob.size > 0) {
-            FC.putFile(id, blob, ct, meta.name).catch(function () {});
+    function cacheInBackground() {
+      // Fire-and-forget: nothing here is awaited by the caller, so first paint
+      // is never delayed by it.
+      try {
+        fetch(directUrl, { credentials: 'same-origin' }).then(function (r) {
+          if (!r.ok) {
+            // A hard auth failure means the cache is no longer trustworthy for
+            // this session → drop everything so nothing stale can be served.
+            if (r.status === 401 || r.status === 403) {
+              if (FC && FC.supported) FC.clearAll().catch(function () {});
+            }
+            return;
           }
-          return trackBlobUrl(URL.createObjectURL(blob));
-        });
-      });
+          var ct = r.headers.get('content-type') || meta.contentType || 'application/octet-stream';
+          return r.blob().then(function (blob) {
+            if (blob && blob.size > 0) {
+              FC.putFile(id, blob, ct, meta.name).catch(function () {});
+            }
+          });
+        }).catch(function () { /* offline / aborted → just no cache entry */ });
+      } catch (e) { /* never let cache warming break the open */ }
+    }
+
+    // Cache miss → return the streamable gated URL NOW, warm the cache after.
+    function fetchFresh() {
+      cacheInBackground();
+      return directUrl;
     }
 
     return FC.getFile(id).then(function (hit) {

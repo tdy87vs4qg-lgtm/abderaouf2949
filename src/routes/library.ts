@@ -257,8 +257,16 @@ libraryApi.get('/file/:id/meta', gateContent, async (c) => {
 libraryApi.get('/file/:id/content', gateContent, async (c) => {
   const id = c.req.param('id')
 
+  // Range passthrough: PDF.js (and <video>/<img> seeking) asks for byte ranges so
+  // the first page can paint before the whole file has arrived. We forward the
+  // header verbatim to Drive and mirror its partial response back. When the
+  // browser sends NO Range header this is undefined and the handler behaves
+  // exactly as it always has — a full 200 body. The gate above is untouched:
+  // every range request is authenticated and subscription-checked identically.
+  const range = c.req.header('Range')
+
   const content = driveConfigured(c.env)
-    ? await getFileContent(c.env, id)
+    ? await getFileContent(c.env, id, range)
     : sampleFileContent(id)
 
   if (!content) {
@@ -278,6 +286,19 @@ libraryApi.get('/file/:id/content', gateContent, async (c) => {
   // Defence-in-depth against embedding the raw bytes off-site.
   c.header('X-Content-Type-Options', 'nosniff')
   if (typeof content.size === 'number') c.header('Content-Length', String(content.size))
+
+  // Tell the client it may seek. Advertised on the full 200 too, so PDF.js knows
+  // it can issue range requests for the pages it actually needs.
+  c.header('Accept-Ranges', content.acceptRanges || 'bytes')
+
+  // Drive honoured the forwarded Range → mirror the partial response verbatim
+  // (206 + Content-Range, with Content-Length already set to the PARTIAL length
+  // above). Without a Range header `content.status` is 200/undefined and we fall
+  // through to the unchanged full-body response.
+  if (content.status === 206 && content.contentRange) {
+    c.header('Content-Range', content.contentRange)
+    return c.body(content.body as any, 206)
+  }
 
   return c.body(content.body as any)
 })

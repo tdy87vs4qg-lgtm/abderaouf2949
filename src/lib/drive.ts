@@ -239,7 +239,15 @@ function authHeaders(auth: DriveAuth): Record<string, string> {
   return auth.token ? { Authorization: `Bearer ${auth.token}` } : {}
 }
 
-/** Single entry point for every Drive HTTP call, so auth is applied uniformly. */
+/**
+ * Single entry point for every Drive HTTP call, so auth is applied uniformly.
+ *
+ * Any caller-supplied headers on `init.headers` are PRESERVED and forwarded to
+ * Drive — this is how the content route passes the browser's `Range` header
+ * through to `alt=media` so Drive answers with a 206 partial body (needed for
+ * progressive PDF.js / <video> loading). Only the credential headers are set by
+ * us, so a forwarded `Range` can never override or leak auth.
+ */
 function driveFetch(url: string, auth: DriveAuth, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers || {})
   for (const [k, v] of Object.entries(authHeaders(auth))) headers.set(k, v)
@@ -888,6 +896,16 @@ export interface FileContent {
   filename: string
   /** Byte length when known (helps the viewer/range logic). */
   size?: number
+  /**
+   * Upstream status: 206 when Drive honoured a forwarded Range request, 200
+   * otherwise. The route mirrors this so the browser/PDF.js sees a real partial
+   * response instead of a full body.
+   */
+  status?: number
+  /** Drive's `Content-Range` for a 206 (e.g. `bytes 0-65535/1048576`). */
+  contentRange?: string
+  /** Drive's `Accept-Ranges` (`bytes`) when range requests are supported. */
+  acceptRanges?: string
 }
 
 /** Public, safe metadata for the viewer chrome (title, type). No secrets. */
@@ -1012,9 +1030,20 @@ export async function getFileMeta(env: Env, fileId: string): Promise<FileMeta | 
  * Fetch the raw bytes of a file for in-app viewing. Binary files stream via
  * `alt=media`; Google-native docs are exported to PDF/PNG. The API key is used
  * server-side only; the returned stream is piped straight back to the client
- * from the route. Returns null when the file is missing/unsupported.
+ * from the route (nothing is ever buffered server-side). Returns null when the
+ * file is missing/unsupported.
+ *
+ * `range` is the browser's raw `Range` header value when present. It is
+ * forwarded verbatim to Drive so the viewer can pull just the bytes it needs;
+ * Drive's 206 status + `Content-Range` / `Content-Length` / `Accept-Ranges` are
+ * handed back to the route unchanged. With no `range`, behaviour is byte-for-byte
+ * identical to before: a full 200 body.
  */
-export async function getFileContent(env: Env, fileId: string): Promise<FileContent | null> {
+export async function getFileContent(
+  env: Env,
+  fileId: string,
+  range?: string | null
+): Promise<FileContent | null> {
   if (!fileId) return null
   const auth = await resolveDriveAuth(env)
   if (!auth) return null
@@ -1085,15 +1114,30 @@ export async function getFileContent(env: Env, fileId: string): Promise<FileCont
     outMime = meta.mimeType || 'application/octet-stream'
   }
 
-  const res = await driveFetch(url, auth)
+  // Forward the caller's Range header (when any) so Drive can answer with a
+  // partial body. Nothing else about the request changes, so a plain (rangeless)
+  // open still gets the exact same full 200 stream as before.
+  const fwdHeaders: Record<string, string> = {}
+  if (range) fwdHeaders.Range = range
+
+  const res = await driveFetch(url, auth, { headers: fwdHeaders })
+  // 200 (full) and 206 (partial) are both success; res.ok covers both.
   if (!res.ok || !res.body) return null
   const contentType = res.headers.get('content-type') || outMime
   const len = res.headers.get('content-length')
   return {
+    // Always a stream — the bytes are never buffered inside the Worker.
     body: res.body,
     contentType,
     filename: sanitizeFilename(outName),
-    size: len ? Number(len) : meta.size ? Number(meta.size) : undefined,
+    // For a 206 this is the PARTIAL length (Drive's own Content-Length), which
+    // is exactly what the route must echo back.
+    size: len ? Number(len) : res.status === 206 ? undefined : meta.size ? Number(meta.size) : undefined,
+    status: res.status === 206 ? 206 : 200,
+    contentRange: res.headers.get('content-range') || undefined,
+    // Drive advertises byte ranges on alt=media; default to that when it 206s
+    // so the browser knows it can seek even if the header was omitted.
+    acceptRanges: res.headers.get('accept-ranges') || (res.status === 206 ? 'bytes' : undefined),
   }
 }
 
