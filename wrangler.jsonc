@@ -49,16 +49,35 @@
   // deployment with no DB (login → AUTH_UNAVAILABLE). It points at the EXISTING
   // production database — no new database is created.
   //
-  // KV namespaces (SESSIONS + DRIVE_CACHE) are intentionally omitted: D1 is the
-  // source of truth for sessions (KV is only a hot-path cache) and the Drive
-  // listing cache falls back to a per-isolate in-memory cache when DRIVE_CACHE
-  // is absent, so the app runs without them.
+  // KV namespaces ARE now bound (see "kv_namespaces" below) — this activates the
+  // caching layer that was already written in the code, with zero code changes:
+  //
+  //   DRIVE_CACHE — Drive folder-listing cache read/written by src/lib/drive.ts.
+  //     Without this binding drive.ts falls back to a per-isolate in-memory Map
+  //     that is constantly cold, so nearly every folder navigation triggered a
+  //     live Google Drive round-trip.
+  //   SESSIONS    — hot-path session cache used by src/lib/session.ts,
+  //     src/routes/auth.ts and src/lib/google-oauth.ts. D1 remains the source of
+  //     truth for sessions; KV only avoids the DB hit on every request.
+  //
+  // Binding names must stay EXACTLY "DRIVE_CACHE" and "SESSIONS" — the code reads
+  // env.DRIVE_CACHE / env.SESSIONS verbatim. KV namespace ids are not secrets.
   // ------------------------------------------------------------------
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "bacyeswecan-production",
       "database_id": "be0dbb10-1f7a-4e9a-ad83-46a1a9795d5e"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "DRIVE_CACHE",
+      "id": "e113de5eba324a0b829e0f236fb56b06"
+    },
+    {
+      "binding": "SESSIONS",
+      "id": "3af9370a2e1f4762b4fe16439f0d7e98"
     }
   ]
 }
