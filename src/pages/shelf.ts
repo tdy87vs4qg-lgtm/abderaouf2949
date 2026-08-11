@@ -1,0 +1,546 @@
+// ============================================================================
+// تيسير — Shelf (home) page  ·  merge step 5/10
+//
+// Server-rendered shell for the cartoon "library room" shelf, adapted from the
+// staged design source at library-src/index.html so it can be served by Hono
+// at GET /shelf (see src/index.tsx). Same pattern as src/pages/library.ts: the
+// module exports a plain HTML string and the route hands it to `c.html(...)`.
+//
+// WHAT WAS ADAPTED FROM THE SOURCE FILE (paths + isolation only — no design,
+// no theme, no subscription and no Drive logic was changed in this step):
+//
+//   • ISOLATION — the whole shelf markup is wrapped in <div class="shelf-root">.
+//     public/static/shelf.css is scoped entirely under `.shelf-root` (step 2–3),
+//     so without this wrapper NOTHING would be styled. The wrapper also carries
+//     the page background/min-height that the source used to put on `body`, and
+//     it deliberately contains the night veil + the gate mount as well, because
+//     those are styled as `.shelf-root .night-veil` / `.shelf-root .gate-*`.
+//
+//   • STYLESHEET — `css/style.css` → `/static/shelf.css` (the isolated build).
+//
+//   • SCRIPTS — `js/config.js` + `js/app.js` → `/static/shelf/js/config.js` then
+//     `/static/shelf/js/app.js` (served copies under public/static/shelf/js/).
+//     config.js MUST load first: app.js reads window.TAYSIR_* from it.
+//     The served config.js also has its 8 cover paths repointed at the real
+//     asset location, /static/shelf/covers/*.png.
+//
+//   • TOGGLE CLASS — the day/night button is `class="shelf-theme-toggle"`, the
+//     renamed class from step 3/10 (taysir already owns a `.theme-toggle`).
+//     Its `id` is unchanged: app.js binds the button via
+//     document.getElementById("theme-toggle"), not via a class selector.
+//
+// NOT DONE HERE (later steps): day/night theme unification (6/10), the
+// subscription gate wiring, Drive wiring, and the folder pages — the books
+// still point wherever the staged config.js points them.
+// ============================================================================
+
+export const shelfPage = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تيسير</title>
+  <meta name="description" content="تيسير — مكتبة كرتونية (RTL)" />
+
+  <!-- تطبيق الوضع المحفوظ قبل الرسم لتجنّب وميض التبديل -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("taysir-theme");
+        if (t === "night") {
+          document.documentElement.setAttribute("data-theme", "night");
+        }
+      } catch (e) { /* storage unavailable */ }
+    })();
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Marhey:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- isolated shelf skin — every rule inside is scoped under .shelf-root -->
+  <link rel="stylesheet" href="/static/shelf.css" />
+</head>
+<body>
+
+<!-- ISOLATION CONTAINER — required: all of shelf.css lives under .shelf-root -->
+<div class="shelf-root">
+
+    <div class="room" id="room">
+
+      <!-- ===== HEADER — text placeholders kept empty on purpose ===== -->
+      <header class="room-header" id="room-header">
+        <div class="title-row">
+          <!-- TEXT PLACEHOLDER: page title goes here -->
+          <h1 class="room-title" id="room-title" data-placeholder="title"></h1>
+
+          <!-- theme toggle (day / night) -->
+          <button id="theme-toggle" class="shelf-theme-toggle" type="button"
+                  aria-pressed="false" aria-label="تبديل الوضع" title="تبديل الوضع">
+            <svg class="toggle-icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="5" fill="#f6d98a"/>
+              <g stroke="#f6d98a" stroke-width="2" stroke-linecap="round">
+                <path d="M12 2.5 V5"/><path d="M12 19 V21.5"/>
+                <path d="M2.5 12 H5"/><path d="M19 12 H21.5"/>
+                <path d="M5.3 5.3 L7 7"/><path d="M17 17 L18.7 18.7"/>
+                <path d="M18.7 5.3 L17 7"/><path d="M7 17 L5.3 18.7"/>
+              </g>
+            </svg>
+            <svg class="toggle-icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 14.5 A8.5 8.5 0 1 1 9.5 4 A7 7 0 0 0 20 14.5 Z" fill="#f6e7b8"/>
+              <circle cx="10" cy="9" r="1.2" fill="#d9c48c"/>
+              <circle cx="13.5" cy="13.5" r="0.9" fill="#d9c48c"/>
+            </svg>
+          </button>
+        </div>
+        <!-- TEXT PLACEHOLDER: subtitle goes here -->
+        <p class="room-subtitle" id="room-subtitle" data-placeholder="subtitle"></p>
+      </header>
+
+      <!-- ===== LIBRARY / SHELVES ===== -->
+      <main class="library" id="library">
+
+        <!-- ───────────── SHELF 1 ───────────── -->
+        <section class="shelf-unit" aria-label="رف 1">
+          <div class="shelf-items">
+
+            <!-- deco: glass dome -->
+            <figure class="deco deco-dome" aria-hidden="true">
+              <svg viewBox="0 0 90 109" class="deco-svg">
+                <ellipse cx="45" cy="102" rx="38" ry="7" fill="#4a2e1e"/>
+                <rect x="10" y="94" width="70" height="8" rx="4" fill="#6b4630"/>
+                <path d="M12 94 Q12 18 45 14 Q78 18 78 94 Z" fill="#f7f1e6" opacity="0.55" stroke="#c9b8a4" stroke-width="2.5"/>
+                <path d="M45 92 V52" stroke="#5c7550" stroke-width="3" stroke-linecap="round"/>
+                <path d="M45 70 Q32 62 28 48" stroke="#5c7550" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                <path d="M45 74 Q58 66 62 52" stroke="#5c7550" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                <path d="M38 82 Q30 80 26 72" stroke="#5c7550" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                <circle cx="45" cy="46" r="8" fill="#7d8fae"/><circle cx="45" cy="46" r="3" fill="#f0e7d8"/>
+                <circle cx="27" cy="44" r="6.5" fill="#8d9bb0"/><circle cx="27" cy="44" r="2.4" fill="#f0e7d8"/>
+                <circle cx="63" cy="48" r="6.5" fill="#8d9bb0"/><circle cx="63" cy="48" r="2.4" fill="#f0e7d8"/>
+                <circle cx="25" cy="68" r="5.5" fill="#7d8fae"/><circle cx="25" cy="68" r="2" fill="#f0e7d8"/>
+                <circle cx="65" cy="66" r="5.5" fill="#7d8fae"/><circle cx="65" cy="66" r="2" fill="#f0e7d8"/>
+              </svg>
+            </figure>
+
+            <!-- deco: standing spines -->
+            <div class="spine-group" aria-hidden="true">
+              <i class="spine" style="--h: 118px; --c: #7e3b47; --c2: #5f2b35;"></i>
+              <i class="spine" style="--h: 108px; --c: #46613f; --c2: #35492f;"></i>
+              <i class="spine spine-wide" style="--h: 124px; --c: #8a4a2c; --c2: #6b3820;"></i>
+            </div>
+
+            <!-- ========== BOOK SLOT 1 — الرياضيات / Mathematics ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-1" data-subject="math"
+                      data-folder-name="الرياضيات">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <!-- TEXT PLACEHOLDER: subject caption -->
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- ========== BOOK SLOT 2 — الفيزياء / Physics ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.18s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-2" data-subject="physics"
+                      data-folder-name="الفيزياء">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- deco: SLEEPING CAT (side view, back to viewer, Zzz) -->
+            <figure class="deco deco-cat" aria-hidden="true">
+              <svg viewBox="0 0 130 74" class="deco-svg">
+                <!-- floating Zzz -->
+                <g class="cat-zzz">
+                  <text class="zzz zzz-1" x="86" y="22">z</text>
+                  <text class="zzz zzz-2" x="98" y="13">z</text>
+                  <text class="zzz zzz-3" x="110" y="6">z</text>
+                </g>
+
+                <!-- tail curling around the body -->
+                <path class="cat-tail" d="M22 66 Q4 64 8 52 Q11 44 20 47"
+                      fill="none" stroke="#a9713f" stroke-width="8" stroke-linecap="round"/>
+
+                <!-- back body: a long sleeping curve, the cat's BACK faces us -->
+                <g class="cat-body">
+                  <path d="M20 68 Q16 44 40 38 Q62 32 84 38 Q104 44 100 68 Z" fill="#c08a54"/>
+                  <!-- haunch -->
+                  <path d="M22 68 Q20 48 38 44 Q52 42 54 68 Z" fill="#b57e48"/>
+                  <!-- fur stripes along the back -->
+                  <path d="M44 39 Q46 46 44 50 M58 37 Q60 45 58 49 M72 39 Q74 46 72 50"
+                        stroke="#a9713f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+                  <!-- head seen from behind: only the back of the head + two ears -->
+                  <path d="M84 40 Q94 26 106 32 Q118 38 114 54 Q110 68 96 68 Q84 66 84 52 Z" fill="#c08a54"/>
+                  <path d="M88 38 L84 22 L100 30 Z" fill="#c08a54"/>
+                  <path d="M108 34 L114 20 L118 36 Z" fill="#c08a54"/>
+                  <path d="M90 34 L88 26 L96 30 Z" fill="#e7b98a" opacity="0.75"/>
+                  <path d="M110 33 L113 26 L115 34 Z" fill="#e7b98a" opacity="0.75"/>
+                  <!-- nape fur tufts -->
+                  <path d="M92 44 Q96 40 100 44 M100 50 Q104 46 108 50"
+                        stroke="#a9713f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                  <!-- front paw tucked forward -->
+                  <ellipse cx="86" cy="68" rx="11" ry="5" fill="#e0b384"/>
+                  <ellipse cx="34" cy="68" rx="10" ry="5" fill="#b57e48"/>
+                </g>
+                <!-- contact shadow so it rests on the shelf -->
+                <ellipse cx="62" cy="70" rx="46" ry="4" fill="#5b3a27" opacity="0.18"/>
+              </svg>
+            </figure>
+
+          </div>
+          <div class="shelf-board" aria-hidden="true"></div>
+        </section>
+
+        <!-- ───────────── SHELF 2 ───────────── -->
+        <section class="shelf-unit" aria-label="رف 2">
+          <div class="shelf-items">
+
+            <!-- ========== BOOK SLOT 3 — العربية / Arabic ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.07s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-3" data-subject="arabic"
+                      data-folder-name="العربية">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- ========== BOOK SLOT 4 — الفرنسية / French ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.26s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-4" data-subject="french"
+                      data-folder-name="الفرنسية">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <div class="spine-group spine-group-lg" aria-hidden="true">
+              <i class="spine" style="--h: 120px; --c: #a8b39a; --c2: #8a9680;"></i>
+              <i class="spine spine-wide" style="--h: 128px; --c: #c99a72; --c2: #a87c56;"></i>
+              <i class="spine" style="--h: 110px; --c: #eee4d2; --c2: #d6c8b0;"></i>
+              <i class="spine" style="--h: 126px; --c: #8d9bb0; --c2: #71809a;"></i>
+              <i class="spine spine-wide" style="--h: 116px; --c: #b56548; --c2: #94502f;"></i>
+              <i class="spine spine-lean" style="--h: 112px; --c: #c9927a; --c2: #a9755e;"></i>
+            </div>
+
+          </div>
+          <div class="shelf-board" aria-hidden="true"></div>
+        </section>
+
+        <!-- ───────────── SHELF 3 ───────────── -->
+        <section class="shelf-unit" aria-label="رف 3">
+          <div class="shelf-items">
+
+            <!-- deco: bust -->
+            <figure class="deco deco-bust" aria-hidden="true">
+              <svg viewBox="0 0 80 112" class="deco-svg">
+                <rect x="22" y="100" width="36" height="12" rx="4" fill="#e8dfd0"/>
+                <rect x="27" y="88" width="26" height="14" rx="3" fill="#efe7d9"/>
+                <path d="M24 88 Q24 70 34 64 L46 64 Q56 70 56 88 Z" fill="#f4ede1"/>
+                <path d="M33 64 Q30 58 31 48 Q32 34 40 32 Q50 30 52 42 Q53 52 48 60 Q46 64 44 65 L36 65 Q34 65 33 64 Z" fill="#f4ede1"/>
+                <path d="M31 46 Q28 34 38 29 Q50 24 54 34 Q57 41 53 44 Q54 36 46 34 Q36 32 34 42 Q33 46 31 46 Z" fill="#e3d8c6"/>
+                <circle cx="54" cy="33" r="6" fill="#e3d8c6"/>
+                <path d="M37 46 Q39 44 42 46" stroke="#b9a98f" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                <path d="M40 52 Q41 54 39 55" stroke="#b9a98f" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+                <path d="M38 59 Q41 60 44 59" stroke="#b9a98f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              </svg>
+            </figure>
+
+            <div class="spine-group" aria-hidden="true">
+              <i class="spine spine-wide" style="--h: 122px; --c: #d8a480; --c2: #b8845f;"></i>
+              <i class="spine" style="--h: 114px; --c: #e8ddc8; --c2: #cfc2a8;"></i>
+            </div>
+
+            <!-- ========== BOOK SLOT 5 — الإنجليزية / English ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.12s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-5" data-subject="english"
+                      data-folder-name="الإنجليزية">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- ========== BOOK SLOT 6 — الإسلامية / Islamic studies ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.32s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-6" data-subject="islamic"
+                      data-folder-name="الإسلامية">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- deco: spinning globe -->
+            <figure class="deco deco-globe" aria-hidden="true">
+              <svg viewBox="0 0 90 106" class="deco-svg">
+                <defs>
+                  <clipPath id="globe-clip">
+                    <circle cx="45" cy="48" r="32"/>
+                  </clipPath>
+                </defs>
+                <rect x="30" y="98" width="30" height="8" rx="4" fill="#4a2e1e"/>
+                <rect x="41" y="86" width="8" height="14" rx="3" fill="#6b4630"/>
+                <path d="M20 78 Q45 106 70 78" fill="none" stroke="#8a6a4a" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="45" cy="48" r="34" fill="#e9ddc8"/>
+                <g clip-path="url(#globe-clip)">
+                  <g class="globe-land">
+                    <path d="M22 32 Q32 24 40 30 Q46 36 38 42 Q28 46 22 40 Z" fill="#a8b39a"/>
+                    <path d="M48 46 Q60 42 64 52 Q64 62 52 62 Q46 56 48 46 Z" fill="#a8b39a"/>
+                    <path d="M28 56 Q36 52 40 60 Q40 70 31 68 Q26 63 28 56 Z" fill="#b5c0a6"/>
+                    <path d="M56 26 Q64 24 68 30 Q66 36 58 34 Q54 30 56 26 Z" fill="#b5c0a6"/>
+                    <path d="M40 70 Q48 68 52 74 Q50 80 42 78 Q38 74 40 70 Z" fill="#a8b39a"/>
+                    <path d="M90 32 Q100 24 108 30 Q114 36 106 42 Q96 46 90 40 Z" fill="#a8b39a"/>
+                    <path d="M116 46 Q128 42 132 52 Q132 62 120 62 Q114 56 116 46 Z" fill="#a8b39a"/>
+                    <path d="M96 56 Q104 52 108 60 Q108 70 99 68 Q94 63 96 56 Z" fill="#b5c0a6"/>
+                    <path d="M124 26 Q132 24 136 30 Q134 36 126 34 Q122 30 124 26 Z" fill="#b5c0a6"/>
+                    <path d="M108 70 Q116 68 120 74 Q118 80 110 78 Q106 74 108 70 Z" fill="#a8b39a"/>
+                  </g>
+                  <path d="M12 40 Q45 32 78 40 M11 56 Q45 64 79 56" fill="none" stroke="#c9b28e" stroke-width="1.8" opacity="0.7"/>
+                </g>
+                <circle cx="45" cy="48" r="34" fill="none" stroke="#c9b28e" stroke-width="2"/>
+                <path d="M45 14 A34 34 0 0 1 45 82 A46 34 0 0 0 45 14 Z" fill="#8a6a4a" opacity="0.10"/>
+              </svg>
+            </figure>
+
+          </div>
+          <div class="shelf-board" aria-hidden="true"></div>
+        </section>
+
+        <!-- ───────────── DESK (bottom shelf with legs) ───────────── -->
+        <section class="shelf-unit shelf-unit-desk" aria-label="طاولة">
+          <div class="shelf-items">
+
+            <!-- deco: vintage camera -->
+            <figure class="deco deco-camera" aria-hidden="true">
+              <svg viewBox="0 0 110 64" class="deco-svg">
+                <rect x="8" y="18" width="94" height="46" rx="10" fill="#6a6f62"/>
+                <rect x="8" y="18" width="94" height="14" rx="7" fill="#7b8172"/>
+                <rect x="30" y="8" width="22" height="14" rx="4" fill="#565b50"/>
+                <circle cx="66" cy="42" r="16" fill="#494e44"/>
+                <circle cx="66" cy="42" r="11" fill="#2f332c"/>
+                <circle cx="62" cy="38" r="3.5" fill="#8d9bb0" opacity="0.8"/>
+                <circle cx="24" cy="42" r="6" fill="#494e44"/>
+                <rect x="86" y="24" width="10" height="6" rx="3" fill="#c9a15a"/>
+              </svg>
+            </figure>
+
+            <!-- ========== BOOK SLOT 7 — العلوم / Science ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.05s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-7" data-subject="science"
+                      data-folder-name="العلوم">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- ========== BOOK SLOT 8 — التاريخ والجغرافيا / History & Geography (ONE book) ========== -->
+            <div class="slot-wrap" style="--lamp-delay: 0.22s;">
+              <span class="shelf-lamp" aria-hidden="true">
+                <svg class="lamp-svg" viewBox="0 0 60 52">
+                  <rect x="21" y="0" width="18" height="7" rx="3.5" class="lamp-mount"/>
+                  <rect x="27.5" y="5" width="5" height="12" rx="2.5" class="lamp-arm"/>
+                  <path d="M11 32 Q11 15 30 15 Q49 15 49 32 Z" class="lamp-shade"/>
+                  <rect x="8" y="30" width="44" height="6" rx="3" class="lamp-rim"/>
+                  <circle cx="30" cy="38" r="12" class="lamp-halo"/>
+                  <circle cx="30" cy="37" r="6.5" class="lamp-bulb"/>
+                </svg>
+              </span>
+              <i class="lamp-beam" aria-hidden="true"></i>
+              <figure class="book-slot" data-slot="slot-8" data-subject="history-geo"
+                      data-folder-name="التاريخ والجغرافيا">
+                <div class="slot-inner">
+                  <div class="slot-fallback" aria-hidden="true">
+                    <svg class="fallback-art" viewBox="0 0 60 80"><use href="#fb-book"/></svg>
+                  </div>
+                  <span class="lamp-pool" aria-hidden="true"></span>
+                </div>
+                <figcaption class="slot-caption" data-placeholder="caption"></figcaption>
+              </figure>
+            </div>
+
+            <!-- deco: framed mushrooms -->
+            <figure class="deco deco-frame" aria-hidden="true">
+              <svg viewBox="0 0 90 104" class="deco-svg">
+                <rect x="6" y="6" width="78" height="98" rx="6" fill="#5d3a24"/>
+                <rect x="14" y="14" width="62" height="82" rx="3" fill="#8f9a7e"/>
+                <path d="M30 44 Q30 30 42 30 Q54 30 54 44 Z" fill="#8a4032"/>
+                <rect x="38" y="44" width="8" height="14" rx="3" fill="#efe4cd"/>
+                <circle cx="36" cy="37" r="2" fill="#efe4cd"/><circle cx="47" cy="35" r="2.4" fill="#efe4cd"/>
+                <path d="M52 74 Q52 64 61 64 Q70 64 70 74 Z" fill="#a2543c"/>
+                <rect x="58" y="74" width="6" height="11" rx="2.5" fill="#efe4cd"/>
+                <path d="M22 82 Q22 75 28 75 Q34 75 34 82 Z" fill="#c9a15a"/>
+                <rect x="26" y="82" width="5" height="9" rx="2" fill="#efe4cd"/>
+              </svg>
+            </figure>
+
+            <!-- deco: bundle of letters -->
+            <figure class="deco deco-letters" aria-hidden="true">
+              <svg viewBox="0 0 110 76" class="deco-svg">
+                <rect x="10" y="58" width="90" height="18" rx="4" fill="#e6d3b8"/>
+                <rect x="14" y="40" width="86" height="18" rx="4" fill="#efe0c8"/>
+                <rect x="12" y="22" width="88" height="18" rx="4" fill="#e6d3b8"/>
+                <rect x="16" y="4"  width="84" height="18" rx="4" fill="#efe0c8"/>
+                <rect x="50" y="0" width="10" height="76" rx="3" fill="#8a4032" opacity="0.9"/>
+                <rect x="0" y="36" width="110" height="10" rx="3" fill="#8a4032" opacity="0.9"/>
+                <circle cx="55" cy="41" r="8" fill="#6d3227"/>
+                <path d="M20 10 h20 M20 28 h24 M20 46 h20 M20 64 h24" stroke="#c9b28e" stroke-width="2.4" stroke-linecap="round"/>
+              </svg>
+            </figure>
+
+          </div>
+          <div class="shelf-board shelf-board-desk" aria-hidden="true">
+            <i class="desk-leg desk-leg-start"></i>
+            <i class="desk-leg desk-leg-end"></i>
+          </div>
+          <div class="rug" aria-hidden="true"></div>
+        </section>
+
+      </main>
+
+      <footer class="room-footer">
+        <!-- TEXT PLACEHOLDER: footer line -->
+        <p class="footer-line" data-placeholder="footer"></p>
+      </footer>
+
+    </div>
+
+    <!-- ============================================================
+         NOT-SUBSCRIBED GLASS BANNER mount (filled by js/app.js)
+         ============================================================ -->
+    <div id="taysir-gate-mount"></div>
+
+    <!-- day/night transition veil -->
+    <div class="night-veil" id="night-veil" aria-hidden="true"></div>
+
+    <!-- shared cartoon fallback art (used when a cover image is not set) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="fb-book" viewBox="0 0 60 80">
+        <rect x="12" y="16" width="36" height="46" rx="4" fill="#e3d3b6"/>
+        <path d="M30 20 Q22 16 14 19 V58 Q22 55 30 59 Z" fill="#f6efe2"/>
+        <path d="M30 20 Q38 16 46 19 V58 Q38 55 30 59 Z" fill="#efe4cd"/>
+        <path d="M30 20 V59" stroke="#c9b28e" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 28 h8 M18 34 h8 M18 40 h6 M34 28 h8 M34 34 h8 M34 40 h6"
+              stroke="#c9b28e" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 66 h20" stroke="#c9b28e" stroke-width="2.4" stroke-linecap="round" opacity="0.6"/>
+      </symbol>
+    </svg>
+</div>
+<!-- /.shelf-root -->
+
+  <!-- config.js FIRST (defines window.TAYSIR_*), then the behaviour script -->
+  <script src="/static/shelf/js/config.js"></script>
+  <script src="/static/shelf/js/app.js"></script>
+</body>
+</html>`

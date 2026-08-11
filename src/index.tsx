@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { spaShell } from './generated/spa-shell'
 import { styleGuidePage } from './pages/styleguide'
 import { libraryPage } from './pages/library'
+import { shelfPage } from './pages/shelf'
 import { adminPage } from './pages/admin'
 import { libraryApi } from './routes/library'
 import { authApi } from './routes/auth'
@@ -98,6 +99,23 @@ app.get('/styleguide', (c) => c.html(styleGuidePage))
 // Library browser (Task 3 deliverable) — dynamic content is fetched
 // client-side from /api/library/* which proxies Google Drive server-side.
 app.get('/library', (c) => c.html(libraryPage))
+
+// Shelf (home) page — merge step 5/10.
+//
+// The cartoon "library room" shelf, adapted from the staged design source in
+// library-src/index.html (see src/pages/shelf.ts for exactly what was adapted).
+// Same shape as /library and /styleguide above: a static server-rendered HTML
+// string handed to c.html(). It has NO server-side gate in this step — the
+// subscription/Drive wiring lands in later steps — so it deliberately does not
+// touch the session, guards or Drive helpers.
+//
+// Its assets are plain static files under public/ (served by the Cloudflare
+// Pages asset layer BEFORE this worker runs, per _routes.json "exclude"):
+//   /static/shelf.css              — isolated skin, scoped under .shelf-root
+//   /static/shelf/js/config.js     — subject list + cover paths (loaded first)
+//   /static/shelf/js/app.js        — shelf behaviour
+//   /static/shelf/covers/*.png     — the 8 book covers
+app.get('/shelf', (c) => c.html(shelfPage))
 
 // Server-side Google Drive API (key + folder id live only in env/secrets)
 app.route('/api/library', libraryApi)
