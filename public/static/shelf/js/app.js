@@ -3,6 +3,11 @@
    - book covers into the 3:4 slots (from js/config.js)
    - each book is WIRED to its subject + future Drive folder
    - NOT-SUBSCRIBED glass banner (glassmorphism) before entering
+     ⚠️ DISPLAY ONLY — merge step 7/10 binds what it SHOWS to the real
+     session (GET /api/auth/me → window.TAYSIR_SESSION, published by
+     src/pages/shelf.ts). It grants nothing: the authoritative gate is
+     server-side (requireActiveSubscriber → 402 SUBSCRIPTION_REQUIRED on
+     /api/library/file/:id/meta|content) and is NOT touched by the shelf.
    - inner book page = cozy shelf scene with plants (EMPTY on purpose)
    - gentle tilt on hover (disabled with reduced motion)
    - dark/light theme with shelf lamps, shared with taysir
@@ -20,8 +25,46 @@
   var FIND       = window.TAYSIR_FIND || function () { return null; };
   var SUB        = window.TAYSIR_SUBSCRIPTION || {};
 
+  /* ------------------------------------------------------------
+     DISPLAY-ONLY subscription read (merge step 7/10).
+
+     ⚠️  This answers "should the glass banner be shown?" — NOTHING
+     more. It is not, and must never be treated as, protection. The
+     real gate is server-side and untouched by the shelf:
+       src/lib/guards.ts → requireActiveSubscriber
+       src/routes/library.ts → gateContent
+         → 402 SUBSCRIPTION_REQUIRED on the file-content routes,
+     re-decided from the validated httpOnly session per request.
+
+     The value ultimately comes from taysir's existing endpoint
+     GET /api/auth/me, published as window.TAYSIR_SESSION by the
+     inline script in src/pages/shelf.ts and read through
+     TAYSIR_SUBSCRIPTION.isSubscribed() in config.js. Deliberately
+     evaluated fresh on every call so that when /me resolves after
+     first paint, the next read already reflects the truth.
+     ------------------------------------------------------------ */
   function isSubscribed() {
     return typeof SUB.isSubscribed === "function" ? !!SUB.isSubscribed() : false;
+  }
+
+  /* Has the server actually answered yet? Used only to avoid acting on
+     the pessimistic pre-answer default while /me is still in flight. */
+  function sessionResolved() {
+    var s = window.TAYSIR_SESSION;
+    return !!(s && typeof s === "object" && s.resolved === true);
+  }
+
+  /* Run `fn` once the real session state is known. If the page never
+     published a session promise (e.g. the shelf markup reused elsewhere
+     without the inline script), fall back to running immediately with
+     whatever the resolver says — which defaults to NOT subscribed. */
+  function whenSessionKnown(fn) {
+    var p = window.TAYSIR_SESSION_READY;
+    if (p && typeof p.then === "function") {
+      p.then(function () { fn(); }, function () { fn(); });
+      return;
+    }
+    fn();
   }
 
   /* ------------------------------------------------------------
@@ -160,7 +203,10 @@
 
     gateMount().appendChild(wrap);
 
-    /* subscribe link — inert unless a URL is configured */
+    /* "اشترك الآن" — a plain link OUT to taysir's real subscription page
+       (TAYSIR_SUBSCRIPTION.subscribeUrl in config.js, now "/subscription").
+       It navigates and nothing else: it grants no access, sets no flag and
+       writes no storage. Still inert if a deployment blanks the URL. */
     var btn = wrap.querySelector("#gate-subscribe");
     if (btn) {
       if (SUB.subscribeUrl) {
@@ -215,6 +261,27 @@
   window.TAYSIR_HIDE_SUBSCRIBE_GATE = closeGate;
 
   /* ------------------------------------------------------------
+     Merge step 7/10 — keep the banner honest after it is painted.
+
+     The banner may already be open when the /api/auth/me answer lands
+     (a subscriber who clicked instantly). When the server confirms
+     entitlement, take the now-wrong banner down. Strictly one-way:
+     a server "not subscribed" is never used to grant anything, and
+     this closes a DECORATION — it opens no content and touches no
+     session. The 402 server gate is unaffected either way.
+     ------------------------------------------------------------ */
+  function syncGateWithSession() {
+    if (!isSubscribed()) return;                 /* still not entitled → leave it */
+    var g = document.getElementById(GATE_ID);
+    if (g && !g.hasAttribute("hidden")) closeGate();
+  }
+
+  function initSessionSync() {
+    document.addEventListener("taysir:session", syncGateWithSession);
+    whenSessionKnown(syncGateWithSession);
+  }
+
+  /* ------------------------------------------------------------
      3) WIRING — each book knows its subject and where it will go.
         A non-subscribed visitor gets the glass banner instead.
      ------------------------------------------------------------ */
@@ -234,7 +301,19 @@
       slot.setAttribute("tabindex", "0");
       slot.setAttribute("aria-label", subject.folderName);
 
+      /* Merge step 7/10: wait for the REAL session before deciding what to
+         PAINT, so a subscriber who clicks during the first few hundred ms
+         does not get a banner that is about to become wrong. This is a
+         display decision only — the server still re-decides access on the
+         file-content routes regardless of what happens here. */
       var go = function () {
+        if (!sessionResolved()) {
+          whenSessionKnown(function () {
+            if (!isSubscribed()) { openGate(slot); return; }
+            window.location.href = FOLDER_URL(subject);
+          });
+          return;
+        }
         if (!isSubscribed()) { openGate(slot); return; }
         window.location.href = FOLDER_URL(subject);
       };
@@ -478,11 +557,20 @@
     var main = document.getElementById("folder-main");
     if (!main) return;
 
-    /* the inner content is library content too → gate it */
-    if (!isSubscribed()) {
+    /* The inner page shows the same DECORATIVE banner. Merge step 7/10:
+       wait for the real /api/auth/me answer first, so a subscriber is not
+       flashed a banner that is immediately wrong, and so a non-subscriber
+       still reliably gets it. Presentational only — `is-gated` is a CSS
+       hook; the actual bytes are still protected server-side by the 402
+       gate on the file-content routes, which this cannot influence. */
+    whenSessionKnown(function () {
+      if (isSubscribed()) {
+        document.body.classList.remove("is-gated");
+        return;
+      }
       document.body.classList.add("is-gated");
       openGate(null);
-    }
+    });
 
     var params  = new URLSearchParams(window.location.search);
     var key     = params.get("subject") || "";
@@ -555,6 +643,7 @@
     initTilt();
     watchReducedMotion();
     initTheme();
+    initSessionSync();   /* merge step 7/10 — banner follows the real session */
     initFolderPage();
   }
 

@@ -41,9 +41,24 @@
 //   html[data-theme="dark"] (attribute value only — no colors touched).
 //   "dark" is the shelf's night scene (lamps on).
 //
-// NOT DONE HERE (later steps): the subscription gate wiring, Drive wiring, and
-// the folder pages — the books still point wherever the staged config.js
-// points them.
+// STEP 7/10 — SUBSCRIPTION BANNER BOUND TO THE REAL SESSION (this step):
+//   The glass banner now DISPLAYS THE TRUTH instead of a guess. An inline
+//   script added just before config.js loads calls taysir's EXISTING endpoint
+//   GET /api/auth/me (src/routes/auth.ts) with credentials:"same-origin" and
+//   publishes window.TAYSIR_SESSION = { authenticated, user, isSubscribed,
+//   resolved }. `isSubscribed` mirrors src/lib/guards.ts →
+//   requireActiveSubscriber exactly: admin, OR subscriber with approved===true.
+//   The insecure "?sub=1 / ?sub=0" URL override was deleted from config.js, and
+//   localStorage["taysir-subscribed"] can no longer unlock anything.
+//
+//   THIS ADDS NO PROTECTION AND WEAKENS NONE. The real gate is untouched and
+//   stays entirely server-side: requireActiveSubscriber → gateContent → 402
+//   SUBSCRIPTION_REQUIRED on /api/library/file/:id/meta|content, re-decided
+//   from the validated httpOnly session on every single request. The banner
+//   only shows/hides and links out to /subscription.
+//
+// NOT DONE HERE (later steps): the Drive wiring and the folder pages — the
+// books still point wherever the staged config.js points them.
 // ============================================================================
 
 export const shelfPage = `<!DOCTYPE html>
@@ -559,6 +574,109 @@ export const shelfPage = `<!DOCTYPE html>
     </svg>
 </div>
 <!-- /.shelf-root -->
+
+  <!-- ============================================================
+       REAL SESSION → window.TAYSIR_SESSION    (merge step 7/10)
+       ------------------------------------------------------------
+       The shelf's glass banner is DECORATION. This block only makes it
+       DISPLAY THE TRUTH; it grants nothing and protects nothing.
+
+       THE REAL PROTECTION IS SERVER-SIDE AND IS NOT TOUCHED HERE:
+       src/lib/guards.ts → requireActiveSubscriber, re-shaped by
+       src/routes/library.ts → gateContent into 402 SUBSCRIPTION_REQUIRED
+       on GET /api/library/file/:id/meta|content. Those routes re-decide
+       access from the validated httpOnly session on every request, so
+       nothing a visitor writes into window.TAYSIR_SESSION from the
+       console can ever produce a single byte of file content.
+
+       SOURCE OF TRUTH FOR THE DISPLAY: taysir's existing endpoint
+       GET /api/auth/me (src/routes/auth.ts) — no new endpoint is
+       introduced. It answers:
+         { ok:true, authenticated:false }                                  guest
+         { ok:true, authenticated:true, user:{ id, email, role, approved } } signed in
+       (/me already refuses to describe a suspended or revoked account:
+       getSessionUser → validateSession returns null for those, so an
+       "authenticated:true" answer implies an active account.)
+
+       ENTITLEMENT MIRRORS requireActiveSubscriber EXACTLY:
+         admin                                → entitled
+         subscriber AND approved === true     → entitled
+         anything else (incl. guests, and a
+         signed-in but not-yet-approved user) → NOT entitled → banner
+       Same rule as the server, computed only so the banner matches what
+       the server would actually do.
+
+       WHY CLIENT-SIDE FETCH RATHER THAN SERVER INJECTION: /shelf is
+       served as a static HTML string (app.get('/shelf', c => c.html(...))
+       in src/index.tsx) with NO session read, deliberately — this step
+       must not add a server-side gate or touch auth. Fetching /me from
+       the page reuses exactly what the React SPA already does
+       (frontend/src/lib/useSession.ts), cookie included via
+       credentials:"same-origin".
+
+       DEFAULT IS PESSIMISTIC: not subscribed until the server says
+       otherwise, so a failed/slow request can only ever SHOW the banner,
+       never hide it.
+
+       MUST RUN BEFORE config.js: config.js reads window.TAYSIR_SESSION.
+       ============================================================ -->
+  <script>
+    (function () {
+      /* taysir's existing session endpoint — do not invent a new one */
+      var SESSION_ENDPOINT = "/api/auth/me";
+
+      /* Pessimistic default: banner shown until the server says otherwise. */
+      window.TAYSIR_SESSION = {
+        authenticated: false,
+        user: null,
+        isSubscribed: false,
+        resolved: false
+      };
+
+      /* Same rule as src/lib/guards.ts → requireActiveSubscriber. */
+      function entitled(user) {
+        if (!user || typeof user !== "object") return false;
+        if (user.role === "admin") return true;
+        return user.role === "subscriber" && user.approved === true;
+      }
+
+      function publish(next) {
+        window.TAYSIR_SESSION = next;
+        /* app.js listens for this to drop the banner once the truth lands */
+        try {
+          document.dispatchEvent(new CustomEvent("taysir:session", { detail: next }));
+        } catch (e) { /* no CustomEvent: app.js still reads the object directly */ }
+      }
+
+      /* Exposed so app.js can await the first answer instead of polling. */
+      window.TAYSIR_SESSION_READY = (function () {
+        if (typeof window.fetch !== "function") return null;
+
+        return window.fetch(SESSION_ENDPOINT, {
+          method: "GET",
+          credentials: "same-origin",          /* httpOnly bac_session cookie */
+          headers: { "Accept": "application/json" }
+        })
+          .then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (data) {
+            var live = !!(data && data.ok === true && data.authenticated === true && data.user);
+            var user = live ? data.user : null;
+            publish({
+              authenticated: live,
+              user: user,
+              isSubscribed: live && entitled(user),
+              resolved: true
+            });
+            return window.TAYSIR_SESSION;
+          })
+          .catch(function () {
+            /* Network blip → stay pessimistic (banner shown). Never unlocks. */
+            publish({ authenticated: false, user: null, isSubscribed: false, resolved: true });
+            return window.TAYSIR_SESSION;
+          });
+      })();
+    })();
+  </script>
 
   <!-- config.js FIRST (defines window.TAYSIR_*), then the behaviour script -->
   <script src="/static/shelf/js/config.js"></script>

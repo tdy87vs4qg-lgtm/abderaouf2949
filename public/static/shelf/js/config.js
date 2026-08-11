@@ -104,23 +104,50 @@ window.TAYSIR_FIND = function (idOrKey) {
 };
 
 /* ============================================================
-   SUBSCRIPTION GATE  /  بوابة الاشتراك
+   SUBSCRIPTION BANNER — DISPLAY STATE  /  بوابة الاشتراك (عرض فقط)
    ------------------------------------------------------------
-   PURE UI LAYER — no auth/session logic is implemented here.
-   It only *reads* the subscription state that the real app
-   already exposes, and decides whether to show the glass banner.
+   ⚠️  THIS IS DECORATION. IT IS NOT A SECURITY BOUNDARY.  ⚠️
+
+   Nothing in this file protects anything, and nothing in it can
+   unlock anything. It only decides whether the glass banner is
+   PAINTED. The real, authoritative gate lives entirely on the
+   server and is not reachable from the browser:
+
+       src/lib/guards.ts  → requireActiveSubscriber
+       src/routes/library.ts → gateContent
+           → 402 { error: "SUBSCRIPTION_REQUIRED" } on
+             GET /api/library/file/:id/meta and .../content
+
+   That gate re-decides access from the validated httpOnly session
+   on EVERY request, so forging any window.TAYSIR_* value from the
+   console changes the picture and nothing else — not one byte of
+   file content is served.
+
+   ── MERGE STEP 7/10 — BOUND TO THE REAL SESSION ───────────────
+   The authoritative signal for the DISPLAY is now the server:
+   src/pages/shelf.ts fetches taysir's existing endpoint
+   GET /api/auth/me (src/routes/auth.ts) before this file runs and
+   publishes window.TAYSIR_SESSION = { authenticated, user,
+   isSubscribed, resolved }, where `isSubscribed` mirrors
+   requireActiveSubscriber exactly (admin, OR subscriber with
+   approved === true).
 
    Resolution order (first answer wins):
      1) window.TAYSIR_IS_SUBSCRIBED            (boolean or function)
-     2) window.TAYSIR_SESSION.isSubscribed / .subscribed / .subscription.active
+     2) window.TAYSIR_SESSION  ← AUTHORITATIVE, set from /api/auth/me
+        (.isSubscribed / .subscribed / .subscription.active)
      3) window.TAYSIR_USER.isSubscribed / .subscribed
-     4) localStorage "taysir-subscribed" === "true"
-     5) URL flag ?sub=1 / ?sub=0                (preview / QA only)
-     6) default → NOT subscribed  (the banner is shown)
+     4) localStorage "taysir-subscribed" — NON-AUTHORITATIVE CACHE.
+        Read ONLY to suppress a banner flash before /me answers, and
+        ONLY while the server has not answered yet. It can never
+        override a server "not subscribed", and a stale "true" is
+        corrected the moment /me resolves.
+     5) default → NOT subscribed  (the banner is shown)
 
-   To plug the real backend in: set window.TAYSIR_IS_SUBSCRIBED
-   (or window.TAYSIR_SESSION) before js/app.js runs. Nothing else
-   in the UI has to change.
+   REMOVED IN STEP 7/10: the "?sub=1 / ?sub=0" URL override. It let
+   ANY visitor hide the banner by editing the address bar, which was
+   pure theatre (it never granted content — the server still returned
+   402) but it made the UI lie. Gone; there is no URL flag any more.
    ============================================================ */
 window.TAYSIR_SUBSCRIPTION = {
   /* pricing shown on the glass banner */
@@ -139,15 +166,29 @@ window.TAYSIR_SUBSCRIPTION = {
     "كل هذا بجودة عالية"
   ],
 
-  /* where the "اشترك الآن" button points (leave empty to keep it inert) */
-  subscribeUrl: "",
+  /* Where the "اشترك الآن" button sends the visitor (merge step 7/10).
+     taysir's real subscription page: the React SPA route "/subscription"
+     (frontend/src/App.tsx <Route path="/subscription">, rendered by
+     frontend/src/pages/SubscriptionPage.tsx, and served on a hard load by
+     src/index.tsx → PUBLIC_SPA_ROUTES). It is a normal public page — it
+     explains the offer and points at the TikTok contact used to arrange
+     the subscription. Navigating there grants nothing by itself. */
+  subscribeUrl: "/subscription",
 
-  /* read-only state resolver — never writes anything */
+  /* ------------------------------------------------------------
+     DISPLAY-STATE RESOLVER — read-only, never writes anything, and
+     NEVER grants access. Its single job is answering "should the
+     glass banner be painted?". The server decides the real thing.
+     ------------------------------------------------------------ */
   isSubscribed: function () {
     var v = window.TAYSIR_IS_SUBSCRIBED;
     if (typeof v === "function") { try { v = v(); } catch (e) { v = undefined; } }
     if (typeof v === "boolean") return v;
 
+    /* AUTHORITATIVE: set by src/pages/shelf.ts from GET /api/auth/me.
+       Once this object exists, it is the answer — no lower-priority
+       source (and in particular no cached localStorage value) may
+       override a server "not subscribed". */
     var s = window.TAYSIR_SESSION;
     if (s && typeof s === "object") {
       if (typeof s.isSubscribed === "boolean") return s.isSubscribed;
@@ -163,17 +204,22 @@ window.TAYSIR_SUBSCRIPTION = {
       if (typeof u.subscribed   === "boolean") return u.subscribed;
     }
 
+    /* NON-AUTHORITATIVE COSMETIC CACHE — anti-flash only.
+       Consulted ONLY when no session object exists at all, i.e. before
+       /api/auth/me has answered (or on a page that never sets one). The
+       moment the server answers, the branch above wins and any stale
+       "true" here is overruled. Because the shelf publishes
+       window.TAYSIR_SESSION synchronously (pessimistically, before the
+       fetch even starts), on /shelf this branch is effectively dead —
+       it cannot be used to unlock the banner there. It never affects
+       content access anywhere: that is the server's 402. */
     try {
-      var ls = localStorage.getItem("taysir-subscribed");
-      if (ls === "true")  return true;
-      if (ls === "false") return false;
+      if (localStorage.getItem("taysir-subscribed") === "true") return true;
     } catch (e) { /* storage unavailable */ }
 
-    try {
-      var q = new URLSearchParams(window.location.search).get("sub");
-      if (q === "1") return true;
-      if (q === "0") return false;
-    } catch (e) { /* ignore */ }
+    /* NOTE: the "?sub=1 / ?sub=0" URL override that used to sit here was
+       REMOVED in merge step 7/10. The banner must not be toggleable from
+       the address bar. */
 
     return false;   /* default: not subscribed → glass banner */
   }
