@@ -81,13 +81,26 @@ window.TAYSIR_SUBJECTS = [
 
 /* ------------------------------------------------------------
    Where a book navigates to when clicked.
-   NOW      : empty shelf page  ->  folder.html?subject=<key>
-   LATER    : same page, but it will receive the Drive folder id too,
-              so the contents page can list that folder's sub-folders.
-   No other file needs editing when the Drives are merged.
+
+   MERGE STEP 9/10 — the base is now a SERVED ROUTE, not a raw file.
+   Was  : "folder.html?subject=<key>&folder=<driveId>"  — the staged design
+          file, which taysir never served (it only ever existed at
+          library-src/folder.html), so every book led to a 404.
+   Now  : "/shelf/folder?subject=<key>&folder=<driveId>" — a real Hono route,
+          app.get('/shelf/folder') in src/index.tsx, rendering
+          src/pages/shelfFolder.ts. Same pattern as /shelf from step 5/10.
+
+   ONLY THE BASE CHANGED. The query string is byte-for-byte the same
+   (?subject=<key> plus &folder=<driveId> when a driveId is set), because
+   js/app.js → initFolderPage() reads both params client-side with
+   URLSearchParams and must keep finding them under the same names.
+
+   The `folder` param already carries the real Drive folder id from step
+   8/10; the page does not consume it yet — listing that folder's contents
+   is step 10/10. No other file needs editing when that lands.
    ------------------------------------------------------------ */
 window.TAYSIR_FOLDER_URL = function (subject) {
-  var url = "folder.html?subject=" + encodeURIComponent(subject.key);
+  var url = "/shelf/folder?subject=" + encodeURIComponent(subject.key);
   if (subject.driveId) {
     url += "&folder=" + encodeURIComponent(subject.driveId);
   }

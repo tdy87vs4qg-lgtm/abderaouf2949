@@ -3,6 +3,7 @@ import { spaShell } from './generated/spa-shell'
 import { styleGuidePage } from './pages/styleguide'
 import { libraryPage } from './pages/library'
 import { shelfPage } from './pages/shelf'
+import { shelfFolderPage } from './pages/shelfFolder'
 import { adminPage } from './pages/admin'
 import { libraryApi } from './routes/library'
 import { authApi } from './routes/auth'
@@ -116,6 +117,46 @@ app.get('/library', (c) => c.html(libraryPage))
 //   /static/shelf/js/app.js        — shelf behaviour
 //   /static/shelf/covers/*.png     — the 8 book covers
 app.get('/shelf', (c) => c.html(shelfPage))
+
+// Subject (folder) page — merge step 9/10.
+//
+// The "inside a book" folder scene, adapted from library-src/folder.html (see
+// src/pages/shelfFolder.ts for exactly what was adapted). Registered with the
+// SAME shape as /shelf directly above: a static server-rendered HTML string
+// handed to c.html(), with NO server-side gate — it does not touch the
+// session, guards or Drive helpers in this step either.
+//
+// This is where a book on /shelf navigates. config.js builds that link in
+// window.TAYSIR_FOLDER_URL, repointed in this step from the raw staged file
+// "folder.html?..." to this route, keeping the query string identical:
+//
+//   /shelf/folder?subject=<key>&folder=<driveId>
+//
+// The two query params are NOT read here. They are read client-side by
+// public/static/shelf/js/app.js → initFolderPage() via URLSearchParams,
+// exactly as the original folder.html expected, so the handler stays a pure
+// static response and Hono ignores the query string when matching.
+//
+// ROUTING: no _redirects / _routes.json change is needed. "/shelf/folder" is a
+// literal Hono path with no wildcard above it, and the SPA shell is only
+// returned for the four exact paths in PUBLIC_SPA_ROUTES ('/', '/login',
+// '/signup', '/subscription') — there is no app.get('*') catch-all — so
+// nothing can swallow this route. The public/_redirects "/* /index.html 200"
+// line is the Pages ASSET-layer fallback, which only runs when neither a
+// static asset nor the worker answers; dist/_routes.json sends every path
+// except /_redirects, /react/* and /static/* to the worker first, so
+// /shelf/folder reaches this handler exactly like /shelf already does.
+//
+// It reuses the SAME static assets as /shelf (served by the Pages asset layer
+// before this worker runs, per the _routes.json "exclude" list):
+//   /static/shelf.css              — isolated skin, scoped under .shelf-root
+//   /static/shelf/js/config.js     — subject list + cover paths (loaded first)
+//   /static/shelf/js/app.js        — shelf + folder behaviour
+//   /static/shelf/covers/*.png     — the 8 book covers
+//
+// NO DRIVE WIRING HERE (step 10/10): window.TAYSIR_FOLDER_ITEMS is still [] in
+// config.js, so the shelves render empty with app.js's Arabic note.
+app.get('/shelf/folder', (c) => c.html(shelfFolderPage))
 
 // Server-side Google Drive API (key + folder id live only in env/secrets)
 app.route('/api/library', libraryApi)
