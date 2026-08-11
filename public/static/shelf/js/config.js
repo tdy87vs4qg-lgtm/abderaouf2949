@@ -26,56 +26,56 @@ window.TAYSIR_SUBJECTS = [
     slot: "slot-1",
     folderName: "الرياضيات",
     cover: "/static/shelf/covers/math.png",
-    driveId: ""                        /* ← Drive folder ID goes here later */
+    driveId: "1v0--1JYVUHwfeX6vvD5rOwjZDhEGjbJb"    /* ← Drive folder ID goes here later */
   },
   {
     key: "physics",
     slot: "slot-2",
     folderName: "الفيزياء",
     cover: "/static/shelf/covers/physics.png",
-    driveId: ""
+    driveId: "1I_cZ14p0YgP_cdv-uBb8lFOI9PwIETOK"
   },
   {
     key: "arabic",
     slot: "slot-3",
     folderName: "العربية",
     cover: "/static/shelf/covers/arabic.png",
-    driveId: ""
+    driveId: "1sgiGHdKWCmAHDUv9BX0VAb-PDBCCXxsu"
   },
   {
     key: "french",
     slot: "slot-4",
     folderName: "الفرنسية",
     cover: "/static/shelf/covers/french.png",
-    driveId: ""
+    driveId: "1dOG4QHOfkr-QkelgtTIe7G_M2-_nwkse"
   },
   {
     key: "english",
     slot: "slot-5",
     folderName: "الإنجليزية",
     cover: "/static/shelf/covers/english.png",
-    driveId: ""
+    driveId: "1Fs5mpTtSqtgi1oVB3aSgbqN5BwCy0XQg"
   },
   {
     key: "islamic",
     slot: "slot-6",
     folderName: "الإسلامية",
     cover: "/static/shelf/covers/islamic.png",
-    driveId: ""
+    driveId: "1d0vHK8aDOJDx-Eo1NwabYS72J_iGFF2c"
   },
   {
     key: "science",
     slot: "slot-7",
     folderName: "العلوم",
     cover: "/static/shelf/covers/science.png",
-    driveId: ""
+    driveId: "1iJ53rw4QrJUUJ7Ay0qEhHIVMzbvfv9xn"
   },
   {
     key: "history-geo",
     slot: "slot-8",
     folderName: "التاريخ والجغرافيا",
     cover: "/static/shelf/covers/history-geo.png",
-    driveId: ""
+    driveId: "1R-oVyB-QAfFAnFsFCd02e5CvRKpOLcFb"
   }
 ];
 
