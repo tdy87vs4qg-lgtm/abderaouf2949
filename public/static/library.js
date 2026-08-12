@@ -338,16 +338,13 @@
       p = FC.getListing('meta:' + id).then(function (hit) {
         if (hit && hit.data && hit.data.id) {
           metaCache[id] = hit.data;
-          // Serve instantly from cache, but still re-check the server gate in
-          // the background: if the session/subscription was revoked, purge the
-          // whole cache so nothing stale can be served afterwards. Never blocks
-          // or disturbs the already-open viewer.
+          // Serve instantly from cache, and refresh the meta in the background.
+          // A failed refresh (expired session, 401/402/403, offline, timeout) is
+          // IGNORED: it must never destroy cached content. Access stays enforced
+          // server-side on every byte request, and the cache is only ever wiped
+          // on an explicit logout or a genuine user-identity change.
           if (!hit.fresh) {
-            fetchMetaNetwork(id).catch(function (err) {
-              if (err && (err.status === 401 || err.status === 402 || err.status === 403)) {
-                FC.clearAll().catch(function () {});
-              }
-            });
+            fetchMetaNetwork(id).catch(function () { /* keep cache intact */ });
           }
           return hit.data;
         }
@@ -410,11 +407,9 @@
       try {
         fetch(directUrl, { credentials: 'same-origin' }).then(function (r) {
           if (!r.ok) {
-            // A hard auth failure means the cache is no longer trustworthy for
-            // this session → drop everything so nothing stale can be served.
-            if (r.status === 401 || r.status === 403) {
-              if (FC && FC.supported) FC.clearAll().catch(function () {});
-            }
+            // Nothing to cache for this attempt. An auth/authorization refusal
+            // (401/402/403) or an expired session is NOT a reason to touch the
+            // already-cached files — they stay exactly where they are.
             return;
           }
           var ct = r.headers.get('content-type') || meta.contentType || 'application/octet-stream';
@@ -451,12 +446,10 @@
       return fetchFresh();
     }).catch(function (err) {
       // If the miss-fetch was refused by the gate, surface it so the viewer can
-      // react (subscribe modal). A hard auth failure (session gone / suspended /
-      // device revoked) also means the cache is no longer trustworthy for this
-      // session → drop everything so nothing stale can be served afterwards.
-      if (err && (err.status === 401 || err.status === 403)) {
-        if (FC && FC.supported) FC.clearAll().catch(function () {});
-      }
+      // react (subscribe modal). The stored cache is deliberately left UNTOUCHED:
+      // a 401/402/403 or an expired session is transient and must never destroy
+      // content the server had already agreed to serve. Access enforcement stays
+      // server-side on every request.
       if (err && (err.status === 401 || err.status === 402 || err.status === 403)) {
         throw err;
       }
@@ -1717,12 +1710,15 @@
 
     if (els.retry) els.retry.addEventListener('click', function () { navigate(state.folder, { replace: true }); });
 
-    // Log out — clear the persistent cache FIRST (so no bytes survive a logout),
-    // then invalidate the session server-side and return to sign-in.
+    // Log out — the ONE explicit user action that wipes the persistent cache
+    // (so no bytes survive a logout). Clear first, then invalidate the session
+    // server-side and return to sign-in.
     if (els.logout) els.logout.addEventListener('click', function () {
       if (els.logout.disabled) return;
       els.logout.disabled = true;
-      var clearCache = (FC && FC.supported) ? FC.clearAll() : Promise.resolve();
+      var clearCache = (FC && FC.supported)
+        ? FC.clearAll('explicit-logout')
+        : Promise.resolve();
       Promise.resolve(clearCache)
         .catch(function () {})
         .then(function () {
@@ -1804,11 +1800,13 @@
     var start = folderFromUrl() || 'root';
     var deepView = viewFromUrl();
 
-    // Bind the persistent cache to the CURRENT session/device identity BEFORE
-    // touching it, so a stale cache from a previous/other session is wiped and
-    // the persistent-listing paint uses the right session key. We key off the
-    // gated /api/auth/me snapshot (user.id only). If the session is
-    // gone (expired / logged out elsewhere) we clear the cache entirely.
+    // Bind the persistent cache to the CURRENT user identity BEFORE touching it,
+    // so the persistent-listing paint uses the right session key. We key off the
+    // gated /api/auth/me snapshot (user.id only). A wipe happens ONLY when a
+    // genuinely DIFFERENT user.id binds. If the session is gone (expired /
+    // logged out elsewhere / /me failed) the cache is simply left UNBOUND — the
+    // stored files are preserved and become available again as soon as the same
+    // user signs back in.
     function startApp() {
       navigate(start, { replace: true });
       // Deep link with ?view=<id> → open the SPA viewer over the folder. Mark it

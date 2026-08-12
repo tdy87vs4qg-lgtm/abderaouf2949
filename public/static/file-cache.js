@@ -20,8 +20,12 @@
      of the key, so a user's cached files survive across browser restarts and
      across approved/role changes — they reopen instantly instead of being
      re-downloaded every session.
-     - The whole cache is cleared only when a genuinely different user.id binds,
-       or on explicit clearAll() (see FileCache.bindSession / FileCache.clearAll).
+     - The whole cache is cleared in EXACTLY two cases: an EXPLICIT user logout
+       (clearAll), or a genuine user-identity change (a different authenticated
+       user.id binds — see FileCache.bindSession). NOTHING else wipes it: HTTP
+       401 / 402 / 403 responses, session expiry, timeouts and network errors
+       leave every stored file untouched, because such failures are frequently
+       transient and losing the whole cache over one is unacceptable.
      - Entries whose `sessionKey` (user.id) does not match the live user are
        ignored and purged, so the cache can never serve content across users.
      - Access enforcement stays on the SERVER: the first fetch of any file/listing
@@ -61,6 +65,20 @@
   var _dbPromise = null;
   var _sessionKey = null;   // active session identity; null = signed-out / unknown
   var _supported = ('indexedDB' in window);
+
+  /* ------------------------------------------------------------------- log
+     Lightweight, non-blocking instrumentation. Every call is wrapped so a
+     missing/!throwing console (or a frozen console in some webviews) can never
+     affect control flow. Prefix is always "[cache]" so the whole cache lifecycle
+     can be filtered in devtools with a single search. */
+  function log() {
+    try {
+      if (typeof console === 'undefined' || !console || !console.log) return;
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift('[cache]');
+      console.log.apply(console, args);
+    } catch (_e) { /* logging must never throw */ }
+  }
 
   // Set of in-flight file-write promises. A write is only removed once its
   // IndexedDB transaction has actually COMMITTED (txDone). flush() awaits these
@@ -190,9 +208,11 @@
   }
 
   /* -------------------------------------------------- session binding / keys
-     The cache is only valid for exactly one live session identity. We persist
-     the active sessionKey in the meta store; if it changes (different user, an
-     approval flip, logout) we wipe everything so no stale bytes survive. */
+     The cache is bound to exactly one STABLE user identity (user.id). We persist
+     the active sessionKey in the meta store; the stored bytes are wiped ONLY
+     when a genuinely DIFFERENT user.id binds (see bindSession) or on an explicit
+     logout (see clearAll). Session expiry, auth/authorization errors (401 / 402 /
+     403), timeouts and network failures NEVER wipe anything. */
   function readStoredSessionKey() {
     return tx(STORE_META, 'readonly').then(function (o) {
       return reqToPromise(o.store.get('session'));
@@ -213,30 +233,40 @@
    * We do NOT clear the cache just because approved/role changed between
    * sessions — the key is now identity-only, so those volatile fields never
    * enter it. The cache is only wiped when the actual user identity changes
-   * (a genuinely different user logs in). Signing out (key === null) leaves the
-   * stored bytes in place but detaches the live session, so getFile() serves
-   * nothing until the same user re-binds. Access on the first fetch is still
-   * enforced server-side, so keeping the cache across sessions is safe.
-   * Returns a promise that resolves when ready.
+   * (a genuinely different user logs in). Signing out / session expiry
+   * (key === null) leaves the stored bytes in place but detaches the live
+   * session, so getFile() serves nothing until the same user re-binds — the
+   * moment they do, their files reopen instantly again. Access on the first
+   * fetch is still enforced server-side, so keeping the cache across sessions
+   * is safe. Returns a promise that resolves when ready.
    */
   function bindSession(key) {
     _sessionKey = key || null;
     if (!_supported) return Promise.resolve();
     if (_sessionKey == null) {
-      // Signed out / unknown identity: detach the live session but keep the
-      // cached bytes intact so the same user gets an instant reopen later.
+      // Signed out / expired / unknown identity: detach the live session but keep
+      // the cached bytes intact so the same user gets an instant reopen later.
+      // This is deliberately NOT a wipe — session expiry must never destroy the
+      // user's cached files.
+      log('session unbound (no wipe: identity unknown / session expired)');
       return Promise.resolve();
     }
     return readStoredSessionKey().then(function (stored) {
       if (stored === _sessionKey) {
         // Same user.id → keep cache exactly as-is.
+        log('session bound to same user, cache kept', { user: _sessionKey });
         return;
       }
-      // A genuinely different user's identity is now bound. Only in this case
-      // do we wipe everything, then record the new identity.
-      return clearAllStores().then(function () {
+      if (stored == null) {
+        // First bind on a fresh/empty store (or right after an explicit logout
+        // wipe): nothing to invalidate, just record the owner.
+        log('session bound (first bind, nothing to invalidate)', { user: _sessionKey });
         return writeStoredSessionKey(_sessionKey);
-      });
+      }
+      // A genuinely DIFFERENT user's identity is now bound. This is the ONLY
+      // implicit wipe: cached content must never cross users.
+      return clearAllStores('user-identity-change: ' + stored + ' -> ' + _sessionKey)
+        .then(function () { return writeStoredSessionKey(_sessionKey); });
     }).catch(function () {});
   }
 
@@ -253,8 +283,15 @@
     return String(user.id);
   }
 
-  /* ----------------------------------------------------------------- clear */
-  function clearAllStores() {
+  /* ----------------------------------------------------------------- clear
+     A full wipe happens in EXACTLY two situations:
+       (a) clearAll('explicit-logout')  — the user pressed "log out";
+       (b) bindSession() detecting a genuinely different authenticated user.id.
+     Nothing else — no HTTP 401 / 402 / 403, no session expiry, no timeout, no
+     network error — is allowed to call this. `reason` is logged so the exact
+     trigger of any wipe is always visible in the console. */
+  function clearAllStores(reason) {
+    log('CLEAR all stores — reason:', reason || 'unspecified');
     if (!_supported) return Promise.resolve();
     return openDb().then(function (db) {
       var t = db.transaction([STORE_FILES, STORE_LISTINGS, STORE_META], 'readwrite');
@@ -265,10 +302,16 @@
     }).catch(function () {});
   }
 
-  /** Public: clear the entire cache (called on logout / invalidation). */
-  function clearAll() {
+  /**
+   * Public: clear the entire cache. ONLY legitimate caller is an explicit user
+   * logout action. Never call this from an error/HTTP-status handler: auth and
+   * authorization failures (401 / 402 / 403), session expiry, timeouts and
+   * network errors must leave the stored files untouched.
+   * @param {string} [reason] trigger description, logged for traceability.
+   */
+  function clearAll(reason) {
     _sessionKey = null;
-    return clearAllStores();
+    return clearAllStores(reason || 'explicit-clearAll');
   }
 
   /* ------------------------------------------------------------- files API */
@@ -282,13 +325,17 @@
    * opportunistically deleted).
    */
   function getFile(id) {
-    if (!_supported || !_sessionKey) return Promise.resolve(null);
+    if (!_supported || !_sessionKey) {
+      log('MISS', id, _supported ? '(no bound session)' : '(indexeddb unsupported)');
+      return Promise.resolve(null);
+    }
     return tx(STORE_FILES, 'readonly').then(function (o) {
       return reqToPromise(o.store.get(id));
     }).then(function (row) {
-      if (!row) return null;
+      if (!row) { log('MISS', id, '(not cached → will fetch from network)'); return null; }
       if (row.sessionKey !== _sessionKey) {
         // Entry belongs to a different user.id → drop it, serve nothing.
+        log('MISS', id, '(entry owned by another user → dropped)');
         deleteFile(id);
         return null;
       }
@@ -298,11 +345,20 @@
       var blob = row.blob;
       var ok = blob && (typeof blob.size !== 'number' || blob.size > 0) &&
                (typeof Blob === 'undefined' || blob instanceof Blob);
-      if (!ok) { deleteFile(id); return null; }
+      if (!ok) {
+        log('MISS', id, '(stored blob unusable → dropped)');
+        deleteFile(id);
+        return null;
+      }
       // Touch savedAt (LRU) without blocking the read path.
       touchFile(id);
+      log('HIT', id, (row.bytes || (blob && blob.size) || 0) + ' bytes (served from local cache)');
       return { blob: blob, contentType: row.contentType, name: row.name };
-    }).catch(function (e) { warnStoreUnavailable(e); return null; });
+    }).catch(function (e) {
+      warnStoreUnavailable(e);
+      log('MISS', id, '(cache read failed → network)');
+      return null;
+    });
   }
 
   function touchFile(id) {
@@ -349,7 +405,10 @@
     if (!_supported || !_sessionKey || !blob) return Promise.resolve();
     var bytes = (blob && typeof blob.size === 'number') ? blob.size : 0;
     // Skip caching absurdly large single files so one item can't blow the budget.
-    if (bytes > MAX_BYTES) return Promise.resolve();
+    if (bytes > MAX_BYTES) {
+      log('WRITE skipped', id, bytes + ' bytes (exceeds cache budget)');
+      return Promise.resolve();
+    }
     var record = {
       id: id,
       sessionKey: _sessionKey,
@@ -367,7 +426,13 @@
     });
     // Track only the durable-write phase for flush(); eviction is pure hygiene.
     trackWrite(p.then(function () {}, function () {}));
-    return p.then(function () { return evictFiles(); }).catch(function (e) { warnStoreUnavailable(e); });
+    return p.then(function () {
+      log('WRITE', id, bytes + ' bytes (stored in local cache)');
+      return evictFiles();
+    }).catch(function (e) {
+      warnStoreUnavailable(e);
+      log('WRITE failed', id, bytes + ' bytes (cache left unchanged)');
+    });
   }
 
   /**
