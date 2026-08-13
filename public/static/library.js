@@ -1052,7 +1052,7 @@
   var ZOOM_MIN = 0.5, ZOOM_MAX = 4, ZOOM_STEP = 0.25;
 
   var PDFJS_VERSION = '3.11.174';
-  var PDFJS_BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@' + PDFJS_VERSION + '/build/';
+  var PDFJS_BASE = '/static/vendor/pdfjs/' + PDFJS_VERSION + '/';
 
   function loadPdfJs() {
     if (_pdfjs) return Promise.resolve(_pdfjs);

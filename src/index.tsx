@@ -345,13 +345,13 @@ app.get('/library/view/:id', async (c) => {
   </div>
   ${
     kind === 'pdf'
-      ? `<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+      ? `<script src="/static/vendor/pdfjs/3.11.174/pdf.min.js"></script>
   <script>
   (function () {
     var host = document.getElementById('viewer-pdf');
     if (!host || !window.pdfjsLib) { return; }
     var src = host.getAttribute('data-src');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/3.11.174/pdf.worker.min.js';
     var doc = null, pages = [], fit = 1, factor = 1, isFit = true;
     function fitScale() {
       if (!pages.length || !pages[0].base) return 1;
