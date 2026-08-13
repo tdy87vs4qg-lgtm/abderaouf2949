@@ -398,14 +398,18 @@
       // gated endpoint, exactly as before.
       return Promise.resolve(directUrl);
     }
-    // Miss path → the viewer streams from `directUrl` immediately, and we warm
-    // the persistent cache behind it. The background fetch pulls the FULL bytes
-    // into a Blob (so the whole file is available for the cache, not just a
-    // streamed range) and writes them to IndexedDB. The write is registered as a
-    // PENDING WRITE inside FileCache.putFile and flushed on
-    // pagehide/visibilitychange (see the unload hook below), so a file opened
-    // once is durably cached even if the user closes the tab immediately — the
-    // core "opens instantly next time, forever" guarantee.
+    // Miss path — SINGLE-DOWNLOAD strategy per viewer kind (the old code always
+    // ran a SECOND full background fetch purely to feed the cache, so every
+    // file's bytes travelled twice; on iPhone the tab was often suspended
+    // before that second download finished, so nothing got cached at all):
+    //   • pdf   → stream from the gated URL (Range/206 kept intact); after the
+    //             document loads, renderPdf() harvests the bytes PDF.js
+    //             ALREADY downloaded via doc.getData() and writes those to the
+    //             cache — one download total, no extra request.
+    //   • image/text → fetch the full bytes ONCE, cache them, and render from
+    //             the very same bytes via an in-memory Blob URL.
+    //   • video/other → stream from the gated URL (seeking needs live Range
+    //             requests) and warm the cache in the background as before.
     function cacheInBackground() {
       // Fire-and-forget: nothing here is awaited by the caller, so first paint
       // is never delayed by it.
@@ -427,9 +431,41 @@
       } catch (e) { /* never let cache warming break the open */ }
     }
 
-    // Cache miss → return the streamable gated URL NOW, warm the cache after.
+    // Fetch the FULL bytes once, cache them, and render from those same bytes.
+    // Used for images/text where full-download-then-paint is imperceptible.
+    function fetchOnceAndCache() {
+      return fetch(directUrl, { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) {
+          var err = new Error('HTTP ' + r.status);
+          err.status = r.status;
+          throw err;
+        }
+        var ct = r.headers.get('content-type') || meta.contentType || 'application/octet-stream';
+        return r.blob().then(function (blob) {
+          if (blob && blob.size > 0) {
+            FC.putFile(id, blob, ct, meta.name).catch(function () {});
+            try {
+              var u = URL.createObjectURL(blob);
+              if (u) return trackBlobUrl(u);
+            } catch (e) { /* fall back to streaming below */ }
+          }
+          return directUrl;
+        });
+      });
+    }
+
     function fetchFresh() {
-      cacheInBackground();
+      if (meta.viewerKind === 'image' || meta.viewerKind === 'text') {
+        return fetchOnceAndCache().catch(function (err) {
+          // Surface gate refusals; anything transient degrades to streaming.
+          if (err && (err.status === 401 || err.status === 402 || err.status === 403)) throw err;
+          return directUrl;
+        });
+      }
+      // video / other kinds: stream now, warm the cache in the background.
+      // PDFs: no extra fetch AT ALL — renderPdf() harvests PDF.js's own
+      // download via doc.getData(), so the bytes travel exactly once.
+      if (meta.viewerKind !== 'pdf') cacheInBackground();
       return directUrl;
     }
 
@@ -445,10 +481,10 @@
         } catch (e) { /* unreadable stored blob → treat as a miss */ }
         if (FC.removeFile) FC.removeFile(id).catch(function () {});
       }
-      return fetchFresh();
+      return Promise.resolve(fetchFresh());
     }, function () {
       // IndexedDB read failed outright → behave as a plain cache miss.
-      return fetchFresh();
+      return Promise.resolve(fetchFresh());
     }).catch(function (err) {
       // If the miss-fetch was refused by the gate, surface it so the viewer can
       // react (subscribe modal). The stored cache is deliberately left UNTOUCHED:
@@ -1093,6 +1129,24 @@
       _zoomKind = 'pdf';
       _zoomFit = true;
       _zoomFactor = 1;
+
+      // SINGLE-DOWNLOAD cache warm: when the document was streamed from the
+      // network (not from a cached blob), harvest the bytes PDF.js has ALREADY
+      // downloaded (doc.getData() resolves once its own progressive download
+      // completes — zero additional requests) and persist them. This replaces
+      // the old second full-file background fetch, halving bandwidth per open.
+      // Best-effort: a viewer closed before the download finishes simply skips
+      // the cache write for this open (identical to an aborted fetch before).
+      if (FC && FC.supported && !meta.sample && url.indexOf('blob:') !== 0) {
+        try {
+          doc.getData().then(function (u8) {
+            if (u8 && u8.length) {
+              var blob = new Blob([u8], { type: 'application/pdf' });
+              FC.putFile(meta.id, blob, 'application/pdf', meta.name).catch(function () {});
+            }
+          }).catch(function () { /* doc destroyed early → no cache this open */ });
+        } catch (e) { /* cache warming must never break rendering */ }
+      }
 
       var container = document.createElement('div');
       container.className = 'gd-pdf-scroll';
@@ -1820,21 +1874,51 @@
     }
 
     if (FC && FC.supported) {
-      fetch('/api/auth/me', { credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var user = (data && data.authenticated && data.user) ? data.user : null;
-          var key = user ? FC.deriveKey(user) : null;
-          return FC.bindSession(key).then(function () {
-            // Bind succeeded → ask (once) for persistent storage so the cached
-            // bytes survive storage pressure. Fire-and-forget: the result is
-            // only logged, so a denial/unsupported browser is a no-op and can
-            // never block or delay startApp() below.
-            if (key) requestPersistentStorage();
+      // 1. OPTIMISTIC PRE-BIND (no network): adopt the session key persisted in
+      //    the cache's own meta store. It was only ever written after a genuine
+      //    server-authenticated bind, so re-adopting it lets cached listings
+      //    AND files serve instantly — even offline, even if /api/auth/me is
+      //    slow or briefly failing. Previously the whole cache stayed DEAD
+      //    (every getFile() → MISS) until /me answered, which is exactly why a
+      //    flaky first request nuked the "instant reopen" experience on iOS.
+      var preBind = (FC.bindStoredSession ? FC.bindStoredSession() : Promise.resolve(null))
+        .catch(function () { return null; });
+      preBind.then(function (storedKey) {
+        if (storedKey) requestPersistentStorage();
+        startApp();
+        // 2. BACKGROUND RECONCILIATION with the server. Outcomes:
+        //    • authenticated as same user  → no-op (cache kept).
+        //    • authenticated as DIFFERENT user → bindSession wipes (security).
+        //    • explicit "authenticated:false" → detach (bytes kept, no wipe).
+        //    • network error / 5xx / malformed → IGNORED: the optimistic bind
+        //      stands, because a transient failure must never disable or wipe
+        //      the cache (and must never look like a logout).
+        fetch('/api/auth/me', { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('me HTTP ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok !== true) {
+              try { console.log('[auth] /me malformed → keeping optimistic cache bind'); } catch (e) {}
+              return;
+            }
+            if (data.authenticated && data.user) {
+              var key = FC.deriveKey(data.user);
+              try { console.log('[auth] /me authenticated user=' + (data.user.id || '?') + ' → bind'); } catch (e) {}
+              return FC.bindSession(key).then(function () {
+                if (key) requestPersistentStorage();
+              });
+            }
+            // The server EXPLICITLY says there is no session. Detach (serve
+            // nothing until the same user signs back in) — the bytes are kept.
+            try { console.log('[auth] /me authenticated:false → detach cache (bytes kept)'); } catch (e) {}
+            return FC.bindSession(null);
+          })
+          .catch(function (e) {
+            try { console.log('[auth] /me failed (' + (e && e.message) + ') → keeping optimistic bind'); } catch (e2) {}
           });
-        })
-        .catch(function () { /* cache stays unbound → simply no persistence */ })
-        .then(startApp, startApp);
+      });
     } else {
       startApp();
     }
