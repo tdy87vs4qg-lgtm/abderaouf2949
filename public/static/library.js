@@ -84,6 +84,11 @@
   // Worker already agreed to serve (the first open of any file still goes
   // through the server-side auth/subscription/device gate).
   var FC = window.FileCache || null;
+  // Ask the browser ONCE per page-session to mark our origin storage as
+  // persistent, so the IndexedDB file cache is not silently evicted under
+  // storage pressure. Purely advisory: a denial (or an unsupported browser)
+  // changes nothing — it never blocks, delays or alters any behaviour.
+  var _persistRequested = false;
   // Blob object URLs held by the viewer, tracked per "generation": the CURRENT
   // open owns its URLs; when a new open starts the previous generation is only
   // RETIRED, and revoked strictly AFTER the new content is mounted. A fresh
@@ -1820,12 +1825,35 @@
         .then(function (data) {
           var user = (data && data.authenticated && data.user) ? data.user : null;
           var key = user ? FC.deriveKey(user) : null;
-          return FC.bindSession(key);
+          return FC.bindSession(key).then(function () {
+            // Bind succeeded → ask (once) for persistent storage so the cached
+            // bytes survive storage pressure. Fire-and-forget: the result is
+            // only logged, so a denial/unsupported browser is a no-op and can
+            // never block or delay startApp() below.
+            if (key) requestPersistentStorage();
+          });
         })
         .catch(function () { /* cache stays unbound → simply no persistence */ })
         .then(startApp, startApp);
     } else {
       startApp();
+    }
+
+    // Fire-and-forget: requested once, never awaited by any caller.
+    function requestPersistentStorage() {
+      if (_persistRequested) return;
+      _persistRequested = true;
+      try {
+        if (navigator.storage && typeof navigator.storage.persist === 'function') {
+          navigator.storage.persist().then(function (granted) {
+            console.log('[cache] persistent storage granted:', granted);
+          }, function (e) {
+            console.log('[cache] persist() failed:', e);
+          });
+        }
+      } catch (e) {
+        console.log('[cache] persist() failed:', e);
+      }
     }
 
     if (lockedHintFromUrl()) {
