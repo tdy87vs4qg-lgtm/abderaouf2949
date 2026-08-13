@@ -38,7 +38,15 @@
 
    STORAGE HYGIENE
    ---------------
-   • LRU-ish eviction by count + total bytes so device storage never fills up.
+   • Two SEPARATE size limits: a PER-FILE cap (MAX_FILE_BYTES) and a WHOLE-CACHE
+     budget (MAX_TOTAL_BYTES). They used to be one constant, which meant a single
+     large file consumed the entire budget and evicted everything else. The total
+     budget is additionally clamped to the device's real quota via
+     navigator.storage.estimate(), so iOS Safari's small quota is respected while
+     Android/desktop get to use much more space.
+   • LRU eviction (oldest `savedAt` first, refreshed on every cache hit) runs
+     until BOTH the entry-count cap and the effective byte budget are satisfied,
+     so device storage never fills up.
    • Folder listings are cached separately (tiny) with a short freshness window;
      files are cached with their content-type so the viewer can rebuild a Blob.
 
@@ -59,9 +67,24 @@
   var STORE_LISTINGS = 'listings'; // { key, sessionKey, data, savedAt }
   var STORE_META = 'meta';         // { key:'session', value:<sessionKey> }
 
-  // Eviction budget for cached file bytes (folder listings are tiny + separate).
-  var MAX_FILES = 60;                       // keep at most N recent files
-  var MAX_BYTES = 120 * 1024 * 1024;        // ~120 MB of cached file bytes
+  /* --------------------------------------------------------- size budgets
+     TWO DISTINCT limits — conflating them was a real bug: a single 100 MB file
+     used to consume the whole cache budget and evict every other file, so
+     students who opened one large document lost every small one.
+
+       • MAX_FILE_BYTES  — per-file cap. A single file larger than this is never
+                           cached at all (it would be pointless churn).
+       • MAX_TOTAL_BYTES — ceiling for the SUM of all cached file bytes, i.e.
+                           the whole-cache budget. Deliberately much larger than
+                           the per-file cap so several large files can coexist.
+       • MAX_FILES       — secondary cap on the entry COUNT (files may now be
+                           smaller on average, so this is generous).
+
+     The effective total budget is additionally clamped at runtime to what the
+     device actually offers (see initStorageBudget / navigator.storage.estimate). */
+  var MAX_FILE_BYTES  = 150 * 1024 * 1024;         // ~150 MB per single file
+  var MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024;    // ~2 GB whole-cache budget
+  var MAX_FILES = 200;                             // keep at most N recent files
   // Folder listings are cheap; keep a generous recent set.
   var MAX_LISTINGS = 400;
   // How long a cached listing is served before we treat it as stale and refresh
@@ -85,6 +108,87 @@
       console.log.apply(console, args);
     } catch (_e) { /* logging must never throw */ }
   }
+
+  /* ------------------------------------------------- adaptive total budget
+     MAX_TOTAL_BYTES is only an UPPER bound. The real limit is whatever the
+     browser is willing to give this origin, which differs wildly: iOS Safari
+     hands out a small quota, while Android Chrome / desktop typically offer
+     many GB. Trying to store more than the quota just produces
+     QuotaExceededError write failures, so we probe the quota once (best effort)
+     via navigator.storage.estimate() and clamp the budget to it.
+
+       effective = min(MAX_TOTAL_BYTES, floor(quota * 0.8) - headroom_from_usage)
+
+     * quota * 0.8 leaves 20 % of the origin quota free so the browser never
+       evicts our whole database under pressure.
+     * `usage` includes bytes we do NOT control (the SPA shell, listings, other
+       stores). We subtract that portion as HEADROOM so our file budget is what
+       is genuinely still available to us, rather than double-counting it.
+
+     Everything here is wrapped: estimate() may be missing, may reject, or may
+     report nonsense — in every such case we silently keep MAX_TOTAL_BYTES. */
+  var _effectiveTotalBytes = MAX_TOTAL_BYTES;   // resolved budget actually enforced
+  var _budgetProbe = null;                      // single in-flight probe promise
+
+  function effectiveTotalBytes() { return _effectiveTotalBytes; }
+
+  function initStorageBudget() {
+    if (_budgetProbe) return _budgetProbe;
+    _budgetProbe = new Promise(function (resolve) {
+      var est = null;
+      try {
+        if (typeof navigator !== 'undefined' && navigator && navigator.storage &&
+            typeof navigator.storage.estimate === 'function') {
+          est = navigator.storage.estimate();
+        }
+      } catch (_e) { est = null; }
+
+      if (!est || typeof est.then !== 'function') {
+        // Storage API unavailable (older Safari / webview) → keep the default.
+        log('effective total budget: ' + _effectiveTotalBytes +
+            ' (quota=unknown, usage=unknown — storage.estimate() unavailable)');
+        resolve(_effectiveTotalBytes);
+        return;
+      }
+
+      est.then(function (info) {
+        var quota = (info && typeof info.quota === 'number' && isFinite(info.quota) && info.quota > 0)
+          ? info.quota : 0;
+        var usage = (info && typeof info.usage === 'number' && isFinite(info.usage) && info.usage > 0)
+          ? info.usage : 0;
+        if (quota > 0) {
+          // 80 % of the quota, minus whatever the origin already occupies.
+          var allowed = Math.floor(quota * 0.8) - usage;
+          if (allowed > 0) {
+            _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, allowed);
+            // Never end up with a budget so small that not even one file could
+            // ever be cached: keep at least the per-file cap when the quota
+            // itself can accommodate it.
+            if (_effectiveTotalBytes < MAX_FILE_BYTES && quota > MAX_FILE_BYTES) {
+              _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, MAX_FILE_BYTES);
+            }
+          } else {
+            // Origin is already at/over 80 % of its quota. Fall back to the
+            // per-file cap so a single fresh file can still displace old ones.
+            _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, MAX_FILE_BYTES);
+          }
+        }
+        log('effective total budget: ' + _effectiveTotalBytes +
+            ' (quota=' + (quota || 'unknown') + ', usage=' + (usage || 0) + ')');
+        resolve(_effectiveTotalBytes);
+      }, function (e) {
+        log('effective total budget: ' + _effectiveTotalBytes +
+            ' (quota=unknown, usage=unknown — storage.estimate() failed)', e);
+        resolve(_effectiveTotalBytes);
+      });
+    }).catch(function () { return _effectiveTotalBytes; });
+    return _budgetProbe;
+  }
+
+  // Probe once at module init; never awaited by any caller, so a slow/hostile
+  // Storage API can never delay a read or a write. Until it settles the default
+  // MAX_TOTAL_BYTES is used, which is safe (eviction simply runs again later).
+  try { initStorageBudget(); } catch (_e) { /* must never throw */ }
 
   // Set of in-flight file-write promises. A write is only removed once its
   // IndexedDB transaction has actually COMMITTED (txDone). flush() awaits these
@@ -394,16 +498,31 @@
    * if the user immediately closes or backgrounds the browser — this is what
    * makes "opened once → opens instantly forever" actually hold on mobile.
    *
-   * Large blobs are handled explicitly: anything above the whole-cache byte
-   * budget is skipped (one file must not evict the entire cache), and a stored
-   * blob is materialised so IndexedDB owns its own copy of the bytes.
+   * Large blobs are handled explicitly, with the PER-FILE cap kept strictly
+   * separate from the whole-cache budget:
+   *   • bytes > MAX_FILE_BYTES              → never cached (single file too big).
+   *   • bytes > effective total budget      → cannot fit even with an empty
+   *                                           cache → skipped.
+   *   • otherwise                           → written, then the eviction pass
+   *                                           removes OLDER entries until the
+   *                                           total is back under budget, so a
+   *                                           large file no longer wipes the
+   *                                           cache and small files coexist
+   *                                           with it.
    */
   function putFile(id, blob, contentType, name) {
     if (!_supported || !_sessionKey || !blob) return Promise.resolve();
     var bytes = (blob && typeof blob.size === 'number') ? blob.size : 0;
-    // Skip caching absurdly large single files so one item can't blow the budget.
-    if (bytes > MAX_BYTES) {
-      log('WRITE skipped', id, bytes + ' bytes (exceeds cache budget)');
+    // (1) PER-FILE cap: a single file above this is never worth caching.
+    if (bytes > MAX_FILE_BYTES) {
+      log('WRITE skipped', id, bytes + ' bytes (exceeds per-file cap ' + MAX_FILE_BYTES + ')');
+      return Promise.resolve();
+    }
+    // (2) WHOLE-CACHE budget: if the file alone cannot fit even after evicting
+    //     every other entry, storing it would only trash the cache for nothing.
+    if (bytes > effectiveTotalBytes()) {
+      log('WRITE skipped (too large for budget)', id,
+          bytes + ' bytes > total budget ' + effectiveTotalBytes());
       return Promise.resolve();
     }
     var record = {
@@ -448,30 +567,57 @@
     return Promise.race([settleAll, guard]);
   }
 
-  /** Evict oldest files until within MAX_FILES and MAX_BYTES. */
+  /**
+   * Evict OLDEST-FIRST (LRU by `savedAt`, which getFile() touches on every hit)
+   * until BOTH caps hold:
+   *     count      <= MAX_FILES                (secondary, entry-count cap)
+   *     totalBytes <= effectiveTotalBytes()    (primary, whole-cache budget)
+   *
+   * A newly written large file that fits under MAX_FILE_BYTES but pushes the
+   * total over budget therefore makes room by dropping the OLDEST entries —
+   * it is never itself the reason the cache is wiped, and it is never skipped
+   * here (putFile already refused anything that could not possibly fit).
+   */
   function evictFiles() {
     return tx(STORE_FILES, 'readonly').then(function (o) {
       return reqToPromise(o.store.getAll());
     }).then(function (rows) {
       if (!rows || !rows.length) return;
+      var budget = effectiveTotalBytes();
       // Only ever keep the current session's rows accounted; drop foreign ones.
       rows.sort(function (a, b) { return (a.savedAt || 0) - (b.savedAt || 0); }); // oldest first
       var totalBytes = 0, i;
       for (i = 0; i < rows.length; i++) totalBytes += (rows[i].bytes || 0);
       var toDelete = [];
+      var freedBytes = 0;
       var count = rows.length;
-      // Evict oldest while over either budget.
+      var overCount = count > MAX_FILES;
+      var overBytes = totalBytes > budget;
+      // Evict oldest while over EITHER cap; stop as soon as both are satisfied.
       i = 0;
-      while ((count > MAX_FILES || totalBytes > MAX_BYTES) && i < rows.length) {
-        toDelete.push(rows[i].id);
-        totalBytes -= (rows[i].bytes || 0);
+      while ((count > MAX_FILES || totalBytes > budget) && i < rows.length) {
+        var row = rows[i];
+        var rowBytes = (row.bytes || 0);
+        var reason = (count > MAX_FILES)
+          ? ('count ' + count + ' > MAX_FILES ' + MAX_FILES)
+          : ('total ' + totalBytes + ' > budget ' + budget);
+        toDelete.push(row.id);
+        freedBytes += rowBytes;
+        totalBytes -= rowBytes;
         count--;
         i++;
+        log('EVICT', row.id, 'freed ' + rowBytes + ' bytes (oldest-first, reason: ' + reason + ')');
       }
       if (!toDelete.length) return;
       return tx(STORE_FILES, 'readwrite').then(function (o) {
         for (var j = 0; j < toDelete.length; j++) o.store.delete(toDelete[j]);
         return txDone(o.tx);
+      }).then(function () {
+        log('EVICT done: removed ' + toDelete.length + ' entr' +
+            (toDelete.length === 1 ? 'y' : 'ies') + ', freed ' + freedBytes +
+            ' bytes, now ' + count + ' file(s) / ' + totalBytes + ' bytes' +
+            ' (caps: MAX_FILES=' + MAX_FILES + ', budget=' + budget +
+            ', triggered by: ' + (overCount && overBytes ? 'count+bytes' : (overCount ? 'count' : 'bytes')) + ')');
       });
     }).catch(function () {});
   }
