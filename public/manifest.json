@@ -1,0 +1,15 @@
+{
+  "name": "تيسير",
+  "short_name": "تيسير",
+  "start_url": "/library",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#06101c",
+  "theme_color": "#07111f",
+  "icons": [
+    { "src": "/react/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

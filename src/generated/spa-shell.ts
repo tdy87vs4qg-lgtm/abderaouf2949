@@ -8,6 +8,7 @@ export const spaShell = `<!doctype html>
     <meta name="theme-color" content="#07111f" />
     <meta name="description" content="تيسير — منصّتك التعليمية المتكاملة للتفوق في البكالوريا." />
     <link rel="icon" type="image/svg+xml" href="/react/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
     <title>تيسير | لأننا نؤمن أن خلف كل تفوقٍ حلمٌ يستحق الدعم</title>
     <script>
       /* Apply the saved (or OS-preferred) theme before paint to avoid a flash
