@@ -1882,4 +1882,18 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+
+  /* ------------------------------------------------ service worker (SW-1c)
+     Registers the shell-only Service Worker so /library can paint offline.
+     Deliberately fire-and-forget and registered on `load` so it never
+     competes with first paint or the initial API calls. Any failure
+     (unsupported browser, insecure origin, blocked registration) is logged
+     and otherwise harmless — the page keeps working exactly as before. */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/service-worker.js').then(function (reg) {
+        console.log('[sw] registered, scope:', reg.scope);
+      }, function (e) { console.log('[sw] registration failed:', e); });
+    });
+  }
 })();
