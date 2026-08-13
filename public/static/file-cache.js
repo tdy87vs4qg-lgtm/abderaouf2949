@@ -117,13 +117,16 @@
      QuotaExceededError write failures, so we probe the quota once (best effort)
      via navigator.storage.estimate() and clamp the budget to it.
 
-       effective = min(MAX_TOTAL_BYTES, floor(quota * 0.8) - headroom_from_usage)
+       effective = max(MAX_FILE_BYTES, min(MAX_TOTAL_BYTES, floor(quota * 0.8)))
 
      * quota * 0.8 leaves 20 % of the origin quota free so the browser never
        evicts our whole database under pressure.
-     * `usage` includes bytes we do NOT control (the SPA shell, listings, other
-       stores). We subtract that portion as HEADROOM so our file budget is what
-       is genuinely still available to us, rather than double-counting it.
+     * `usage` is NOT subtracted. Most of `usage` is our OWN cached files, so
+       subtracting it double-counted them: every probe shrank the budget again
+       (a ratchet), which on iOS Safari's small quota collapsed it to 1-2 MB and
+       made the cache evict files milliseconds after writing them.
+     * The result is floored at MAX_FILE_BYTES so any single file the per-file
+       cap allows can always be stored, on every device.
 
      Everything here is wrapped: estimate() may be missing, may reject, or may
      report nonsense — in every such case we silently keep MAX_TOTAL_BYTES. */
@@ -157,19 +160,19 @@
         var usage = (info && typeof info.usage === 'number' && isFinite(info.usage) && info.usage > 0)
           ? info.usage : 0;
         if (quota > 0) {
-          // 80 % of the quota, minus whatever the origin already occupies.
-          var allowed = Math.floor(quota * 0.8) - usage;
-          if (allowed > 0) {
-            _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, allowed);
-            // Never end up with a budget so small that not even one file could
-            // ever be cached: keep at least the per-file cap when the quota
-            // itself can accommodate it.
-            if (_effectiveTotalBytes < MAX_FILE_BYTES && quota > MAX_FILE_BYTES) {
-              _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, MAX_FILE_BYTES);
-            }
-          } else {
-            // Origin is already at/over 80 % of its quota. Fall back to the
-            // per-file cap so a single fresh file can still displace old ones.
+          // 80 % of the quota. `usage` is deliberately NOT subtracted: most of
+          // it IS our own cached files, so subtracting it double-counted them
+          // and made the budget ratchet monotonically downwards on every probe
+          // (collapsing to 1-2 MB on iOS Safari, where the quota is small).
+          // Eviction already enforces the total, so the budget must stay a
+          // stable function of the quota alone.
+          var allowed = Math.floor(quota * 0.8);
+          _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, allowed);
+          // Never end up with a budget so small that not even one allowed file
+          // could ever be cached. This floor is UNCONDITIONAL — the old
+          // `quota > MAX_FILE_BYTES` guard never fired on iOS (small quota),
+          // which is exactly where the collapse needed rescuing.
+          if (_effectiveTotalBytes < MAX_FILE_BYTES) {
             _effectiveTotalBytes = Math.min(MAX_TOTAL_BYTES, MAX_FILE_BYTES);
           }
         }
@@ -544,7 +547,9 @@
     trackWrite(p.then(function () {}, function () {}));
     return p.then(function () {
       log('WRITE', id, bytes + ' bytes (stored in local cache)');
-      return evictFiles();
+      // Pass the id we just wrote so the eviction pass can never delete the
+      // file the user is currently viewing.
+      return evictFiles(id);
     }).catch(function (e) {
       warnStoreUnavailable(e);
       log('WRITE failed', id, bytes + ' bytes (cache left unchanged)');
@@ -578,7 +583,7 @@
    * it is never itself the reason the cache is wiped, and it is never skipped
    * here (putFile already refused anything that could not possibly fit).
    */
-  function evictFiles() {
+  function evictFiles(protectId) {
     return tx(STORE_FILES, 'readonly').then(function (o) {
       return reqToPromise(o.store.getAll());
     }).then(function (rows) {
@@ -595,9 +600,20 @@
       var overBytes = totalBytes > budget;
       // Evict oldest while over EITHER cap; stop as soon as both are satisfied.
       i = 0;
+      // The newest row is never a sensible eviction target either: it is the
+      // file the user just opened (LRU order makes it last).
+      var newestId = rows.length ? rows[rows.length - 1].id : null;
       while ((count > MAX_FILES || totalBytes > budget) && i < rows.length) {
         var row = rows[i];
         var rowBytes = (row.bytes || 0);
+        // NEVER evict the entry that was just written (nor the most recently
+        // saved row): deleting it is what made a freshly opened file vanish
+        // milliseconds after being cached.
+        if ((protectId != null && row.id === protectId) || row.id === newestId) {
+          log('eviction: keeping just-written ' + row.id);
+          i++;
+          continue;
+        }
         var reason = (count > MAX_FILES)
           ? ('count ' + count + ' > MAX_FILES ' + MAX_FILES)
           : ('total ' + totalBytes + ' > budget ' + budget);
