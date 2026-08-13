@@ -48,7 +48,13 @@
   'use strict';
 
   var DB_NAME = 'taysir-lib-cache';
-  var DB_VERSION = 2;
+  // NOTE: bumped 2 → 3 to repair databases left in a partial state (missing one
+  // of the three stores) by an earlier build. The upgrade handler below creates
+  // every store idempotently, so a plain versioned upgrade fully heals such a
+  // DB. The DB is NEVER opened at a version above this constant — doing so would
+  // leave the on-disk DB ahead of the version later loads request, making every
+  // subsequent open fail permanently with VersionError.
+  var DB_VERSION = 3;
   var STORE_FILES = 'files';       // { id, sessionKey, blob, contentType, name, savedAt, bytes }
   var STORE_LISTINGS = 'listings'; // { key, sessionKey, data, savedAt }
   var STORE_META = 'meta';         // { key:'session', value:<sessionKey> }
@@ -152,27 +158,18 @@
       };
       req.onsuccess = function () {
         var db = req.result;
-        // Belt-and-suspenders: if an existing DB at this version is missing any
-        // store (e.g. a mismatched/partial DB from an earlier build), the
-        // upgrade path never ran for it → close it and reopen at DB_VERSION+1
-        // so onupgradeneeded fires and (idempotently) creates the missing
-        // stores. This self-heals instead of degrading to a permanent silent
-        // MISS / re-download.
+        // A partial DB (missing one of the stores) is repaired by the normal
+        // versioned upgrade above: DB_VERSION was bumped and ensureStores() is
+        // idempotent, so onupgradeneeded runs and creates whatever is missing.
+        // We deliberately do NOT reopen at a higher version here — that would
+        // push the on-disk DB ahead of DB_VERSION and make every later
+        // indexedDB.open(DB_NAME, DB_VERSION) fail forever with VersionError.
+        // If stores are somehow still missing we just surface it so callers
+        // fall back to the network for this page-session.
         if (!hasAllStores(db)) {
           warnStoreUnavailable(new Error('missing-object-stores'));
           try { db.close(); } catch (e) {}
-          _dbPromise = null;
-          var req2;
-          try { req2 = indexedDB.open(DB_NAME, DB_VERSION + 1); }
-          catch (e2) { reject(e2); return; }
-          req2.onupgradeneeded = function () { ensureStores(req2.result); };
-          req2.onsuccess = function () {
-            var db2 = req2.result;
-            wireDbHandlers(db2);
-            resolve(db2);
-          };
-          req2.onerror = function () { reject(req2.error || new Error('idb-open-failed')); };
-          req2.onblocked = function () { reject(new Error('idb-open-blocked')); };
+          reject(new Error('idb-missing-object-stores'));
           return;
         }
         wireDbHandlers(db);
