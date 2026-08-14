@@ -249,10 +249,6 @@ export const libraryPage = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- TEMPORARY DEBUG: on-screen log panel (remove after verification).
-       Loaded FIRST (not deferred) so it can mirror the very first [cache]
-       logs from file-cache.js; wrapped entirely in try/catch internally. -->
-  <script src="/static/debug-panel.js"></script>
   <script src="/static/file-cache.js" defer></script>
   <script src="/static/library.js" defer></script>
 </body>
