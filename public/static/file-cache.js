@@ -63,7 +63,15 @@
   // leave the on-disk DB ahead of the version later loads request, making every
   // subsequent open fail permanently with VersionError.
   var DB_VERSION = 3;
-  var STORE_FILES = 'files';       // { id, sessionKey, blob, contentType, name, savedAt, bytes }
+  var STORE_FILES = 'files';       // { id, sessionKey, data:ArrayBuffer, contentType, name, savedAt, bytes }
+  // NOTE (iOS fix): file bytes are stored as an ArrayBuffer in `data`, NOT as a
+  // Blob. iOS Safari has long-standing WebKit bugs where Blob records written
+  // to IndexedDB become unreadable after the browser is fully closed and
+  // reopened (the row is still there, blob.size looks fine, but reading the
+  // bytes fails) — which made every reopen a re-download on iPhone/iPad.
+  // ArrayBuffers are serialized inline into the database and survive restarts
+  // reliably on every platform. Legacy rows that still hold a Blob are read
+  // if usable and migrated opportunistically; no version bump / wipe needed.
   var STORE_LISTINGS = 'listings'; // { key, sessionKey, data, savedAt }
   var STORE_META = 'meta';         // { key:'session', value:<sessionKey> }
 
@@ -265,6 +273,7 @@
       };
       req.onsuccess = function () {
         var db = req.result;
+        log('idb open OK (name=' + DB_NAME + ', version=' + db.version + ')');
         // A partial DB (missing one of the stores) is repaired by the normal
         // versioned upgrade above: DB_VERSION was bumped and ensureStores() is
         // idempotent, so onupgradeneeded runs and creates whatever is missing.
@@ -282,10 +291,17 @@
         wireDbHandlers(db);
         resolve(db);
       };
-      req.onerror = function () { reject(req.error || new Error('idb-open-failed')); };
+      req.onerror = function () {
+        var e = req.error || new Error('idb-open-failed');
+        log('idb open FAILED: ' + (e && (e.name + ': ' + e.message)));
+        reject(e);
+      };
       // A blocked open (older connection still holding the DB) must not hang the
       // read/write path forever — surface it so callers fall back to the network.
-      req.onblocked = function () { reject(new Error('idb-open-blocked')); };
+      req.onblocked = function () {
+        log('idb open BLOCKED (another tab holds an old connection)');
+        reject(new Error('idb-open-blocked'));
+      };
     }).catch(function (e) { _dbPromise = null; throw e; });
     return _dbPromise;
   }
@@ -344,6 +360,28 @@
    * fetch is still enforced server-side, so keeping the cache across sessions
    * is safe. Returns a promise that resolves when ready.
    */
+  /**
+   * OPTIMISTIC bind from the key persisted in the meta store, WITHOUT any
+   * network round-trip. The stored key was only ever written after a genuine
+   * server-authenticated bind, so re-adopting it at startup is safe: it lets
+   * cached listings/files serve INSTANTLY (and offline) instead of the whole
+   * cache being dead until /api/auth/me answers. bindSession() reconciles
+   * later: same user → no-op; different user → wipe; explicit signed-out
+   * answer → detach (bytes kept). Resolves with the adopted key or null.
+   */
+  function bindStoredSession() {
+    if (!_supported) return Promise.resolve(null);
+    return readStoredSessionKey().then(function (stored) {
+      if (stored) {
+        _sessionKey = stored;
+        log('session pre-bound from stored key (offline-safe)', { user: stored });
+      } else {
+        log('no stored session key (first visit or post-logout)');
+      }
+      return stored;
+    }).catch(function () { return null; });
+  }
+
   function bindSession(key) {
     _sessionKey = key || null;
     if (!_supported) return Promise.resolve();
@@ -358,7 +396,7 @@
     return readStoredSessionKey().then(function (stored) {
       if (stored === _sessionKey) {
         // Same user.id → keep cache exactly as-is.
-        log('session bound to same user, cache kept', { user: _sessionKey });
+        log('session bound to same user, cache kept — _sessionKey=' + _sessionKey);
         return;
       }
       if (stored == null) {
@@ -443,20 +481,39 @@
         deleteFile(id);
         return null;
       }
-      // Defensive: a stored entry with no usable blob (empty / detached) must be
-      // treated as a MISS so the caller re-fetches through the gated Worker
-      // instead of rendering a blank page. Drop the bad row opportunistically.
-      var blob = row.blob;
-      var ok = blob && (typeof blob.size !== 'number' || blob.size > 0) &&
-               (typeof Blob === 'undefined' || blob instanceof Blob);
-      if (!ok) {
-        log('MISS', id, '(stored blob unusable → dropped)');
+      // Preferred (iOS-safe) format: bytes stored as an ArrayBuffer in `data`.
+      // Rebuild a fresh Blob from it on every read — ArrayBuffers survive a
+      // full browser restart on iOS Safari, where stored Blobs did not.
+      var blob = null;
+      if (row.data && typeof row.data.byteLength === 'number' && row.data.byteLength > 0) {
+        try {
+          blob = new Blob([row.data], { type: row.contentType || 'application/octet-stream' });
+        } catch (_e) { blob = null; }
+      }
+      // Legacy rows (pre-ArrayBuffer builds) may still hold a Blob; serve it if
+      // it looks usable so existing caches keep working without a re-download,
+      // and MIGRATE it to the restart-proof ArrayBuffer format in the
+      // background (putFile converts + rewrites the row; best-effort).
+      if (!blob) {
+        var legacy = row.blob;
+        var ok = legacy && (typeof legacy.size !== 'number' || legacy.size > 0) &&
+                 (typeof Blob === 'undefined' || legacy instanceof Blob);
+        if (ok) {
+          blob = legacy;
+          try {
+            log('migrating legacy blob row \u2192 ArrayBuffer', id);
+            putFile(id, legacy, row.contentType, row.name).catch(function () {});
+          } catch (_e2) { /* migration is pure hygiene */ }
+        }
+      }
+      if (!blob) {
+        log('MISS', id, '(stored bytes unusable → dropped)');
         deleteFile(id);
         return null;
       }
       // Touch savedAt (LRU) without blocking the read path.
       touchFile(id);
-      log('HIT', id, (row.bytes || (blob && blob.size) || 0) + ' bytes (served from local cache)');
+      log('HIT', id, (row.bytes || blob.size || 0) + ' bytes (served from local cache)');
       return { blob: blob, contentType: row.contentType, name: row.name };
     }).catch(function (e) {
       warnStoreUnavailable(e);
@@ -513,6 +570,23 @@
    *                                           cache and small files coexist
    *                                           with it.
    */
+  // Blob → ArrayBuffer, with a fallback for engines lacking blob.arrayBuffer().
+  function blobToArrayBuffer(blob) {
+    try {
+      if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer();
+    } catch (_e) { /* fall through */ }
+    try {
+      return new Response(blob).arrayBuffer();
+    } catch (_e2) {
+      return new Promise(function (resolve, reject) {
+        var fr = new FileReader();
+        fr.onload = function () { resolve(fr.result); };
+        fr.onerror = function () { reject(fr.error || new Error('read-failed')); };
+        fr.readAsArrayBuffer(blob);
+      });
+    }
+  }
+
   function putFile(id, blob, contentType, name) {
     if (!_supported || !_sessionKey || !blob) return Promise.resolve();
     var bytes = (blob && typeof blob.size === 'number') ? blob.size : 0;
@@ -528,20 +602,28 @@
           bytes + ' bytes > total budget ' + effectiveTotalBytes());
       return Promise.resolve();
     }
-    var record = {
-      id: id,
-      sessionKey: _sessionKey,
-      blob: blob,
-      contentType: contentType || (blob.type || 'application/octet-stream'),
-      name: name || '',
-      bytes: bytes,
-      savedAt: Date.now(),
-    };
-    // The eviction pass runs AFTER the write has committed, so a slow evict can
-    // never abort or race the durable write of the file the user just opened.
-    var p = tx(STORE_FILES, 'readwrite').then(function (o) {
-      o.store.put(record);
-      return txDone(o.tx);
+    // Convert to an ArrayBuffer BEFORE the transaction: ArrayBuffers are
+    // serialized inline into IndexedDB and reliably survive a full browser
+    // restart on iOS Safari, where stored Blobs frequently became unreadable
+    // (the root cause of "reopen always re-downloads" on iPhone/iPad).
+    var owner = _sessionKey;
+    var p = blobToArrayBuffer(blob).then(function (buf) {
+      if (!buf || !buf.byteLength) throw new Error('empty-buffer');
+      var record = {
+        id: id,
+        sessionKey: owner,
+        data: buf,
+        contentType: contentType || (blob.type || 'application/octet-stream'),
+        name: name || '',
+        bytes: buf.byteLength,
+        savedAt: Date.now(),
+      };
+      // The eviction pass runs AFTER the write has committed, so a slow evict
+      // can never abort or race the durable write of the just-opened file.
+      return tx(STORE_FILES, 'readwrite').then(function (o) {
+        o.store.put(record);
+        return txDone(o.tx);
+      });
     });
     // Track only the durable-write phase for flush(); eviction is pure hygiene.
     trackWrite(p.then(function () {}, function () {}));
@@ -692,7 +774,11 @@
   window.FileCache = {
     supported: _supported,
     bindSession: bindSession,
+    bindStoredSession: bindStoredSession,
     deriveKey: deriveKey,
+    // Read-only introspection for the temporary on-screen debug panel.
+    sessionKey: function () { return _sessionKey; },
+    effectiveBudget: function () { return _effectiveTotalBytes; },
     clearAll: clearAll,
     getFile: getFile,
     putFile: putFile,

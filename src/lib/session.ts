@@ -111,7 +111,11 @@ export async function validateSession(
 
   // Expiry guard (KV TTL usually handles this, but D1-only records need it).
   if (new Date(record.expiresAt).getTime() <= Date.now()) {
-    await destroyByHash(env, tokenHash)
+    try {
+      await destroyByHash(env, tokenHash)
+    } catch {
+      /* cleanup is best-effort */
+    }
     return null
   }
 
@@ -119,16 +123,22 @@ export async function validateSession(
   if (record.user.status !== 'active') return null
 
   // Silent renewal (sliding window) — only when close enough to expiry to
-  // avoid a write on every single request.
+  // avoid a write on every single request. ROBUSTNESS: a transient KV/D1
+  // WRITE failure must never fail validation of a session that is already
+  // proven valid — otherwise a storage blip would masquerade as a logout.
+  // The renewal is best-effort; the session stays live either way.
   const remaining = new Date(record.expiresAt).getTime() - Date.now()
   if (remaining < SESSION_TTL_MS - RENEW_THRESHOLD_MS) {
     const newExpiry = new Date(Date.now() + SESSION_TTL_MS).toISOString()
     const renewed: SessionRecord = { ...record, expiresAt: newExpiry }
-    // Fire-and-forget style, but await so the record is consistent within req.
-    await Promise.all([
-      writeKv(env, tokenHash, renewed),
-      touchD1(env, tokenHash, newExpiry),
-    ])
+    try {
+      await Promise.all([
+        writeKv(env, tokenHash, renewed),
+        touchD1(env, tokenHash, newExpiry),
+      ])
+    } catch {
+      /* best-effort renewal — never invalidate a valid session over a write blip */
+    }
   }
 
   return record.user
@@ -260,20 +270,31 @@ export async function refreshUserSessions(env: Env, userId: string): Promise<voi
 // even if the KV namespace isn't bound yet in a given environment).
 // ---------------------------------------------------------------------------
 async function readSession(env: Env, tokenHash: string): Promise<SessionRecord | null> {
-  // 1. KV hot path.
+  // 1. KV hot path. A transient KV READ failure must NOT abort validation —
+  //    D1 below is the source of truth and can still confirm the session.
+  //    (Previously an uncaught KV exception bubbled up and made a perfectly
+  //    valid session look dead — i.e. a surprise logout.)
   if (env.SESSIONS) {
-    const raw = await env.SESSIONS.get(kvKey(tokenHash))
-    if (raw) {
-      try {
-        return JSON.parse(raw) as SessionRecord
-      } catch {
-        /* fall through to D1 */
+    try {
+      const raw = await env.SESSIONS.get(kvKey(tokenHash))
+      if (raw) {
+        try {
+          return JSON.parse(raw) as SessionRecord
+        } catch {
+          /* corrupt KV value → fall through to D1 */
+        }
       }
+    } catch {
+      /* KV blip → fall through to D1 */
     }
   }
 
-  // 2. D1 source of truth (also rehydrates the user snapshot).
+  // 2. D1 source of truth (also rehydrates the user snapshot). Wrapped so a
+  //    transient D1 error surfaces as "session not found for THIS request"
+  //    only after BOTH stores failed — and even then the cookie is untouched,
+  //    so the very next request revalidates normally (no logout, no wipe).
   if (env.DB) {
+    try {
     const row = await env.DB.prepare(
       `SELECT s.user_id AS userId, s.created_at AS createdAt, s.expires_at AS expiresAt,
               u.email AS email, u.role AS role, u.status AS status, u.approved AS approved
@@ -308,6 +329,9 @@ async function readSession(env: Env, tokenHash: string): Promise<SessionRecord |
       // Warm KV so subsequent reads skip D1.
       await writeKv(env, tokenHash, record).catch(() => {})
       return record
+    }
+    } catch {
+      /* transient D1 failure → treat as unresolvable for this request only */
     }
   }
 
