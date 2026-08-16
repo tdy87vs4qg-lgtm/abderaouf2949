@@ -2,8 +2,8 @@
 
 @theme {
   --color-ink: #06101c;
-  --color-cyan: #6ee7dc;
-  --color-gold: #efc47a;
+  --color-cyan: #6b7280;
+  --color-gold: #6b7280;
   --font-sans: "Tajawal", sans-serif;
   --font-display: "Noto Kufi Arabic", sans-serif;
 }
@@ -18,8 +18,8 @@
      accents feel more premium and cinematic, with crisper text contrast. */
   --ink: #050d18;
   --ink-soft: #0a1524;
-  --cyan: #7bece1;          /* brighter, gem-like teal for accents */
-  --gold: #f0ca86;          /* warmer, softer gold */
+  --cyan: #e5e5e5;          /* brighter, gem-like teal for accents */
+  --gold: #9ca3af;          /* warmer, softer gold */
   --white: #f8fbff;
 
   /* ── Semantic theme tokens (DARK is the native default) ──────────
@@ -36,8 +36,8 @@
   --surface: rgba(255, 255, 255, .055);
   --surface-2: rgba(255, 255, 255, .038);
   --gradient-strong: #fff;   /* start colour of the white→cyan→gold text gradients */
-  --gradient-mid: #9df8ee;
-  --gradient-end: #efc985;
+  --gradient-mid: #f5f5f5;
+  --gradient-end: #f5f5f5;
   --ambient-photo-opacity: .62;
   --ambient-veil-strength: .88;
 }
@@ -55,8 +55,8 @@ html[data-theme="light"] {
   --page-bg: #eef4fc;
   --ink: #eef4fc;
   --white: #0a1826;
-  --cyan: #0b8377;   /* deep teal — AA contrast on the porcelain bg */
-  --gold: #a9741f;   /* rich bronze-gold — readable on light */
+  --cyan: #111111;   /* deep teal — AA contrast on the porcelain bg */
+  --gold: #6b7280;   /* rich bronze-gold — readable on light */
 
   /* Near-black slate ink for maximum Arabic-script legibility. */
   --text-strong: #081521;
@@ -68,8 +68,8 @@ html[data-theme="light"] {
   --surface: rgba(8, 21, 33, .045);
   --surface-2: rgba(8, 21, 33, .03);
   --gradient-strong: #081521;
-  --gradient-mid: #0b8377;
-  --gradient-end: #a9741f;
+  --gradient-mid: #111111;
+  --gradient-end: #111111;
   --ambient-photo-opacity: .14;
   --ambient-veil-strength: .3;
 }
@@ -140,8 +140,8 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 }
 .ambient-veil { position: absolute; inset: 0; background: radial-gradient(circle at 70% 27%, transparent 0, rgba(5,15,27,.12) 25%, rgba(5,15,27,.88) 70%), linear-gradient(90deg, rgba(5,15,27,.22), rgba(5,15,27,.55)); }
 .ambient-orb { position: absolute; border-radius: 999px; filter: blur(95px); opacity: .23; }
-.ambient-orb--cyan { width: 38rem; height: 38rem; background: #2dd4bf; top: 36%; right: -22rem; }
-.ambient-orb--gold { width: 25rem; height: 25rem; background: #d99b42; left: -12rem; top: 12%; opacity: .18; }
+.ambient-orb--cyan { width: 38rem; height: 38rem; background: #6b7280; top: 36%; right: -22rem; }
+.ambient-orb--gold { width: 25rem; height: 25rem; background: #6b7280; left: -12rem; top: 12%; opacity: .18; }
 
 /* Navigation
    The header is pinned to the very top. It is GPU-promoted (translateZ + will-change)
@@ -159,7 +159,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 }
 .site-header--scrolled { background: rgba(5, 14, 25, .82); backdrop-filter: blur(12px) saturate(120%); border-color: rgba(255,255,255,.07); }
 .brand-lockup { display: inline-flex; flex-direction: column; align-items: center; gap: .28rem; }
-.brand-word { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.5rem; letter-spacing: -.03em; line-height: 1; color: white; background: linear-gradient(115deg, #ffffff 20%, #9df8ee 62%, #efc985); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-word { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.5rem; letter-spacing: -.03em; line-height: 1; color: white; background: linear-gradient(115deg, #ffffff 20%, #f5f5f5 62%, #f5f5f5); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .brand-underscore { width: 100%; height: 2px; border-radius: 2px; background: linear-gradient(to left, var(--cyan), transparent); transform: scaleX(.55); transform-origin: right; transition: transform .35s ease; }
 .brand-lockup:hover .brand-underscore { transform: scaleX(1); }
 .footer-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.4rem; letter-spacing: -.03em; color: white; }
@@ -202,7 +202,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 
 /* Shared atoms */
 .button-primary, .button-secondary, .button-ghost { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; border-radius: 999px; font-weight: 800; white-space: nowrap; transition: transform .28s ease, box-shadow .28s ease, background .28s ease, border-color .28s ease; }
-.button-primary { padding: .92rem 1.35rem; color: #07131d; background: linear-gradient(135deg, #d9fff9, #6ee7dc 58%, #59c5be); box-shadow: 0 10px 35px rgba(82, 211, 200, .19), inset 0 1px rgba(255,255,255,.8); }
+.button-primary { padding: .92rem 1.35rem; color: #07131d; background: linear-gradient(135deg, #f5f5f5, #d4d4d4 58%, #9ca3af); box-shadow: 0 10px 35px rgba(82, 211, 200, .19), inset 0 1px rgba(255,255,255,.8); }
 .button-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 45px rgba(82,211,200,.3); }
 .button-primary--small { padding: .7rem 1.05rem; font-size: .82rem; }
 .button-secondary { padding: .88rem 1.3rem; color: white; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); box-shadow: inset 0 1px rgba(255,255,255,.06); }
@@ -215,7 +215,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 .section-index { color: var(--gold); font-size: .78rem; font-weight: 800; letter-spacing: .06em; }
 .section-title { font-family: "Noto Kufi Arabic"; font-size: clamp(2rem, 4vw, 4rem); line-height: 1.55; letter-spacing: -.055em; font-weight: 900; }
 .section-copy { max-width: 42rem; color: rgba(255,255,255,.56); font-size: clamp(1rem, 1.5vw, 1.16rem); line-height: 2; }
-.text-gradient { color: transparent; background: linear-gradient(120deg, #fff, #91f4e9 55%, #efd29b); background-clip: text; -webkit-background-clip: text; }
+.text-gradient { color: transparent; background: linear-gradient(120deg, #fff, #f5f5f5 55%, #d4d4d4); background-clip: text; -webkit-background-clip: text; }
 
 /* Home */
 .hero-section::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(6,16,28,.02) 0%, rgba(6,16,28,.15) 44%, rgba(6,16,28,.92) 100%); }
@@ -268,7 +268,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 }
 .write-in.write-in--shown { opacity: 1; transform: translate3d(0, 0, 0); }
 .write-in__plain { color: #f4f9ff; }
-.write-in__brand { color: #9df8ee; }
+.write-in__brand { color: #f5f5f5; }
 
 /* ── RTL typewriter wipe (single clip-path, GPU-only) ──────────
    The whole title is ONE element clipped with an inset() whose LEFT value is
@@ -296,7 +296,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 .story-paragraph .write-in__brand { font-size: 1.28em; font-weight: 900; letter-spacing: -.03em; }
 
 .platform-paragraph { font-family: "Tajawal", sans-serif; font-weight: 500; line-height: 2.15; color: rgba(255,255,255,.6); font-size: clamp(1.05rem, 1.7vw, 1.35rem); }
-.platform-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.35em; letter-spacing: -.03em; color: transparent; background: linear-gradient(110deg, #fff, #9df8ee 55%, #efc985); -webkit-background-clip: text; background-clip: text; }
+.platform-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.35em; letter-spacing: -.03em; color: transparent; background: linear-gradient(110deg, #fff, #f5f5f5 55%, #f5f5f5); -webkit-background-clip: text; background-clip: text; }
 
 .full-bleed-story { z-index: 2; background: radial-gradient(circle at 12% 30%, rgba(211,158,75,.12), transparent 38%), linear-gradient(120deg, rgba(14,31,45,.96), rgba(5,15,26,.96)); border-block: 1px solid rgba(255,255,255,.07); }
 .story-line { position: absolute; width: 1px; top: 0; bottom: 0; right: 14%; background: linear-gradient(transparent, rgba(110,231,220,.4), transparent); box-shadow: 0 0 35px rgba(110,231,220,.5); }
@@ -316,16 +316,16 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
   color: #2a2a24;
 }
 .paper::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(255,255,255,.5), transparent 18%), linear-gradient(0deg, rgba(0,0,0,.05), transparent 12%); pointer-events: none; }
-.paper--cream { background: linear-gradient(160deg, #fdf6e3, #f3e7c6); }
-.paper--mint  { background: linear-gradient(160deg, #e9f7f1, #cdeee2); }
-.paper--sky   { background: linear-gradient(160deg, #eaf1fb, #d3e2f5); }
-.paper--blush { background: linear-gradient(160deg, #fdeef0, #f6d8de); }
-.paper__pin { position: absolute; top: -.55rem; right: 50%; translate: 50% 0; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff8b8b, #c0362f 70%); box-shadow: 0 3px 6px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.5); }
+.paper--cream { background: linear-gradient(160deg, #fafafa, #e5e5e5); }
+.paper--mint  { background: linear-gradient(160deg, #f5f5f5, #e0e0e0); }
+.paper--sky   { background: linear-gradient(160deg, #f5f5f5, #dedede); }
+.paper--blush { background: linear-gradient(160deg, #fafafa, #e8e8e8); }
+.paper__pin { position: absolute; top: -.55rem; right: 50%; translate: 50% 0; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #9ca3af, #4b5563 70%); box-shadow: 0 3px 6px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.5); }
 /* Removed per-paper backdrop-filter blur: with 7 draggable papers it created
    7 recompositing layers that janked badly while dragging. The tape reads the
    same as a plain translucent strip. */
 .paper__tape { position: absolute; top: -.7rem; left: 1.2rem; width: 3.4rem; height: 1.5rem; rotate: -8deg; background: rgba(255,255,255,.4); border-left: 1px dashed rgba(0,0,0,.08); border-right: 1px dashed rgba(0,0,0,.08); }
-.paper__clip { position: absolute; top: 1rem; left: 1.1rem; font: 800 .68rem/1 "Noto Kufi Arabic"; color: #b4472f; opacity: .65; letter-spacing: .02em; }
+.paper__clip { position: absolute; top: 1rem; left: 1.1rem; font: 800 .68rem/1 "Noto Kufi Arabic"; color: #6b7280; opacity: .65; letter-spacing: .02em; }
 .paper__text { font-family: "Noto Kufi Arabic"; font-weight: 800; font-size: clamp(.95rem, 1.4vw, 1.12rem); line-height: 1.85; margin-top: .6rem; }
 .paper__ruling { position: absolute; inset: 3.6rem .9rem .9rem; background-image: repeating-linear-gradient(transparent, transparent 1.78rem, rgba(60,90,130,.14) 1.78rem, rgba(60,90,130,.14) calc(1.78rem + 1px)); pointer-events: none; opacity: .7; }
 
@@ -339,7 +339,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 .laureate__school { margin-top: .5rem; color: rgba(255,255,255,.45); font-size: clamp(.85rem, 1.2vw, 1rem); }
 .laureate__average-wrap { display: flex; flex-direction: column; align-items: center; }
 .laureate__average-label { color: var(--gold); font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
-.laureate__average { margin-top: .2rem; font: 900 clamp(2.4rem, 4.5vw, 4rem)/1 "Noto Kufi Arabic"; letter-spacing: -.06em; color: transparent; background: linear-gradient(120deg, #fff, #9df8ee 60%, #efc985); -webkit-background-clip: text; background-clip: text; }
+.laureate__average { margin-top: .2rem; font: 900 clamp(2.4rem, 4.5vw, 4rem)/1 "Noto Kufi Arabic"; letter-spacing: -.06em; color: transparent; background: linear-gradient(120deg, #fff, #f5f5f5 60%, #f5f5f5); -webkit-background-clip: text; background-clip: text; }
 .laureate__grades { display: flex; gap: 1.6rem; }
 .laureate__grades li { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
 .laureate__grades span { color: rgba(255,255,255,.4); font-size: .72rem; font-weight: 700; }
@@ -440,7 +440,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 /* Subscription */
 .subscription-hero { z-index: 2; }
 .subscription-title { margin-top: 2rem; font: 900 clamp(3rem, 7vw, 7rem)/1.35 "Noto Kufi Arabic"; letter-spacing: -.075em; }
-.subscription-title span { color: transparent; background: linear-gradient(110deg, #fff, #86eee4 50%, #edc985); background-clip: text; -webkit-background-clip: text; }
+.subscription-title span { color: transparent; background: linear-gradient(110deg, #fff, #f5f5f5 50%, #d4d4d4); background-clip: text; -webkit-background-clip: text; }
 .stats-ribbon { display: grid; grid-template-columns: .85fr auto 1.15fr; align-items: center; gap: 4rem; padding: clamp(2rem, 5vw, 4rem); border-block: 1px solid rgba(255,255,255,.11); background: linear-gradient(90deg, transparent, rgba(255,255,255,.035), transparent); }
 .stat-hero { display: grid; grid-template-columns: auto 1fr; align-items: start; justify-content: center; text-align: center; }
 .stat-hero__plus { padding-top: .5rem; color: var(--cyan); font-size: 2rem; }
@@ -500,7 +500,7 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
 .theme-toggle:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .theme-toggle--light {
   border-color: rgba(8, 21, 33, .12);
-  background: linear-gradient(145deg, #ffe9b0, #ffd27a 60%, #ffbf57);
+  background: linear-gradient(145deg, #e5e5e5, #d4d4d4 60%, #9ca3af);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, .5), inset 0 0 0 1px rgba(255, 255, 255, .35);
 }
 .theme-toggle__glow {
@@ -530,8 +530,8 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
   will-change: transform;
 }
 .theme-toggle--light .theme-toggle__knob {
-  background: linear-gradient(145deg, #fffdf6, #fff3d6);
-  color: #e08a12;
+  background: linear-gradient(145deg, #fafafa, #e5e5e5);
+  color: #6b7280;
   box-shadow: 0 3px 8px rgba(180, 120, 20, .35), inset 0 1px rgba(255, 255, 255, .9);
   /* Fallback resting position for light mode BEFORE the (lazily-loaded)
      Framer Motion animation applies its own inline transform. Framer Motion
@@ -567,13 +567,13 @@ html[data-theme="light"] .ambient-photo {
 html[data-theme="light"] .ambient-veil {
   background: radial-gradient(circle at 70% 27%, transparent 0, rgba(238, 244, 252, .2) 25%, rgba(238, 244, 252, .9) 70%), linear-gradient(90deg, rgba(238, 244, 252, .5), rgba(238, 244, 252, .75));
 }
-html[data-theme="light"] .ambient-orb--cyan { background: #5eead4; opacity: .14; }
-html[data-theme="light"] .ambient-orb--gold { background: #f0b95c; opacity: .16; }
+html[data-theme="light"] .ambient-orb--cyan { background: #6b7280; opacity: .14; }
+html[data-theme="light"] .ambient-orb--gold { background: #6b7280; opacity: .16; }
 html[data-theme="light"] .app-shell::after { border-color: rgba(8, 21, 33, .05); }
 
 /* Header + nav */
 html[data-theme="light"] .site-header--scrolled { background: rgba(245, 249, 254, .86); border-color: rgba(8, 21, 33, .09); box-shadow: 0 8px 30px rgba(30, 60, 100, .06); }
-html[data-theme="light"] .brand-word { background: linear-gradient(115deg, #081521 18%, #0b8377 60%, #a9741f); -webkit-background-clip: text; background-clip: text; }
+html[data-theme="light"] .brand-word { background: linear-gradient(115deg, #081521 18%, #111111 60%, #6b7280); -webkit-background-clip: text; background-clip: text; }
 html[data-theme="light"] .nav-link { color: rgba(8, 21, 33, .55); }
 html[data-theme="light"] .nav-link:hover, html[data-theme="light"] .nav-link--active { color: #081521; }
 html[data-theme="light"] .menu-button { border-color: rgba(8, 21, 33, .14); background: rgba(8, 21, 33, .04); color: #081521; }
@@ -597,11 +597,11 @@ html[data-theme="light"] .text-gradient,
 html[data-theme="light"] .platform-brand,
 html[data-theme="light"] .subscription-title span,
 html[data-theme="light"] .laureate__average {
-  background: linear-gradient(120deg, #081521, #0b8377 52%, #a9741f);
+  background: linear-gradient(120deg, #081521, #111111 52%, #6b7280);
   -webkit-background-clip: text; background-clip: text;
 }
 html[data-theme="light"] .write-in__plain { color: #081521; }
-html[data-theme="light"] .write-in__brand { color: #0b8377; }
+html[data-theme="light"] .write-in__brand { color: #111111; }
 html[data-theme="light"] .hero-slogan { text-shadow: 0 10px 40px rgba(120, 150, 190, .22); }
 html[data-theme="light"] .hero-slogan .write-in__plain { color: rgba(8, 21, 33, .88); }
 html[data-theme="light"] .hero-slogan .write-in__brand { text-shadow: 0 12px 45px rgba(11, 131, 119, .22); }
@@ -884,7 +884,7 @@ html[data-theme="light"] .inapp-notice__icon {
 }
 .inapp-notice__copy {
   border: 1px solid transparent;
-  background: linear-gradient(135deg, var(--cyan), #9df8ee);
+  background: linear-gradient(135deg, var(--cyan), #f5f5f5);
   color: #06121d;
   box-shadow: 0 14px 34px rgba(110, 231, 220, .22);
 }
