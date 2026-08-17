@@ -233,7 +233,7 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
 .section-index { color: var(--gold); font-size: .78rem; font-weight: 800; letter-spacing: .06em; }
 .section-title { font-family: "Noto Kufi Arabic"; font-size: clamp(2rem, 4vw, 4rem); line-height: 1.55; letter-spacing: -.055em; font-weight: 900; }
 .section-copy { max-width: 42rem; color: rgba(255,255,255,.56); font-size: clamp(1rem, 1.5vw, 1.16rem); line-height: 2; }
-.text-gradient { color: transparent; background: linear-gradient(120deg, #fff, #f5f5f5 55%, #d4d4d4); background-clip: text; -webkit-background-clip: text; }
+.text-gradient { color: #f5f5f5; background: none; }
 
 /* Home */
 .hero-section::before { content: ""; position: absolute; inset: 0; z-index: 1; background: rgba(0, 0, 0, .5); }
@@ -398,7 +398,7 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   min-height: 100vh;      /* legacy fallback */
   min-height: 100svh;     /* stable: ignores keyboard/autofill resize */
 }
-.auth-page::before { content: ""; position: absolute; width: 42rem; height: 42rem; right: 50%; top: 50%; translate: 50% -50%; border-radius: 50%; border: 1px solid rgba(255,255,255,.06); box-shadow: 0 0 100px rgba(0,0,0,.06); }
+.auth-page::before { content: ""; position: absolute; width: 42rem; height: 42rem; right: 50%; top: 50%; translate: 50% -50%; border-radius: 50%; border: 1px solid rgba(255,255,255,.06); box-shadow: none; }
 .auth-layout { position: relative; z-index: 2; }
 .quote-mark { display: flex; align-items: center; gap: 1rem; color: rgba(255,255,255,.5); }
 .quote-mark span { color: var(--gold); font: 800 3rem/1 serif; }
@@ -410,10 +410,10 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
    edge, so even when the viewport is short (keyboard open) the fox is never
    clipped by the page top. `overflow: visible` keeps the overhanging
    ears/paws from being cut off. */
-.auth-card { position: relative; overflow: visible; width: 100%; max-width: 38rem; margin-inline-start: auto; margin-top: 5rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid rgba(255,255,255,.14); border-radius: 32px; background: linear-gradient(145deg, rgba(18,36,50,.9), rgba(7,19,31,.86)); backdrop-filter: blur(14px) saturate(125%); box-shadow: 0 35px 100px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.12); }
+.auth-card { position: relative; overflow: visible; width: 100%; max-width: 38rem; margin-inline-start: auto; margin-top: 5rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid rgba(255,255,255,.14); border-radius: 32px; background: rgba(0,0,0,.62); backdrop-filter: blur(14px) grayscale(1); -webkit-backdrop-filter: blur(14px) grayscale(1); box-shadow: 0 35px 100px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.12); }
 @media (min-width: 1024px) { .auth-card { margin-top: 0; } }
-.auth-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(115deg, rgba(255,255,255,.08), transparent 22%); pointer-events: none; }
-.auth-card__glow { position: absolute; left: 0; top: 0; width: 12rem; height: 12rem; border-radius: 50%; background: rgba(255,255,255,.14); filter: blur(60px); pointer-events: none; }
+.auth-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(255,255,255,.03); pointer-events: none; }
+.auth-card__glow { position: absolute; left: 0; top: 0; width: 12rem; height: 12rem; border-radius: 50%; background: none; filter: none; pointer-events: none; }
 .auth-card h2 { font-family: "Noto Kufi Arabic"; letter-spacing: -.045em; }
 /* GOOGLE-ONLY SIGN-IN (step 3): the card no longer contains a form, so it can
    breathe a little more and centre its single action. The email/password field
@@ -435,8 +435,8 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   padding: .95rem 1.4rem;
   border: 1px solid rgba(255,255,255,.16);
   border-radius: 999px;
-  background: linear-gradient(160deg, #ffffff, #eef3f8);
-  color: #10202f;
+  background: #ffffff;
+  color: #111111;
   font-size: 1rem;
   font-weight: 800;
   text-decoration: none;
@@ -448,7 +448,7 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
 .google-signin-button:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0,0,0,.35), 0 14px 40px rgba(0,0,0,.32); }
 .google-signin-button[aria-disabled="true"] { pointer-events: none; filter: saturate(.55) opacity(.72); }
 /* The glyph keeps its own LTR box so the RTL page never mirrors the mark. */
-.google-signin-button__glyph { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.google-signin-button__glyph { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; filter: grayscale(1); }
 .google-signin-button__label { line-height: 1.4; }
 @media (prefers-reduced-motion: reduce) {
   .google-signin-button, .google-signin-button:hover, .google-signin-button:active { transform: none; transition: none; }
@@ -634,7 +634,7 @@ html[data-theme="light"] .section-shell { background: rgba(250, 250, 250, .88); 
 html[data-theme="light"] .section-copy { color: var(--text-muted); }
 html[data-theme="light"] .eyebrow { color: var(--cyan); }
 html[data-theme="light"] .eyebrow::before { background: linear-gradient(to left, var(--cyan), transparent); }
-html[data-theme="light"] .text-gradient,
+html[data-theme="light"] .text-gradient { color: #111111; background: none; }
 html[data-theme="light"] .subscription-title span {
   background: linear-gradient(120deg, #081521, #111111 52%, #6b7280);
   -webkit-background-clip: text; background-clip: text;
@@ -700,7 +700,7 @@ html[data-theme="light"] .footer-brand { color: #0a0a0a; }
 
 /* Auth cards keep their dark-glass identity (unchanged per spec), but nudge
    the surrounding page glow to suit daylight. */
-html[data-theme="light"] .auth-page::before { border-color: rgba(0, 0, 0, .08); box-shadow: 0 0 100px rgba(0, 0, 0, .06); }
+html[data-theme="light"] .auth-page::before { border: 1px solid rgba(0, 0, 0, .08); box-shadow: none; }
 
 /* Tailwind utility text colours used inline on light surfaces → keep readable.
    These are the few spots that hard-code white via utilities. Scoped to the
