@@ -157,7 +157,14 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   backface-visibility: hidden;
   transition: background-color .4s ease, backdrop-filter .4s ease, border-color .4s ease;
 }
-.site-header--scrolled { background: rgba(0, 0, 0, .82); backdrop-filter: blur(12px); border-color: var(--hairline); }
+/* Frosted glass: pure black translucency + blur. No colour, no gradient, no glow.
+   The -webkit- prefix is mandatory for Safari / iOS. */
+.site-header--scrolled {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
 .brand-lockup { display: inline-flex; flex-direction: column; align-items: center; gap: .28rem; }
 /* Wordmark: one solid ink colour — black on light, white on dark (via the
    shared --text-strong token). No gradient, no background-clip, no glow. */
@@ -180,8 +187,7 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(0, 0, 0, .55);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.45);
   will-change: opacity;
 }
 .mobile-menu {
@@ -193,11 +199,12 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   transform-origin: top center;
   will-change: transform, opacity;
   padding: .75rem;
-  border: 1px solid var(--hairline-strong);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 22px;
-  background: rgba(12, 12, 12, .94);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(18px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 .mobile-menu__link { display: block; padding: .95rem 1.1rem; border-radius: 14px; color: var(--text-base); font-weight: 700; transition: background-color .2s ease, color .2s ease; }
 .mobile-menu__link:hover, .mobile-menu__link:active { background: var(--surface); color: var(--text-strong); }
@@ -580,17 +587,29 @@ html[data-theme="light"] .ambient-orb--gold { background: #6b7280; opacity: .16;
 html[data-theme="light"] .app-shell::after { border-color: rgba(8, 21, 33, .05); }
 
 /* Header + nav */
-html[data-theme="light"] .site-header--scrolled { background: rgba(255, 255, 255, .88); border-color: var(--hairline); box-shadow: none; }
+html[data-theme="light"] .site-header--scrolled {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+}
 /* Light theme: the wordmark is a solid ink colour (no gradient / no clip),
    reusing the same --text-strong token the base rule reads. */
 html[data-theme="light"] .brand-word { color: var(--text-strong); background: none; }
 html[data-theme="light"] .nav-link { color: var(--text-muted); }
 html[data-theme="light"] .nav-link:hover, html[data-theme="light"] .nav-link--active { color: var(--text-strong); }
 html[data-theme="light"] .menu-button { border-color: var(--hairline-strong); background: var(--surface); color: var(--text-strong); }
-html[data-theme="light"] .mobile-menu { background: rgba(255, 255, 255, .96); border-color: var(--hairline-strong); box-shadow: 0 24px 60px rgba(0, 0, 0, .14); }
+html[data-theme="light"] .mobile-menu {
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
 html[data-theme="light"] .mobile-menu__link { color: var(--text-base); }
 html[data-theme="light"] .mobile-menu__link:hover, html[data-theme="light"] .mobile-menu__link:active { background: var(--surface); color: var(--text-strong); }
-html[data-theme="light"] .mobile-menu__scrim { background: rgba(0, 0, 0, .3); }
+html[data-theme="light"] .mobile-menu__scrim { background: rgba(0, 0, 0, 0.35); }
 
 /* Buttons */
 html[data-theme="light"] .button-secondary { color: #081521; border-color: rgba(8, 21, 33, .16); background: rgba(255, 255, 255, .7); box-shadow: inset 0 1px rgba(255, 255, 255, .8); }
