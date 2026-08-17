@@ -157,19 +157,21 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   backface-visibility: hidden;
   transition: background-color .4s ease, backdrop-filter .4s ease, border-color .4s ease;
 }
-.site-header--scrolled { background: rgba(5, 14, 25, .82); backdrop-filter: blur(12px) saturate(120%); border-color: rgba(255,255,255,.07); }
+.site-header--scrolled { background: rgba(0, 0, 0, .82); backdrop-filter: blur(12px); border-color: var(--hairline); }
 .brand-lockup { display: inline-flex; flex-direction: column; align-items: center; gap: .28rem; }
-.brand-word { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.5rem; letter-spacing: -.03em; line-height: 1; color: white; background: linear-gradient(115deg, #ffffff 20%, #f5f5f5 62%, #f5f5f5); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.brand-underscore { width: 100%; height: 2px; border-radius: 2px; background: linear-gradient(to left, var(--cyan), transparent); transform: scaleX(.55); transform-origin: right; transition: transform .35s ease; }
+/* Wordmark: one solid ink colour — black on light, white on dark (via the
+   shared --text-strong token). No gradient, no background-clip, no glow. */
+.brand-word { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.5rem; letter-spacing: -.03em; line-height: 1; color: var(--text-strong); }
+.brand-underscore { width: 100%; height: 2px; border-radius: 2px; background: var(--hairline-strong); transform: scaleX(.55); transform-origin: right; transition: transform .35s ease; }
 .brand-lockup:hover .brand-underscore { transform: scaleX(1); }
 .footer-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.4rem; letter-spacing: -.03em; color: white; }
-.nav-link { position: relative; color: rgba(255,255,255,.58); font-weight: 600; font-size: .9rem; transition: color .25s ease; }
-.nav-link:hover, .nav-link--active { color: white; }
+.nav-link { position: relative; color: var(--text-muted); font-weight: 600; font-size: .9rem; transition: color .25s ease; }
+.nav-link:hover, .nav-link--active { color: var(--text-strong); }
 /* Underline uses transform: scaleX (GPU) instead of animating `left`, which
    would trigger layout on every hover frame. */
-.nav-link::after { content: ""; position: absolute; height: 1px; right: 0; left: 0; bottom: -.65rem; background: var(--cyan); transform: scaleX(0); transform-origin: right; transition: transform .3s ease; }
+.nav-link::after { content: ""; position: absolute; height: 1px; right: 0; left: 0; bottom: -.65rem; background: var(--text-strong); transform: scaleX(0); transform-origin: right; transition: transform .3s ease; }
 .nav-link:hover::after, .nav-link--active::after { transform: scaleX(1); }
-.menu-button { position: relative; z-index: 10; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(255,255,255,.05); color: white; }
+.menu-button { position: relative; z-index: 10; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--hairline-strong); border-radius: 14px; background: var(--surface); color: var(--text-strong); }
 /* Mobile menu — pinned to the ABSOLUTE top of the header, revealed with a
    scale-fade/slide-down (see SiteHeader.tsx). transform-origin:top so the
    scaleY grows the panel downward from beneath the nav bar. Only transform +
@@ -178,7 +180,7 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(3, 9, 17, .55);
+  background: rgba(0, 0, 0, .55);
   backdrop-filter: blur(2px);
   will-change: opacity;
 }
@@ -191,24 +193,28 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   transform-origin: top center;
   will-change: transform, opacity;
   padding: .75rem;
-  border: 1px solid rgba(255,255,255,.1);
+  border: 1px solid var(--hairline-strong);
   border-radius: 22px;
-  background: rgba(6, 16, 28, .92);
-  backdrop-filter: blur(18px) saturate(130%);
-  box-shadow: 0 28px 80px rgba(0,0,0,.55), inset 0 1px rgba(255,255,255,.08);
+  background: rgba(12, 12, 12, .94);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
 }
-.mobile-menu__link { display: block; padding: .95rem 1.1rem; border-radius: 14px; color: rgba(255,255,255,.78); font-weight: 700; transition: background-color .2s ease, color .2s ease; }
-.mobile-menu__link:hover, .mobile-menu__link:active { background: rgba(255,255,255,.1); color: white; }
+.mobile-menu__link { display: block; padding: .95rem 1.1rem; border-radius: 14px; color: var(--text-base); font-weight: 700; transition: background-color .2s ease, color .2s ease; }
+.mobile-menu__link:hover, .mobile-menu__link:active { background: var(--surface); color: var(--text-strong); }
 
 /* Shared atoms */
 .button-primary, .button-secondary, .button-ghost { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; border-radius: 999px; font-weight: 800; white-space: nowrap; transition: transform .28s ease, box-shadow .28s ease, background .28s ease, border-color .28s ease; }
 .button-primary { padding: .92rem 1.35rem; color: #07131d; background: linear-gradient(135deg, #f5f5f5, #d4d4d4 58%, #9ca3af); box-shadow: 0 10px 35px rgba(0, 0, 0, .19), inset 0 1px rgba(255,255,255,.8); }
 .button-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 45px rgba(0,0,0,.3); }
-.button-primary--small { padding: .7rem 1.05rem; font-size: .82rem; }
+/* Header-only size variant — also the header's login / status pill: a flat,
+   neutral ink fill (white pill on dark, black pill on light), no gradient,
+   no glow. Layout + hover transform stay exactly as before. */
+.button-primary--small { padding: .7rem 1.05rem; font-size: .82rem; color: var(--page-bg); background: var(--text-strong); box-shadow: none; }
+.button-primary--small:hover { box-shadow: none; }
 .button-secondary { padding: .88rem 1.3rem; color: white; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); box-shadow: inset 0 1px rgba(255,255,255,.06); }
 .button-secondary:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.09); }
-.button-ghost { padding: .7rem .9rem; color: rgba(255,255,255,.68); font-size: .85rem; }
-.button-ghost:hover { color: white; }
+.button-ghost { padding: .7rem .9rem; color: var(--text-muted); font-size: .85rem; }
+.button-ghost:hover { color: var(--text-strong); }
 .eyebrow { display: inline-flex; align-items: center; gap: .5rem; color: var(--cyan); font-size: .8rem; font-weight: 800; letter-spacing: .02em; }
 .eyebrow::before { content: ""; width: 2rem; height: 1px; background: linear-gradient(to left, var(--cyan), transparent); }
 .section-shell { position: relative; z-index: 2; background: linear-gradient(180deg, rgba(6,16,28,.72), rgba(6,16,28,.92)); }
@@ -489,30 +495,32 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   padding: 0;
   border-radius: 999px;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, .18);
-  background: linear-gradient(145deg, rgba(7, 17, 30, .92), rgba(17, 34, 50, .84));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  border: 1px solid var(--hairline-strong);
+  background: #1a1a1a;
+  box-shadow: none;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   transition: background .4s ease, border-color .4s ease, box-shadow .4s ease;
 }
-.theme-toggle:hover { border-color: rgba(255, 255, 255, .45); }
-.theme-toggle:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.theme-toggle:hover { border-color: var(--text-muted); }
+.theme-toggle:focus-visible { outline: 2px solid var(--text-strong); outline-offset: 2px; }
 .theme-toggle--light {
-  border-color: rgba(8, 21, 33, .12);
-  background: linear-gradient(145deg, #e5e5e5, #d4d4d4 60%, #9ca3af);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, .5), inset 0 0 0 1px rgba(255, 255, 255, .35);
+  border-color: var(--hairline-strong);
+  background: #d4d4d4;
+  box-shadow: none;
 }
+/* Kept in the DOM (markup untouched) but rendered as a no-op: the grayscale
+   identity has no glow. */
 .theme-toggle__glow {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 78% 50%, rgba(255, 255, 255, .24), transparent 60%);
-  opacity: 1;
+  background: none;
+  opacity: 0;
   transition: opacity .4s ease, background .4s ease;
 }
 .theme-toggle--light .theme-toggle__glow {
-  background: radial-gradient(circle at 22% 50%, rgba(255, 255, 255, .8), transparent 62%);
+  background: none;
 }
 .theme-toggle__knob {
   position: absolute;
@@ -524,15 +532,15 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  background: linear-gradient(145deg, #0f2233, #08151f);
-  color: var(--cyan);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .45), inset 0 1px rgba(255, 255, 255, .12);
+  background: #fafafa;
+  color: #1a1a1a;
+  box-shadow: none;
   will-change: transform;
 }
 .theme-toggle--light .theme-toggle__knob {
-  background: linear-gradient(145deg, #fafafa, #e5e5e5);
-  color: #6b7280;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .35), inset 0 1px rgba(255, 255, 255, .9);
+  background: #1a1a1a;
+  color: #fafafa;
+  box-shadow: none;
   /* Fallback resting position for light mode BEFORE the (lazily-loaded)
      Framer Motion animation applies its own inline transform. Framer Motion
      writes an inline `transform` on mount, which overrides this — so there is
@@ -572,21 +580,23 @@ html[data-theme="light"] .ambient-orb--gold { background: #6b7280; opacity: .16;
 html[data-theme="light"] .app-shell::after { border-color: rgba(8, 21, 33, .05); }
 
 /* Header + nav */
-html[data-theme="light"] .site-header--scrolled { background: rgba(245, 249, 254, .86); border-color: rgba(8, 21, 33, .09); box-shadow: 0 8px 30px rgba(0, 0, 0, .06); }
-html[data-theme="light"] .brand-word { background: linear-gradient(115deg, #081521 18%, #111111 60%, #6b7280); -webkit-background-clip: text; background-clip: text; }
-html[data-theme="light"] .nav-link { color: rgba(8, 21, 33, .55); }
-html[data-theme="light"] .nav-link:hover, html[data-theme="light"] .nav-link--active { color: #081521; }
-html[data-theme="light"] .menu-button { border-color: rgba(8, 21, 33, .14); background: rgba(8, 21, 33, .04); color: #081521; }
-html[data-theme="light"] .mobile-menu { background: rgba(248, 251, 255, .95); border-color: rgba(8, 21, 33, .1); box-shadow: 0 28px 80px rgba(0, 0, 0, .18), inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .mobile-menu__link { color: rgba(8, 21, 33, .78); }
-html[data-theme="light"] .mobile-menu__link:hover, html[data-theme="light"] .mobile-menu__link:active { background: rgba(0, 0, 0, .1); color: #081521; }
+html[data-theme="light"] .site-header--scrolled { background: rgba(255, 255, 255, .88); border-color: var(--hairline); box-shadow: none; }
+/* Light theme: the wordmark is a solid ink colour (no gradient / no clip),
+   reusing the same --text-strong token the base rule reads. */
+html[data-theme="light"] .brand-word { color: var(--text-strong); background: none; }
+html[data-theme="light"] .nav-link { color: var(--text-muted); }
+html[data-theme="light"] .nav-link:hover, html[data-theme="light"] .nav-link--active { color: var(--text-strong); }
+html[data-theme="light"] .menu-button { border-color: var(--hairline-strong); background: var(--surface); color: var(--text-strong); }
+html[data-theme="light"] .mobile-menu { background: rgba(255, 255, 255, .96); border-color: var(--hairline-strong); box-shadow: 0 24px 60px rgba(0, 0, 0, .14); }
+html[data-theme="light"] .mobile-menu__link { color: var(--text-base); }
+html[data-theme="light"] .mobile-menu__link:hover, html[data-theme="light"] .mobile-menu__link:active { background: var(--surface); color: var(--text-strong); }
 html[data-theme="light"] .mobile-menu__scrim { background: rgba(0, 0, 0, .3); }
 
 /* Buttons */
 html[data-theme="light"] .button-secondary { color: #081521; border-color: rgba(8, 21, 33, .16); background: rgba(255, 255, 255, .7); box-shadow: inset 0 1px rgba(255, 255, 255, .8); }
 html[data-theme="light"] .button-secondary:hover { border-color: rgba(8, 21, 33, .3); background: rgba(255, 255, 255, .9); }
-html[data-theme="light"] .button-ghost { color: rgba(8, 21, 33, .68); }
-html[data-theme="light"] .button-ghost:hover { color: #081521; }
+html[data-theme="light"] .button-ghost { color: var(--text-muted); }
+html[data-theme="light"] .button-ghost:hover { color: var(--text-strong); }
 
 /* Sections + typography */
 html[data-theme="light"] .section-shell { background: linear-gradient(180deg, rgba(245, 249, 254, .72), rgba(238, 244, 252, .92)); }
