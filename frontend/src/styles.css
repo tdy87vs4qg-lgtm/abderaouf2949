@@ -82,6 +82,47 @@ body { margin: 0; min-width: 320px; min-height: 100vh; min-height: 100svh; backg
 button { font: inherit; }
 
 /* ══════════════════════════════════════════════════════════════════
+   THEME SWITCH — GLOBAL COLOUR EASING (step 9b, additive)
+   Makes light <-> dark feel like the whole page melts between palettes
+   instead of snapping, even outside the circular-reveal window (e.g. when
+   the theme is restored, or on browsers that ignore View Transitions).
+
+   PERFORMANCE CONTRACT: paint-only properties (background-color / color /
+   border-color). NO transform, NO opacity, NO layout properties are added
+   here — nothing that could cause jank or reflow. Declared as its own
+   additive rule so every pre-existing `transition` in this file keeps its
+   original property list and duration untouched.
+   ══════════════════════════════════════════════════════════════════ */
+html {
+  transition: background-color .35s ease, color .35s ease;
+}
+
+/* Major surfaces that paint their OWN background/border, so the cascade
+   alone cannot ease them. Only selectors that do NOT already declare a
+   `transition` are listed here — existing transitions stay authoritative. */
+.app-shell::after,
+.menu-button,
+.mobile-menu,
+.stats-ribbon,
+.laureate__rule,
+footer {
+  transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+}
+
+/* Accessibility: users asking for reduced motion get the instant swap. */
+@media (prefers-reduced-motion: reduce) {
+  html,
+  .app-shell::after,
+  .menu-button,
+  .mobile-menu,
+  .stats-ribbon,
+  .laureate__rule,
+  footer {
+    transition: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
    THEME TRANSITION — circular reveal (View Transitions API)
    The new theme's paint is unveiled by a clip-path circle expanding from the
    toggle button (driven in ThemeProvider.tsx). Only clip-path on ONE snapshot
