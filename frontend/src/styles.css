@@ -733,7 +733,7 @@ html[data-theme="light"] .decision-card::after { opacity: .1; }
 html[data-theme="light"] .decision-card p { color: var(--text-muted); }
 html[data-theme="light"] .decision-card ul { color: rgba(8, 21, 33, .65); }
 html[data-theme="light"] .decision-card small { color: rgba(8, 21, 33, .4); }
-html[data-theme="light"] .decision-card__shine { opacity: .35; background: #fff7e6; }
+html[data-theme="light"] .decision-card__shine { opacity: .35; background: #fafafa; }
 
 /* Footer */
 html[data-theme="light"] footer { border-top-color: rgba(8, 21, 33, .1) !important; }
@@ -830,6 +830,7 @@ html[data-theme="light"] .auth-card .text-white\/70 { color: inherit !important;
   inset: 0;
   background: rgba(3, 9, 17, .78);
   backdrop-filter: blur(10px) saturate(115%);
+  -webkit-backdrop-filter: blur(10px) saturate(115%);
 }
 html[data-theme="light"] .inapp-notice__backdrop { background: rgba(8, 21, 33, .55); }
 
