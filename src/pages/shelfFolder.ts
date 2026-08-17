@@ -104,9 +104,6 @@ export const shelfFolderPage = `<!DOCTYPE html>
   </script>
 
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Marhey:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <!-- isolated shelf skin — every rule inside is scoped under .shelf-root -->
   <link rel="stylesheet" href="/static/shelf.css" />

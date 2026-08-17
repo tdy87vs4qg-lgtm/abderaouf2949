@@ -284,9 +284,6 @@ app.get('/library/view/:id', async (c) => {
   <meta name="color-scheme" content="dark light" />
   <title>${title} — تيسير</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/components.css" rel="stylesheet" />
   <style>
@@ -295,7 +292,7 @@ app.get('/library/view/:id', async (c) => {
     .viewer-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5);
       border-bottom: 1px solid var(--color-border, #dcdcdc); background: var(--color-surface, #fff); position: sticky; top: 0; z-index: 5; }
     .viewer-bar .viewer-back { flex: 0 0 auto; }
-    .viewer-title { font-family: 'Fraunces', Georgia, serif; font-size: 1.05rem; font-weight: 600;
+    .viewer-title { font-family: "Tajawal", "Noto Kufi Arabic", sans-serif; font-size: 1.05rem; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .viewer-meta { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
     .viewer-body { flex: 1 1 auto; display: flex; padding: var(--space-4); }

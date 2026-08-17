@@ -146,7 +146,7 @@ function samplePlaceholderSvg(seed: string): string {
     <path d="M118 60 h84 M118 84 h84 M118 108 h60"/>
   </g>
   <rect x="104" y="40 " width="112" height="120" rx="6" fill="none" stroke="${fg}" stroke-opacity="0.35" stroke-width="4"/>
-  <text x="160" y="184" text-anchor="middle" font-family="Public Sans, system-ui, sans-serif" font-size="13" fill="${fg}" fill-opacity="0.6">Preview</text>
+  <text x="160" y="184" text-anchor="middle" font-family="Tajawal, Noto Kufi Arabic, sans-serif" font-size="13" fill="${fg}" fill-opacity="0.6">Preview</text>
 </svg>`
 }
 

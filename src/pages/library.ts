@@ -138,9 +138,6 @@ export const libraryPage = `<!DOCTYPE html>
   <meta name="description" content="Browse the complete تيسير library: lessons, summaries, corrected exams, exercise series, mock papers and premium books — organised like Google Drive." />
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/library.css" rel="stylesheet" />
 </head>
