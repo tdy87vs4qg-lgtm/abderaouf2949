@@ -167,7 +167,21 @@ html[data-theme="light"] .gd-body {
 /* ========================================================================== */
 /* TOP BAR                                                                    */
 /* ========================================================================== */
+/* Frosted glass, greyscale only: black/white translucency + blur. No colour,
+   no gradient, no glow — matches the public site header. The -webkit- prefix
+   is mandatory for Safari / iOS. The `--gd-bar-*` vars below are scoped to the
+   bar so every child inherits a neutral palette without touching the shared
+   library tokens (which other components still read). */
 .gd-topbar {
+  /* neutral, bar-local palette (dark) */
+  --gd-bar-fg:       #ffffff;
+  --gd-bar-fg-2:     rgba(255, 255, 255, .72);
+  --gd-bar-line:     rgba(255, 255, 255, .14);
+  --gd-bar-hover:    rgba(255, 255, 255, .08);
+  --gd-bar-hover-2:  rgba(255, 255, 255, .14);
+  --gd-bar-field:    rgba(255, 255, 255, .06);
+  --gd-bar-ring:     rgba(255, 255, 255, .18);
+
   position: fixed;
   inset: 0 0 auto 0;
   height: var(--gd-topbar-h);
@@ -175,11 +189,32 @@ html[data-theme="light"] .gd-body {
   align-items: center;
   gap: 8px;
   padding: 0 16px;
-  background: var(--gd-bg);
-  border-bottom: 1px solid var(--gd-line);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  color: var(--gd-bar-fg);
   z-index: 40;
   width: 100%;
   max-width: 100%;
+}
+
+/* Light theme — same glass, inverted greyscale translucency. */
+html[data-theme="light"] .gd-topbar {
+  --gd-bar-fg:       #111111;
+  --gd-bar-fg-2:     rgba(0, 0, 0, .64);
+  --gd-bar-line:     rgba(0, 0, 0, .14);
+  --gd-bar-hover:    rgba(0, 0, 0, .05);
+  --gd-bar-hover-2:  rgba(0, 0, 0, .10);
+  --gd-bar-field:    rgba(0, 0, 0, .04);
+  --gd-bar-ring:     rgba(0, 0, 0, .16);
+
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .gd-topbar-left {
@@ -195,17 +230,17 @@ html[data-theme="light"] .gd-body {
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--gd-blue);
+  color: var(--gd-bar-fg);
   padding: 4px 10px;
   border-radius: var(--gd-radius-sm);
   transition: background var(--duration-fast, 150ms) ease;
 }
-.gd-brand:hover { background: var(--gd-hover); }
+.gd-brand:hover { background: var(--gd-bar-hover); }
 .gd-brand-name {
   font-family: var(--font-heading, 'Fraunces', Georgia, serif);
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--gd-blue);
+  color: var(--gd-bar-fg);
   letter-spacing: var(--tracking-tight, -0.015em);
   white-space: nowrap;
   line-height: 1;
@@ -230,6 +265,12 @@ html[data-theme="light"] .gd-body {
 .gd-icon-btn:hover { background: var(--gd-hover); }
 .gd-icon-btn:active { background: var(--gd-hover-2); }
 
+/* Inside the glass bar the icon buttons read from the neutral bar palette
+   (the base rule above is shared with the viewer/modal and stays untouched). */
+.gd-topbar .gd-icon-btn { color: var(--gd-bar-fg-2); }
+.gd-topbar .gd-icon-btn:hover { background: var(--gd-bar-hover); color: var(--gd-bar-fg); }
+.gd-topbar .gd-icon-btn:active { background: var(--gd-bar-hover-2); }
+
 .gd-menu-toggle { display: none; }
 
 /* ------------------------------------------------------------- search */
@@ -241,17 +282,17 @@ html[data-theme="light"] .gd-body {
   align-items: center;
   gap: 4px;
   height: 46px;
-  background: var(--gd-surface);
-  border: 1px solid var(--gd-line);
+  background: var(--gd-bar-field);
+  border: 1px solid var(--gd-bar-line);
   border-radius: 999px;
   padding: 0 8px 0 4px;
   transition: background var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
   margin: 0 8px;
 }
 .gd-search:focus-within {
-  background: var(--gd-surface);
-  border-color: var(--gd-blue-tint);
-  box-shadow: var(--gd-shadow-1);
+  background: var(--gd-bar-hover);
+  border-color: var(--gd-bar-ring);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30);
 }
 .gd-search-icon {
   display: inline-flex;
@@ -261,12 +302,12 @@ html[data-theme="light"] .gd-body {
   height: 40px;
   border: none;
   background: transparent;
-  color: var(--gd-text-2);
+  color: var(--gd-bar-fg-2);
   border-radius: 50%;
   cursor: pointer;
   flex: 0 0 auto;
 }
-.gd-search-icon:hover { background: var(--gd-hover); }
+.gd-search-icon:hover { background: var(--gd-bar-hover); }
 .gd-search-input {
   flex: 1 1 auto;
   min-width: 0;
@@ -274,10 +315,10 @@ html[data-theme="light"] .gd-body {
   background: transparent;
   outline: none;
   font-size: 1rem;
-  color: var(--gd-text);
+  color: var(--gd-bar-fg);
   height: 100%;
 }
-.gd-search-input::placeholder { color: var(--gd-text-2); }
+.gd-search-input::placeholder { color: var(--gd-bar-fg-2); }
 .gd-search-input::-webkit-search-cancel-button { display: none; }
 .gd-search-clear {
   display: inline-flex;
@@ -287,12 +328,12 @@ html[data-theme="light"] .gd-body {
   height: 36px;
   border: none;
   background: transparent;
-  color: var(--gd-text-2);
+  color: var(--gd-bar-fg-2);
   border-radius: 50%;
   cursor: pointer;
   flex: 0 0 auto;
 }
-.gd-search-clear:hover { background: var(--gd-hover); }
+.gd-search-clear:hover { background: var(--gd-bar-hover); }
 
 .gd-topbar-right {
   display: flex;
@@ -302,25 +343,27 @@ html[data-theme="light"] .gd-body {
   margin-left: auto;
   padding-left: 2px;
 }
+/* Account glyph — flat neutral chip. No gradient, no coloured glow. */
 .gd-account {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: none;
+  border: 1px solid var(--gd-bar-line);
   border-radius: 50%;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--gd-blue), var(--color-accent, #5a5a5a));
-  color: var(--color-on-primary, #fafafa);
+  background: var(--gd-bar-hover-2);
+  color: var(--gd-bar-fg);
   flex: 0 0 auto;
   margin: 0 2px;
+  transition: background var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease;
 }
-.gd-account:hover { box-shadow: var(--shadow-focus, 0 0 0 3px rgba(0,0,0,.18)); }
+.gd-account:hover { background: var(--gd-bar-hover); box-shadow: 0 0 0 3px var(--gd-bar-hover); }
 
 /* Log-out — quiet ghost icon button that reads on hover, always inside frame */
-.gd-logout { color: var(--gd-text-2); }
-.gd-logout:hover { background: var(--color-danger-soft, #ececec); color: var(--color-danger, #555555); }
+.gd-logout { color: var(--gd-bar-fg-2); }
+.gd-topbar .gd-logout:hover { background: var(--gd-bar-hover-2); color: var(--gd-bar-fg); }
 
 /* ========================================================================== */
 /* SHELL: sidebar + main                                                      */
