@@ -211,8 +211,13 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
 
 /* Shared atoms */
 .button-primary, .button-secondary, .button-ghost { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; border-radius: 999px; font-weight: 800; white-space: nowrap; transition: transform .28s ease, box-shadow .28s ease, background .28s ease, border-color .28s ease; }
-.button-primary { padding: .92rem 1.35rem; color: #07131d; background: linear-gradient(135deg, #f5f5f5, #d4d4d4 58%, #9ca3af); box-shadow: 0 10px 35px rgba(0, 0, 0, .19), inset 0 1px rgba(255,255,255,.8); }
-.button-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 45px rgba(0,0,0,.3); }
+/* Primary pill: one flat neutral ink fill (white pill on dark, black pill on
+   light) via the shared theme tokens. No gradient, no colour, no glow — only a
+   soft neutral drop shadow. NOTE: this base rule is shared with the header
+   (.button-primary--small, which overrides it) and with SubscriptionPage
+   (.decision-cta) — both become grayscale too, by design. */
+.button-primary { padding: .92rem 1.35rem; color: var(--page-bg); background: var(--text-strong); box-shadow: 0 10px 28px rgba(0, 0, 0, .26); }
+.button-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 38px rgba(0, 0, 0, .32); }
 /* Header-only size variant — also the header's login / status pill: a flat,
    neutral ink fill (white pill on dark, black pill on light), no gradient,
    no glow. Layout + hover transform stay exactly as before. */
@@ -224,14 +229,14 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
 .button-ghost:hover { color: var(--text-strong); }
 .eyebrow { display: inline-flex; align-items: center; gap: .5rem; color: var(--cyan); font-size: .8rem; font-weight: 800; letter-spacing: .02em; }
 .eyebrow::before { content: ""; width: 2rem; height: 1px; background: linear-gradient(to left, var(--cyan), transparent); }
-.section-shell { position: relative; z-index: 2; background: linear-gradient(180deg, rgba(6,16,28,.72), rgba(6,16,28,.92)); }
+.section-shell { position: relative; z-index: 2; background: rgba(0, 0, 0, .82); }
 .section-index { color: var(--gold); font-size: .78rem; font-weight: 800; letter-spacing: .06em; }
 .section-title { font-family: "Noto Kufi Arabic"; font-size: clamp(2rem, 4vw, 4rem); line-height: 1.55; letter-spacing: -.055em; font-weight: 900; }
 .section-copy { max-width: 42rem; color: rgba(255,255,255,.56); font-size: clamp(1rem, 1.5vw, 1.16rem); line-height: 2; }
 .text-gradient { color: transparent; background: linear-gradient(120deg, #fff, #f5f5f5 55%, #d4d4d4); background-clip: text; -webkit-background-clip: text; }
 
 /* Home */
-.hero-section::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(6,16,28,.02) 0%, rgba(6,16,28,.15) 44%, rgba(6,16,28,.92) 100%); }
+.hero-section::before { content: ""; position: absolute; inset: 0; z-index: 1; background: rgba(0, 0, 0, .5); }
 .hero-vignette { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 12vw rgba(0,0,0,.55); }
 .scroll-cue { position: absolute; left: 0; bottom: -3.5rem; display: flex; align-items: center; gap: .65rem; color: rgba(255,255,255,.38); font-size: .75rem; writing-mode: vertical-rl; }
 
@@ -280,7 +285,7 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
   transition: opacity .55s ease, transform .55s ease;
 }
 .write-in.write-in--shown { opacity: 1; transform: translate3d(0, 0, 0); }
-.write-in__plain { color: #f4f9ff; }
+.write-in__plain { color: #fafafa; }
 .write-in__brand { color: #f5f5f5; }
 
 /* ── RTL typewriter wipe (single clip-path, GPU-only) ──────────
@@ -309,38 +314,41 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
 .story-paragraph .write-in__brand { font-size: 1.28em; font-weight: 900; letter-spacing: -.03em; }
 
 .platform-paragraph { font-family: "Tajawal", sans-serif; font-weight: 500; line-height: 2.15; color: rgba(255,255,255,.6); font-size: clamp(1.05rem, 1.7vw, 1.35rem); }
-.platform-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.35em; letter-spacing: -.03em; color: transparent; background: linear-gradient(110deg, #fff, #f5f5f5 55%, #f5f5f5); -webkit-background-clip: text; background-clip: text; }
+.platform-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.35em; letter-spacing: -.03em; color: #fafafa; }
 
-.full-bleed-story { z-index: 2; background: radial-gradient(circle at 12% 30%, rgba(255,255,255,.12), transparent 38%), linear-gradient(120deg, rgba(14,31,45,.96), rgba(5,15,26,.96)); border-block: 1px solid rgba(255,255,255,.07); }
-.story-line { position: absolute; width: 1px; top: 0; bottom: 0; right: 14%; background: linear-gradient(transparent, rgba(255,255,255,.4), transparent); box-shadow: 0 0 35px rgba(0,0,0,.5); }
+.full-bleed-story { z-index: 2; background: rgba(0, 0, 0, .86); border-block: 1px solid rgba(255,255,255,.07); }
+.story-line { position: absolute; width: 1px; top: 0; bottom: 0; right: 14%; background: rgba(255,255,255,.22); box-shadow: 0 0 35px rgba(0,0,0,.5); }
 .display-quote { font-family: "Noto Kufi Arabic"; font-size: clamp(2.5rem, 5.5vw, 5.7rem); line-height: 1.48; letter-spacing: -.065em; font-weight: 900; }
 
 /* ── Draggable papers desk ──────────────────────────────────── */
 .papers-desk { position: relative; margin-top: 2rem; padding: 2.5rem 0 1rem; }
-.papers-desk__grain { position: absolute; inset: 0; opacity: .5; border-radius: 30px; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.06), transparent 45%), radial-gradient(circle at 80% 70%, rgba(255,255,255,.06), transparent 45%); pointer-events: none; }
+.papers-desk__grain { position: absolute; inset: 0; opacity: .5; border-radius: 30px; background: rgba(255,255,255,.05); pointer-events: none; }
 .papers-desk__hint { display: inline-flex; align-items: center; gap: .55rem; margin-bottom: 1.5rem; color: rgba(255,255,255,.5); font-size: .85rem; font-weight: 700; }
-.papers-desk__hint-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+.papers-desk__hint-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--cyan); box-shadow: none; }
 .papers-board { position: relative; display: flex; flex-wrap: wrap; gap: 1.5rem 2.2rem; justify-content: center; align-items: center; min-height: 30rem; padding: 1.5rem; }
 .paper {
   position: relative; flex: 0 0 auto; width: clamp(13rem, 22vw, 16rem); min-height: 12rem;
   padding: 2.2rem 1.6rem 1.6rem; cursor: grab; user-select: none; touch-action: none;
   border-radius: 3px 3px 4px 4px;
   box-shadow: 0 1px 1px rgba(0,0,0,.18), 0 12px 26px rgba(0,0,0,.32), 0 22px 50px rgba(0,0,0,.22);
-  color: #2a2a24;
+  color: #2a2a2a;
 }
-.paper::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(255,255,255,.5), transparent 18%), linear-gradient(0deg, rgba(0,0,0,.05), transparent 12%); pointer-events: none; }
-.paper--cream { background: linear-gradient(160deg, #fafafa, #e5e5e5); }
-.paper--mint  { background: linear-gradient(160deg, #f5f5f5, #e0e0e0); }
-.paper--sky   { background: linear-gradient(160deg, #f5f5f5, #dedede); }
-.paper--blush { background: linear-gradient(160deg, #fafafa, #e8e8e8); }
-.paper__pin { position: absolute; top: -.55rem; right: 50%; translate: 50% 0; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #9ca3af, #4b5563 70%); box-shadow: 0 3px 6px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.5); }
+.paper::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(255,255,255,.07); pointer-events: none; }
+.paper--cream { background: #fafafa; }
+.paper--mint  { background: #f2f2f2; }
+.paper--sky   { background: #ebebeb; }
+.paper--blush { background: #f6f6f6; }
+.paper__pin { position: absolute; top: -.55rem; right: 50%; translate: 50% 0; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: #737373; box-shadow: 0 3px 6px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.5); }
 /* Removed per-paper backdrop-filter blur: with 7 draggable papers it created
    7 recompositing layers that janked badly while dragging. The tape reads the
    same as a plain translucent strip. */
 .paper__tape { position: absolute; top: -.7rem; left: 1.2rem; width: 3.4rem; height: 1.5rem; rotate: -8deg; background: rgba(255,255,255,.4); border-left: 1px dashed rgba(0,0,0,.08); border-right: 1px dashed rgba(0,0,0,.08); }
-.paper__clip { position: absolute; top: 1rem; left: 1.1rem; font: 800 .68rem/1 "Noto Kufi Arabic"; color: #6b7280; opacity: .65; letter-spacing: .02em; }
+.paper__clip { position: absolute; top: 1rem; left: 1.1rem; font: 800 .68rem/1 "Noto Kufi Arabic"; color: #737373; opacity: .65; letter-spacing: .02em; }
 .paper__text { font-family: "Noto Kufi Arabic"; font-weight: 800; font-size: clamp(.95rem, 1.4vw, 1.12rem); line-height: 1.85; margin-top: .6rem; }
-.paper__ruling { position: absolute; inset: 3.6rem .9rem .9rem; background-image: repeating-linear-gradient(transparent, transparent 1.78rem, rgba(0,0,0,.14) 1.78rem, rgba(0,0,0,.14) calc(1.78rem + 1px)); pointer-events: none; opacity: .7; }
+/* The ruled lines were painted with a repeating-linear-gradient; the grayscale
+   identity forbids gradients, so the element stays (same class, same box) with
+   a flat neutral tint instead of the printed rules. */
+.paper__ruling { position: absolute; inset: 3.6rem .9rem .9rem; background-image: none; background-color: rgba(0,0,0,.04); pointer-events: none; opacity: .7; }
 
 /* ── Laureates (top students) ───────────────────────────────── */
 .laureates { margin-top: 3.5rem; }
@@ -352,15 +360,19 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, .22); color: #0
 .laureate__school { margin-top: .5rem; color: rgba(255,255,255,.45); font-size: clamp(.85rem, 1.2vw, 1rem); }
 .laureate__average-wrap { display: flex; flex-direction: column; align-items: center; }
 .laureate__average-label { color: var(--gold); font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
-.laureate__average { margin-top: .2rem; font: 900 clamp(2.4rem, 4.5vw, 4rem)/1 "Noto Kufi Arabic"; letter-spacing: -.06em; color: transparent; background: linear-gradient(120deg, #fff, #f5f5f5 60%, #f5f5f5); -webkit-background-clip: text; background-clip: text; }
+.laureate__average { margin-top: .2rem; font: 900 clamp(2.4rem, 4.5vw, 4rem)/1 "Noto Kufi Arabic"; letter-spacing: -.06em; color: #fafafa; }
 .laureate__grades { display: flex; gap: 1.6rem; }
 .laureate__grades li { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
 .laureate__grades span { color: rgba(255,255,255,.4); font-size: .72rem; font-weight: 700; }
 .laureate__grades strong { font: 800 1.3rem/1 "Noto Kufi Arabic"; color: var(--cyan); }
-.laureate__rule { position: absolute; right: 0; left: 0; bottom: 0; height: 1px; background: linear-gradient(to left, rgba(255,255,255,.35), rgba(255,255,255,.07) 60%, transparent); transform-origin: right; }
+.laureate__rule { position: absolute; right: 0; left: 0; bottom: 0; height: 1px; background: rgba(255,255,255,.18); transform-origin: right; }
 
-.final-cta { position: relative; overflow: hidden; padding: clamp(3rem, 8vw, 7rem) 1.5rem; text-align: center; border: 1px solid rgba(255,255,255,.1); border-radius: 38px; background: radial-gradient(circle at 50% 100%, rgba(255,255,255,.18), transparent 45%), linear-gradient(135deg, rgba(17,38,53,.94), rgba(8,20,31,.9)); box-shadow: 0 40px 110px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.08); }
-.final-cta::before { content: ""; position: absolute; inset: 0; opacity: .13; background-image: radial-gradient(circle at center, white 1px, transparent 1px); background-size: 28px 28px; mask-image: radial-gradient(circle, black, transparent 68%); }
+/* Final CTA card — neutral frosted glass: white translucency over blur, a
+   hairline border and a plain black drop shadow. No colour, no gradient. */
+.final-cta { position: relative; overflow: hidden; padding: clamp(3rem, 8vw, 7rem) 1.5rem; text-align: center; border: 1px solid rgba(255,255,255,.1); border-radius: 38px; background: rgba(255,255,255,.06); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 40px 110px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.08); }
+/* The dotted texture layer stays in place (same pseudo-element) but is now a
+   flat neutral wash — its dot pattern and mask were gradient-based. */
+.final-cta::before { content: ""; position: absolute; inset: 0; opacity: .13; background-image: none; background-color: rgba(255,255,255,.06); }
 .final-cta > * { position: relative; z-index: 2; }
 .final-cta h2 { margin-top: 1.5rem; font: 900 clamp(2.2rem, 5vw, 5rem)/1.5 "Noto Kufi Arabic"; letter-spacing: -.06em; }
 .final-cta h2 span { color: var(--cyan); }
@@ -612,51 +624,52 @@ html[data-theme="light"] .mobile-menu__link:hover, html[data-theme="light"] .mob
 html[data-theme="light"] .mobile-menu__scrim { background: rgba(0, 0, 0, 0.35); }
 
 /* Buttons */
-html[data-theme="light"] .button-secondary { color: #081521; border-color: rgba(8, 21, 33, .16); background: rgba(255, 255, 255, .7); box-shadow: inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .button-secondary:hover { border-color: rgba(8, 21, 33, .3); background: rgba(255, 255, 255, .9); }
+html[data-theme="light"] .button-secondary { color: #0a0a0a; border-color: rgba(0, 0, 0, .16); background: rgba(255, 255, 255, .7); box-shadow: inset 0 1px rgba(255, 255, 255, .8); }
+html[data-theme="light"] .button-secondary:hover { border-color: rgba(0, 0, 0, .3); background: rgba(255, 255, 255, .9); }
 html[data-theme="light"] .button-ghost { color: var(--text-muted); }
 html[data-theme="light"] .button-ghost:hover { color: var(--text-strong); }
 
 /* Sections + typography */
-html[data-theme="light"] .section-shell { background: linear-gradient(180deg, rgba(245, 249, 254, .72), rgba(238, 244, 252, .92)); }
+html[data-theme="light"] .section-shell { background: rgba(250, 250, 250, .88); }
 html[data-theme="light"] .section-copy { color: var(--text-muted); }
 html[data-theme="light"] .eyebrow { color: var(--cyan); }
 html[data-theme="light"] .eyebrow::before { background: linear-gradient(to left, var(--cyan), transparent); }
 html[data-theme="light"] .text-gradient,
-html[data-theme="light"] .platform-brand,
-html[data-theme="light"] .subscription-title span,
-html[data-theme="light"] .laureate__average {
+html[data-theme="light"] .subscription-title span {
   background: linear-gradient(120deg, #081521, #111111 52%, #6b7280);
   -webkit-background-clip: text; background-clip: text;
 }
-html[data-theme="light"] .write-in__plain { color: #081521; }
+/* Home brand words: one solid ink colour, no gradient / no background-clip. */
+html[data-theme="light"] .platform-brand,
+html[data-theme="light"] .laureate__average { color: #0a0a0a; }
+html[data-theme="light"] .write-in__plain { color: #0a0a0a; }
 html[data-theme="light"] .write-in__brand { color: #111111; }
 html[data-theme="light"] .hero-slogan { text-shadow: 0 10px 40px rgba(0, 0, 0, .22); }
-html[data-theme="light"] .hero-slogan .write-in__plain { color: rgba(8, 21, 33, .88); }
+html[data-theme="light"] .hero-slogan .write-in__plain { color: rgba(0, 0, 0, .88); }
 html[data-theme="light"] .hero-slogan .write-in__brand { text-shadow: 0 12px 45px rgba(0, 0, 0, .22); }
-html[data-theme="light"] .story-paragraph .write-in__plain { color: rgba(8, 21, 33, .82); }
+html[data-theme="light"] .story-paragraph .write-in__plain { color: rgba(0, 0, 0, .82); }
 html[data-theme="light"] .platform-paragraph { color: var(--text-muted); }
-html[data-theme="light"] .scroll-cue { color: rgba(8, 21, 33, .4); }
+html[data-theme="light"] .scroll-cue { color: rgba(0, 0, 0, .45); }
 html[data-theme="light"] .section-index { color: var(--gold); }
 
 /* Home story band */
-html[data-theme="light"] .full-bleed-story { background: radial-gradient(circle at 12% 30%, rgba(0, 0, 0, .1), transparent 38%), linear-gradient(120deg, rgba(226, 236, 248, .96), rgba(238, 244, 252, .96)); border-block-color: rgba(8, 21, 33, .08); }
-html[data-theme="light"] .story-line { background: linear-gradient(transparent, rgba(255, 255, 255, .35), transparent); box-shadow: 0 0 35px rgba(0, 0, 0, .3); }
+html[data-theme="light"] .full-bleed-story { background: rgba(245, 245, 245, .94); border-block-color: rgba(0, 0, 0, .08); }
+html[data-theme="light"] .story-line { background: rgba(0, 0, 0, .18); box-shadow: 0 0 35px rgba(0, 0, 0, .3); }
 
 /* Draggable papers desk — text is already dark on light paper; just soften bg */
-html[data-theme="light"] .papers-desk__hint { color: rgba(8, 21, 33, .5); }
+html[data-theme="light"] .papers-desk__hint { color: rgba(0, 0, 0, .5); }
 
 /* Laureates */
-html[data-theme="light"] .laureate__ordinal { -webkit-text-stroke-color: rgba(8, 21, 33, .22); }
+html[data-theme="light"] .laureate__ordinal { -webkit-text-stroke-color: rgba(0, 0, 0, .22); }
 html[data-theme="light"] .laureate__school { color: var(--text-faint); }
 html[data-theme="light"] .laureate__average-label { color: var(--gold); }
-html[data-theme="light"] .laureate__grades span { color: rgba(8, 21, 33, .45); }
+html[data-theme="light"] .laureate__grades span { color: rgba(0, 0, 0, .45); }
 html[data-theme="light"] .laureate__grades strong { color: var(--cyan); }
-html[data-theme="light"] .laureate__rule { background: linear-gradient(to left, rgba(0, 0, 0, .35), rgba(8, 21, 33, .08) 60%, transparent); }
+html[data-theme="light"] .laureate__rule { background: rgba(0, 0, 0, .18); }
 
 /* Final CTA / decision cards → light glass */
-html[data-theme="light"] .final-cta { border-color: rgba(8, 21, 33, .1); background: radial-gradient(circle at 50% 100%, rgba(0, 0, 0, .14), transparent 45%), linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(230, 240, 250, .9)); box-shadow: 0 40px 110px rgba(0, 0, 0, .14), inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .final-cta::before { opacity: .06; }
+html[data-theme="light"] .final-cta { border-color: rgba(0, 0, 0, .1); background: rgba(255, 255, 255, .7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 40px 110px rgba(0, 0, 0, .14), inset 0 1px rgba(255, 255, 255, .8); }
+html[data-theme="light"] .final-cta::before { opacity: .06; background-color: rgba(0, 0, 0, .06); }
 html[data-theme="light"] .final-cta h2 span { color: var(--cyan); }
 html[data-theme="light"] .final-cta p { color: var(--text-muted); }
 
@@ -683,7 +696,7 @@ html[data-theme="light"] .decision-card__shine { opacity: .35; background: #fff7
 
 /* Footer */
 html[data-theme="light"] footer { border-top-color: rgba(8, 21, 33, .1) !important; }
-html[data-theme="light"] .footer-brand { color: #081521; }
+html[data-theme="light"] .footer-brand { color: #0a0a0a; }
 
 /* Auth cards keep their dark-glass identity (unchanged per spec), but nudge
    the surrounding page glow to suit daylight. */
@@ -693,10 +706,10 @@ html[data-theme="light"] .auth-page::before { border-color: rgba(0, 0, 0, .08); 
    These are the few spots that hard-code white via utilities. Scoped to the
    marketing pages (NOT the auth cards, which stay dark-glass by design). */
 html[data-theme="light"] .footer-brand + p,
-html[data-theme="light"] .text-white\/45 { color: rgba(8, 21, 33, .55) !important; }
-html[data-theme="light"] .text-white\/55 { color: rgba(8, 21, 33, .62) !important; }
-html[data-theme="light"] .text-white\/60 { color: rgba(8, 21, 33, .64) !important; }
-html[data-theme="light"] .text-white\/70 { color: rgba(8, 21, 33, .72) !important; }
+html[data-theme="light"] .text-white\/45 { color: rgba(0, 0, 0, .55) !important; }
+html[data-theme="light"] .text-white\/55 { color: rgba(0, 0, 0, .62) !important; }
+html[data-theme="light"] .text-white\/60 { color: rgba(0, 0, 0, .64) !important; }
+html[data-theme="light"] .text-white\/70 { color: rgba(0, 0, 0, .72) !important; }
 
 /* Auth cards keep their own dark palette regardless of theme — never let the
    marketing light-mode utility overrides bleed into them. */
