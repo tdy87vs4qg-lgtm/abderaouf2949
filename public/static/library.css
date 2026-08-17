@@ -26,9 +26,9 @@
 /* ── Brand tokens shared by both library themes ─────────────────────────── */
 .gd-body {
   /* Signature exterior-brand accents */
-  --gd-cyan:        #6ee7dc;   /* luminous teal — primary brand accent */
-  --gd-cyan-strong: #8ff3e9;
-  --gd-gold:        #efc47a;   /* warm gold — secondary brand accent */
+  --gd-cyan:        #a3a3a3;   /* luminous teal — primary brand accent */
+  --gd-cyan-strong: #c4c4c4;
+  --gd-gold:        #c9c9c9;   /* warm gold — secondary brand accent */
 
   --gd-topbar-h:    64px;
   --gd-sidebar-w:   248px;
@@ -41,15 +41,15 @@
 .gd-body,
 html[data-theme="dark"] .gd-body {
   /* Primary → brand cyan (the interactive/active colour on the dark canvas) */
-  --gd-blue:        #6ee7dc;
-  --gd-blue-hover:  #8ff3e9;
-  --gd-blue-soft:   rgba(110, 231, 220, .14);
-  --gd-blue-tint:   rgba(110, 231, 220, .42);
+  --gd-blue:        #a3a3a3;
+  --gd-blue-hover:  #c4c4c4;
+  --gd-blue-soft:   rgba(255, 255, 255, .14);
+  --gd-blue-tint:   rgba(255, 255, 255, .42);
 
   /* Text → cool off-white on deep navy */
   --gd-text:        #f7fbff;
-  --gd-text-2:      rgba(247, 251, 255, .70);
-  --gd-text-3:      rgba(247, 251, 255, .48);
+  --gd-text-2:      rgba(255, 255, 255, .70);
+  --gd-text-3:      rgba(255, 255, 255, .48);
 
   /* Lines + surfaces → deep ink-navy, translucent hairlines */
   --gd-line:        rgba(255, 255, 255, .12);
@@ -59,20 +59,20 @@ html[data-theme="dark"] .gd-body {
   --gd-bg:          #06101c;   /* page / topbar / sidebar canvas */
   --gd-hover:       rgba(255, 255, 255, .06);
   --gd-hover-2:     rgba(255, 255, 255, .10);
-  --gd-selected:    rgba(110, 231, 220, .14);
+  --gd-selected:    rgba(255, 255, 255, .14);
   --gd-chip:        rgba(255, 255, 255, .07);
-  --gd-scrim:       rgba(3, 9, 17, .62);
+  --gd-scrim:       rgba(0, 0, 0, .62);
   --gd-shimmer:     rgba(255, 255, 255, .14);
-  --gd-lock-veil:   rgba(4, 10, 18, .34);
+  --gd-lock-veil:   rgba(0, 0, 0, .34);
   --gd-on-accent:   #07131d;   /* dark ink text ON the cyan/gold accents */
   --gd-tooltip-bg:  #12283a;   /* elevated navy chip */
   --gd-tooltip-fg:  #f7fbff;
 
   /* Type glyph accents, themed to the brand palette */
-  --gd-folder:      #6ee7dc;
-  --gd-red:         #efc47a;    /* PDF-ish docs → warm gold */
-  --gd-green:       #6ee7dc;
-  --gd-yellow:      #efc47a;
+  --gd-folder:      #a3a3a3;
+  --gd-red:         #c9c9c9;    /* PDF-ish docs → warm gold */
+  --gd-green:       #a3a3a3;
+  --gd-yellow:      #c9c9c9;
 
   --gd-shadow-1:    0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.35);
   --gd-shadow-2:    0 6px 20px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
@@ -80,73 +80,73 @@ html[data-theme="dark"] .gd-body {
 
   /* Re-point the base tokens the JS-injected icon SVGs read, so file/folder
      glyphs stay on-brand — SCOPED to the library, admin is untouched. */
-  --color-primary:        #6ee7dc;
-  --color-accent:         #efc47a;
-  --color-success:        #6ee7dc;
-  --color-warning:        #efc47a;
-  --color-danger:         #f0a58f;
-  --color-ink-secondary:  rgba(247, 251, 255, .70);
+  --color-primary:        #a3a3a3;
+  --color-accent:         #c9c9c9;
+  --color-success:        #a3a3a3;
+  --color-warning:        #c9c9c9;
+  --color-danger:         #b0b0b0;
+  --color-ink-secondary:  rgba(255, 255, 255, .70);
   --color-on-primary:     #07131d;
   --color-on-accent:      #07131d;
   /* Soft/support tokens used by a few library atoms (sample note, log-out
      hover, scrollbar) — brand-tinted so nothing falls back to a light chip. */
-  --color-accent-soft:    rgba(239, 196, 122, .14);
-  --color-warning-soft:   rgba(239, 196, 122, .28);
-  --color-danger-soft:    rgba(240, 165, 143, .16);
+  --color-accent-soft:    rgba(255, 255, 255, .14);
+  --color-warning-soft:   rgba(255, 255, 255, .28);
+  --color-danger-soft:    rgba(255, 255, 255, .16);
   --color-border-strong:  rgba(255, 255, 255, .20);
 }
 
 /* ── LIGHT theme — warm, high-contrast daylight version of the brand ─────── */
 html[data-theme="light"] .gd-body {
   /* Primary → deeper teal that reads on light backgrounds */
-  --gd-blue:        #0d7d72;
-  --gd-blue-hover:  #0a5f57;
-  --gd-blue-soft:   rgba(13, 148, 136, .12);
-  --gd-blue-tint:   rgba(13, 148, 136, .42);
+  --gd-blue:        #4a4a4a;
+  --gd-blue-hover:  #333333;
+  --gd-blue-soft:   rgba(0, 0, 0, .12);
+  --gd-blue-tint:   rgba(0, 0, 0, .42);
 
   /* Text → deep ink-navy on soft off-white */
   --gd-text:        #0b1a27;
-  --gd-text-2:      rgba(11, 26, 39, .66);
-  --gd-text-3:      rgba(11, 26, 39, .46);
+  --gd-text-2:      rgba(0, 0, 0, .66);
+  --gd-text-3:      rgba(0, 0, 0, .46);
 
-  --gd-line:        rgba(11, 26, 39, .12);
-  --gd-line-soft:   rgba(11, 26, 39, .07);
+  --gd-line:        rgba(0, 0, 0, .12);
+  --gd-line-soft:   rgba(0, 0, 0, .07);
   --gd-surface:     #ffffff;
   --gd-surface-2:   #eef3fb;
   --gd-bg:          #eef3fb;
-  --gd-hover:       rgba(11, 26, 39, .05);
-  --gd-hover-2:     rgba(11, 26, 39, .09);
-  --gd-selected:    rgba(13, 148, 136, .12);
-  --gd-chip:        rgba(11, 26, 39, .06);
-  --gd-scrim:       rgba(6, 16, 28, .45);
+  --gd-hover:       rgba(0, 0, 0, .05);
+  --gd-hover-2:     rgba(0, 0, 0, .09);
+  --gd-selected:    rgba(0, 0, 0, .12);
+  --gd-chip:        rgba(0, 0, 0, .06);
+  --gd-scrim:       rgba(0, 0, 0, .45);
   --gd-shimmer:     rgba(255, 255, 255, .7);
-  --gd-lock-veil:   rgba(6, 16, 28, .08);
+  --gd-lock-veil:   rgba(0, 0, 0, .08);
   --gd-on-accent:   #ffffff;
   --gd-tooltip-bg:  #0b1a27;   /* deep ink chip on light canvas */
   --gd-tooltip-fg:  #f7fbff;
 
-  --gd-folder:      #0d7d72;
-  --gd-red:         #b57e28;    /* PDF-ish docs → warm gold (darkened for light) */
-  --gd-green:       #0d7d72;
-  --gd-yellow:      #b57e28;
+  --gd-folder:      #4a4a4a;
+  --gd-red:         #5a5a5a;    /* PDF-ish docs → warm gold (darkened for light) */
+  --gd-green:       #4a4a4a;
+  --gd-yellow:      #5a5a5a;
 
-  --gd-shadow-1:    0 1px 3px rgba(6,16,28,.09), 0 1px 2px rgba(6,16,28,.05);
-  --gd-shadow-2:    0 4px 14px rgba(6,16,28,.10), 0 2px 5px rgba(6,16,28,.06);
-  --gd-shadow-menu: 0 14px 40px rgba(6,16,28,.16), 0 4px 10px rgba(6,16,28,.08);
+  --gd-shadow-1:    0 1px 3px rgba(0,0,0,.09), 0 1px 2px rgba(0,0,0,.05);
+  --gd-shadow-2:    0 4px 14px rgba(0,0,0,.10), 0 2px 5px rgba(0,0,0,.06);
+  --gd-shadow-menu: 0 14px 40px rgba(0,0,0,.16), 0 4px 10px rgba(0,0,0,.08);
 
   /* On-brand icon glyphs for the light theme */
-  --color-primary:        #0d7d72;
-  --color-accent:         #b57e28;
-  --color-success:        #0d7d72;
-  --color-warning:        #b57e28;
-  --color-danger:         #a63d2f;
-  --color-ink-secondary:  rgba(11, 26, 39, .66);
+  --color-primary:        #4a4a4a;
+  --color-accent:         #5a5a5a;
+  --color-success:        #4a4a4a;
+  --color-warning:        #5a5a5a;
+  --color-danger:         #555555;
+  --color-ink-secondary:  rgba(0, 0, 0, .66);
   --color-on-primary:     #ffffff;
   --color-on-accent:      #ffffff;
-  --color-accent-soft:    rgba(181, 126, 40, .12);
-  --color-warning-soft:   rgba(181, 126, 40, .20);
-  --color-danger-soft:    rgba(166, 61, 47, .12);
-  --color-border-strong:  rgba(11, 26, 39, .28);
+  --color-accent-soft:    rgba(0, 0, 0, .12);
+  --color-warning-soft:   rgba(0, 0, 0, .20);
+  --color-danger-soft:    rgba(0, 0, 0, .12);
+  --color-border-strong:  rgba(0, 0, 0, .28);
 }
 
 /* ------------------------------------------------------------------ reset */
@@ -311,16 +311,16 @@ html[data-theme="light"] .gd-body {
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--gd-blue), var(--color-accent, #B97E2C));
-  color: var(--color-on-primary, #F7FAFC);
+  background: linear-gradient(135deg, var(--gd-blue), var(--color-accent, #5a5a5a));
+  color: var(--color-on-primary, #fafafa);
   flex: 0 0 auto;
   margin: 0 2px;
 }
-.gd-account:hover { box-shadow: var(--shadow-focus, 0 0 0 3px rgba(22,50,79,.18)); }
+.gd-account:hover { box-shadow: var(--shadow-focus, 0 0 0 3px rgba(0,0,0,.18)); }
 
 /* Log-out — quiet ghost icon button that reads on hover, always inside frame */
 .gd-logout { color: var(--gd-text-2); }
-.gd-logout:hover { background: var(--color-danger-soft, #F6E7E4); color: var(--color-danger, #A63D2F); }
+.gd-logout:hover { background: var(--color-danger-soft, #ececec); color: var(--color-danger, #555555); }
 
 /* ========================================================================== */
 /* SHELL: sidebar + main                                                      */
@@ -415,7 +415,7 @@ html[data-theme="light"] .gd-body {
 .gd-scrim {
   position: fixed;
   inset: var(--gd-topbar-h) 0 0 0;
-  background: var(--gd-scrim, rgba(31,41,51,.4));
+  background: var(--gd-scrim, rgba(0,0,0,.4));
   z-index: 29;
   opacity: 0;
   transition: opacity var(--duration-base, 200ms) ease;
@@ -516,19 +516,19 @@ html[data-theme="light"] .gd-body {
   gap: 10px;
   margin: 0 24px 4px;
   padding: 10px 14px;
-  background: var(--color-accent-soft, #F7EEDD);
-  border: 1px solid var(--color-warning-soft, #F8EDDE);
+  background: var(--color-accent-soft, #ededed);
+  border: 1px solid var(--color-warning-soft, #e8e8e8);
   border-radius: var(--gd-radius-sm);
   font-size: 0.8125rem;
-  color: var(--color-warning, #A9631A);
+  color: var(--color-warning, #5a5a5a);
 }
 .gd-chip {
   display: inline-flex;
   align-items: center;
   padding: 2px 10px;
   border-radius: 999px;
-  background: var(--color-accent, #B97E2C);
-  color: var(--color-on-accent, #FFFDF7);
+  background: var(--color-accent, #5a5a5a);
+  color: var(--color-on-accent, #ffffff);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: .3px;
@@ -544,7 +544,7 @@ html[data-theme="light"] .gd-body {
 }
 .gd-scroller::-webkit-scrollbar { width: 12px; }
 .gd-scroller::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong, #C9C2B4); border-radius: 999px; border: 3px solid var(--gd-bg);
+  background: var(--color-border-strong, #c4c4c4); border-radius: 999px; border: 3px solid var(--gd-bg);
 }
 .gd-scroller::-webkit-scrollbar-thumb:hover { background: var(--gd-text-3); }
 
@@ -706,7 +706,7 @@ html[data-theme="light"] .gd-body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 50%, var(--gd-lock-veil, rgba(31,41,51,.08)));
+  background: linear-gradient(180deg, transparent 50%, var(--gd-lock-veil, rgba(0,0,0,.08)));
 }
 .gd-card.is-locked .gd-card-lock { background: var(--gd-blue-soft); color: var(--gd-blue); }
 
@@ -874,7 +874,7 @@ html[data-theme="light"] .gd-body {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: var(--gd-scrim, rgba(31,41,51,.5));
+  background: var(--gd-scrim, rgba(0,0,0,.5));
   opacity: 0;
   transition: opacity var(--duration-base, 200ms) ease;
 }
@@ -946,7 +946,7 @@ html[data-theme="light"] .gd-body {
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.01em;
-  color: var(--gd-gold, #efc47a);
+  color: var(--gd-gold, #c9c9c9);
 }
 .gd-price-note {
   margin: 10px 0 0;
@@ -1067,7 +1067,7 @@ html[data-theme="light"] .gd-body {
   z-index: 450;
   display: flex;
   flex-direction: column;
-  background: var(--gd-surface-2, #f2ede3);
+  background: var(--gd-surface-2, #f0f0f0);
   opacity: 0;
   transition: opacity var(--duration-base, 200ms) ease;
 }
@@ -1088,7 +1088,7 @@ html[data-theme="light"] .gd-body {
   font-family: var(--font-heading, 'Fraunces', Georgia, serif);
   font-size: 1.02rem;
   font-weight: 600;
-  color: var(--gd-blue, #16324F);
+  color: var(--gd-blue, #666666);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1103,7 +1103,7 @@ html[data-theme="light"] .gd-body {
   gap: 4px;
   padding: 2px;
   border-radius: 999px;
-  background: var(--gd-blue-soft, #e7edf3);
+  background: var(--gd-blue-soft, #ededed);
 }
 .gd-viewer-zoom[hidden] { display: none; }
 .gd-viewer-zoom .gd-icon-btn { width: 34px; height: 34px; }
@@ -1112,7 +1112,7 @@ html[data-theme="light"] .gd-body {
   text-align: center;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--gd-blue, #16324F);
+  color: var(--gd-blue, #666666);
   font-variant-numeric: tabular-nums;
   user-select: none;
 }
@@ -1124,8 +1124,8 @@ html[data-theme="light"] .gd-body {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: capitalize;
-  background: var(--gd-blue-soft, #e7edf3);
-  color: var(--gd-blue, #16324F);
+  background: var(--gd-blue-soft, #ededed);
+  color: var(--gd-blue, #666666);
 }
 .gd-viewer-stage {
   flex: 1 1 auto;
@@ -1141,7 +1141,7 @@ html[data-theme="light"] .gd-body {
   display: block;
   padding: 0;
   overflow: hidden;
-  background: var(--gd-surface-2, #f2ede3);
+  background: var(--gd-surface-2, #f0f0f0);
 }
 /* Center-only content (spinner, message, unsupported note, iframe/video) that
    is placed directly in the stage without its own scroller. Applied to any
@@ -1240,12 +1240,12 @@ html[data-theme="light"] .gd-body {
   box-shadow: var(--gd-shadow-menu, 0 6px 24px rgba(0,0,0,.12));
 }
 .gd-viewer-video { max-width: 100%; max-height: 100%; border-radius: 12px; background: #000; margin: auto; }
-.gd-viewer-msg { max-width: 34rem; margin: auto; text-align: center; color: var(--gd-text-2, #7A6A52); line-height: 1.6; padding: 24px; }
+.gd-viewer-msg { max-width: 34rem; margin: auto; text-align: center; color: var(--gd-text-2, #6e6e6e); line-height: 1.6; padding: 24px; }
 .gd-viewer-spinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .gd-spin {
   width: 34px; height: 34px; border-radius: 50%;
-  border: 3px solid var(--gd-blue-soft, #e7edf3);
-  border-top-color: var(--gd-blue, #16324F);
+  border: 3px solid var(--gd-blue-soft, #ededed);
+  border-top-color: var(--gd-blue, #666666);
   animation: gd-spin 0.8s linear infinite;
 }
 @keyframes gd-spin { to { transform: rotate(360deg); } }
