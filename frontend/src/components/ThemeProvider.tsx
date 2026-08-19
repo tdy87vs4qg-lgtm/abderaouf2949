@@ -58,7 +58,7 @@ function applyTheme(theme: Theme) {
   root.setAttribute('data-theme', theme)
   root.style.colorScheme = theme
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#eef4fc' : '#050d18')
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#f5f5f5' : '#101010')
 }
 
 /**
