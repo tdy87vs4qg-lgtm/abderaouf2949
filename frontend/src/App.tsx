@@ -19,15 +19,24 @@ const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'))
 export default function App() {
   const location = useLocation()
 
+  // The redesigned home page is a self-contained, single-screen composition:
+  // it carries its OWN minimal chrome (brand top-left + a ⋮ menu top-right)
+  // and its own pristine grid ground. The global SiteHeader and the cinematic
+  // AmbientBackdrop would both fight that composition, so they are simply not
+  // mounted wherever HomePage renders. That includes the catch-all route, which
+  // also renders HomePage. Every other route keeps them exactly as before.
+  const CHROME_ROUTES = ['/login', '/signup', '/subscription']
+  const isHome = !CHROME_ROUTES.includes(location.pathname)
+
   return (
     <div className="app-shell min-h-screen overflow-x-hidden bg-ink text-white" dir="rtl">
       <ScrollToTop />
-      <AmbientBackdrop />
+      {!isHome && <AmbientBackdrop />}
       {/* Shown ONLY inside an in-app browser (TikTok / Instagram / Facebook /
           Telegram web views), where Google's OAuth screen refuses to load.
           Renders null everywhere else and touches no auth logic. */}
       <InAppBrowserNotice />
-      <SiteHeader />
+      {!isHome && <SiteHeader />}
       <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
         <LazyAnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>

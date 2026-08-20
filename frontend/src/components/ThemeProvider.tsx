@@ -58,7 +58,9 @@ function applyTheme(theme: Theme) {
   root.setAttribute('data-theme', theme)
   root.style.colorScheme = theme
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#f5f5f5' : '#101010')
+  // Kept in lockstep with the pre-paint script in index.html and the home
+  // page's ground, so the mobile URL bar never flashes a different gray.
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0a0a0a')
 }
 
 /**

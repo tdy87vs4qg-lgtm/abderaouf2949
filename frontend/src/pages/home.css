@@ -1,0 +1,516 @@
+/* ════════════════════════════════════════════════════════════════════
+   تيسير — HOME  ·  "Quiet Luxury / Scandinavian Minimalist"
+   ────────────────────────────────────────────────────────────────────
+   A single, calm screen. Everything here obeys four rules:
+
+   1. MONOCHROME ONLY. White, black, refined neutral grays. There is not
+      one hue in this file — every colour value is either achromatic
+      (R = G = B) or a neutral alpha over the page. No gold, no teal, no
+      neon, no colour gradient, no 3D.
+   2. THE GRID IS TEXTURE, NOT DECORATION. Two stacked hairline grids at
+      ~2–4% alpha, softly masked at the edges. It should read as paper
+      tooth — you should notice the quality, never the lines.
+   3. MATERIAL, NOT EFFECTS. The menu is one real iOS sheet: blur +
+      saturation + a 1px inner highlight + a hairline + one wide, low
+      shadow. Both `-webkit-backdrop-filter` and `backdrop-filter` are
+      declared so Safari / iOS render the true frosted material.
+   4. MOTION IS A WHISPER. 200–420ms, GPU-only (opacity / transform),
+      Apple's own easing, and fully disabled under reduced-motion.
+
+   Scoped under `.home-quiet` (plus `html[data-page="home"]` for the two
+   things that must reach the document: the page ground and scrollbar),
+   so no other route inherits anything from here.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ─────────────────────────────────────────────────────────
+   Light ("pristine white") is the design's home base; dark is the same
+   scale inverted onto near-black. Only luminance ever changes. */
+.home-quiet {
+  --hq-bg: #ffffff;
+  --hq-ground: #fafafa;          /* the faintest lift under the cards */
+  --hq-ink: #0a0a0a;             /* headline / brand */
+  --hq-ink-2: #404040;           /* body copy — neutral-700 */
+  --hq-ink-3: #737373;           /* secondary — neutral-500 */
+  --hq-ink-4: #a3a3a3;           /* labels / hairline type — neutral-400 */
+
+  --hq-line: rgba(10, 10, 10, 0.042);      /* major grid (72px) */
+  --hq-line-fine: rgba(10, 10, 10, 0.022); /* minor grid (18px) */
+  --hq-hairline: rgba(10, 10, 10, 0.09);
+  --hq-hairline-soft: rgba(10, 10, 10, 0.06);
+  --hq-surface: rgba(255, 255, 255, 0.72);
+  --hq-surface-hover: #ffffff;
+
+  --hq-shadow: 0 1px 2px rgba(10, 10, 10, 0.03);
+  --hq-shadow-lift: 0 18px 40px -26px rgba(10, 10, 10, 0.22),
+                    0 2px 6px -2px rgba(10, 10, 10, 0.05);
+
+  --hq-glass: rgba(255, 255, 255, 0.55);
+  --hq-glass-border: rgba(10, 10, 10, 0.07);
+  --hq-glass-highlight: rgba(255, 255, 255, 0.85);
+  --hq-glass-shadow: 0 24px 60px -22px rgba(10, 10, 10, 0.24),
+                     0 2px 8px -4px rgba(10, 10, 10, 0.08);
+  --hq-scrim: rgba(120, 120, 120, 0.12);
+
+  --hq-ease: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS sheet curve */
+  --hq-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-theme="dark"] .home-quiet {
+  --hq-bg: #0a0a0a;
+  --hq-ground: #0f0f0f;
+  --hq-ink: #fafafa;
+  --hq-ink-2: #d4d4d4;
+  --hq-ink-3: #a3a3a3;
+  --hq-ink-4: #737373;
+
+  --hq-line: rgba(255, 255, 255, 0.045);
+  --hq-line-fine: rgba(255, 255, 255, 0.022);
+  --hq-hairline: rgba(255, 255, 255, 0.10);
+  --hq-hairline-soft: rgba(255, 255, 255, 0.06);
+  --hq-surface: rgba(255, 255, 255, 0.022);
+  --hq-surface-hover: rgba(255, 255, 255, 0.045);
+
+  --hq-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --hq-shadow-lift: 0 20px 44px -26px rgba(0, 0, 0, 0.9),
+                    0 2px 6px -2px rgba(0, 0, 0, 0.4);
+
+  --hq-glass: rgba(20, 20, 20, 0.55);
+  --hq-glass-border: rgba(255, 255, 255, 0.10);
+  --hq-glass-highlight: rgba(255, 255, 255, 0.08);
+  --hq-glass-shadow: 0 26px 64px -22px rgba(0, 0, 0, 0.85),
+                     0 2px 8px -4px rgba(0, 0, 0, 0.5);
+  --hq-scrim: rgba(0, 0, 0, 0.42);
+}
+
+/* ── The page ground ───────────────────────────────────────────────
+   `data-page="home"` is set on <html> while the route is mounted, so the
+   overscroll area, the mobile URL bar and the scrollbar all match the
+   pristine white / near-black ground instead of the site's gray. */
+html[data-page="home"],
+html[data-page="home"] body { background: #ffffff; }
+html[data-page="home"][data-theme="dark"],
+html[data-page="home"][data-theme="dark"] body { background: #0a0a0a; }
+html[data-page="home"] .app-shell { background: transparent; }
+
+.home-quiet {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+  background: var(--hq-bg);
+  color: var(--hq-ink);
+  font-family: var(--font-ui);
+  transition: background-color 0.42s var(--hq-ease), color 0.42s var(--hq-ease);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   1 · THE GRID  —  premium texture, zero distraction
+   Two hairline grids: a 72px major and an 18px minor, both at 2–4%.
+   The whole layer is masked so the lines dissolve toward the edges and
+   never terminate visibly against the viewport.
+   ══════════════════════════════════════════════════════════════════ */
+.hq-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--hq-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hq-line) 1px, transparent 1px),
+    linear-gradient(to right, var(--hq-line-fine) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hq-line-fine) 1px, transparent 1px);
+  background-size: 72px 72px, 72px 72px, 18px 18px, 18px 18px;
+  background-position: center center;
+  -webkit-mask-image: radial-gradient(115% 95% at 50% 6%, #000 42%, transparent 100%);
+  mask-image: radial-gradient(115% 95% at 50% 6%, #000 42%, transparent 100%);
+}
+
+/* One extremely soft achromatic bloom so the white never looks flat.
+   Pure luminance — no hue, no visible edge. */
+.hq-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(72% 52% at 50% 0%, rgba(10, 10, 10, 0.026), transparent 72%);
+}
+html[data-theme="dark"] .hq-canvas::after {
+  background: radial-gradient(72% 52% at 50% 0%, rgba(255, 255, 255, 0.035), transparent 72%);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   2 · TOP BAR — brand physically left, ⋮ physically right
+   The bar is laid out LTR on purpose (dir="ltr" in the markup) so the
+   two anchors sit exactly where the design asks, while every piece of
+   Arabic text inside stays `dir="rtl"`.
+   ══════════════════════════════════════════════════════════════════ */
+.hq-bar {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.1rem, 2.6vw, 1.75rem) clamp(1.25rem, 4vw, 2.75rem);
+}
+
+.hq-brand {
+  display: inline-block;
+  color: var(--hq-ink);
+  font-family: var(--font-ui);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0;                 /* Arabic is joined — never track it */
+  transition: opacity 0.3s var(--hq-ease-soft);
+}
+.hq-brand:hover { opacity: 0.62; }
+.hq-brand:focus-visible { outline: 1px solid var(--hq-ink-4); outline-offset: 6px; border-radius: 4px; }
+
+/* ── the ⋮ button ── */
+.hq-dots {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 2.375rem;
+  height: 2.375rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.28s var(--hq-ease-soft),
+              border-color 0.28s var(--hq-ease-soft),
+              transform 0.28s var(--hq-ease);
+}
+.hq-dots span {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--hq-ink-3);
+  transition: background-color 0.28s var(--hq-ease-soft);
+}
+.hq-dots:hover { background: var(--hq-surface-hover); border-color: var(--hq-hairline-soft); }
+.hq-dots:hover span { background: var(--hq-ink); }
+.hq-dots:active { transform: scale(0.94); }
+.hq-dots[aria-expanded="true"] { background: var(--hq-surface-hover); border-color: var(--hq-hairline-soft); }
+.hq-dots[aria-expanded="true"] span { background: var(--hq-ink); }
+.hq-dots:focus-visible { outline: 1px solid var(--hq-ink-4); outline-offset: 4px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   3 · THE MENU — an authentic iOS translucent sheet
+   blur + saturate + hairline + 1px inner highlight + one wide shadow.
+   `-webkit-backdrop-filter` is declared first for Safari / iOS.
+   ══════════════════════════════════════════════════════════════════ */
+.hq-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--hq-scrim);
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+}
+
+.hq-menu {
+  position: absolute;
+  top: calc(100% - 0.35rem);
+  right: clamp(1.25rem, 4vw, 2.75rem);
+  z-index: 50;
+  width: min(17.5rem, calc(100vw - 2.5rem));
+  padding: 0.5rem;
+  transform-origin: top right;
+  border: 1px solid var(--hq-glass-border);
+  border-radius: 1.5rem;                       /* rounded-3xl */
+  background: var(--hq-glass);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: var(--hq-glass-shadow), inset 0 1px 0 var(--hq-glass-highlight);
+}
+
+/* Safari on iOS ignores backdrop-filter when the element is composited
+   inside a filtered ancestor; the fallback keeps it legible either way. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .hq-menu { background: var(--hq-bg); }
+}
+
+.hq-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.72rem 0.9rem;
+  border: 0;
+  border-radius: 1rem;
+  background: transparent;
+  color: var(--hq-ink-2);
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.7;
+  text-align: right;
+  cursor: pointer;
+  transition: background-color 0.24s var(--hq-ease-soft), color 0.24s var(--hq-ease-soft);
+}
+.hq-menu-item:hover,
+.hq-menu-item:focus-visible {
+  background: var(--hq-surface-hover);
+  color: var(--hq-ink);
+  outline: none;
+}
+.hq-menu-item__hint { color: var(--hq-ink-4); font-size: 0.78rem; }
+
+.hq-menu-sep {
+  height: 1px;
+  margin: 0.4rem 0.55rem;
+  background: var(--hq-glass-border);
+}
+
+.hq-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.9rem 0.55rem;
+  color: var(--hq-ink-3);
+  font-size: 0.84rem;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   4 · CONTENT — generous air, refined Arabic typography
+   ══════════════════════════════════════════════════════════════════ */
+.hq-main {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 9vh, 6.5rem) clamp(1.25rem, 4vw, 2.75rem) clamp(2rem, 6vh, 4rem);
+}
+
+.hq-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+  color: var(--hq-ink-4);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.8;
+}
+.hq-eyebrow::before {
+  content: "";
+  width: 1.5rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.hq-title {
+  margin: clamp(1.1rem, 2.4vw, 1.6rem) 0 0;
+  max-width: 30ch;
+  color: var(--hq-ink);
+  font-family: var(--font-title);
+  font-size: clamp(2rem, 5.4vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1.5;                  /* generous for Arabic ascenders */
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+.hq-title em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--hq-ink-3);
+}
+
+.hq-lede {
+  margin: clamp(1.1rem, 2.2vw, 1.5rem) 0 0;
+  max-width: 46ch;
+  color: var(--hq-ink-2);
+  font-size: clamp(0.95rem, 1.35vw, 1.0625rem);
+  font-weight: 400;
+  line-height: 2.05;                 /* the "high-end Arabic" measure */
+  letter-spacing: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   5 · THE THREE CARDS
+   Flat, hairline-bordered, quiet. Hover = a 3px lift and one faint
+   shadow, nothing else. Disabled = elegant but unmistakably inert.
+   ══════════════════════════════════════════════════════════════════ */
+.hq-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.6vw, 1.1rem);
+  margin-top: clamp(2.5rem, 6.5vh, 4.5rem);
+}
+
+.hq-card {
+  position: relative;
+  display: flex;
+  min-height: clamp(9.5rem, 20vh, 12rem);
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1.15rem, 2.2vw, 1.6rem);
+  border: 1px solid var(--hq-hairline-soft);
+  border-radius: 1.25rem;
+  background: var(--hq-surface);
+  box-shadow: var(--hq-shadow);
+  text-align: right;
+  transition: transform 0.45s var(--hq-ease),
+              box-shadow 0.45s var(--hq-ease),
+              border-color 0.45s var(--hq-ease-soft),
+              background-color 0.45s var(--hq-ease-soft);
+  will-change: transform;
+}
+
+.hq-card__index {
+  color: var(--hq-ink-4);
+  font-size: 0.72rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.hq-card__title {
+  margin: 0;
+  color: var(--hq-ink);
+  font-family: var(--font-title);
+  font-size: clamp(1.02rem, 1.5vw, 1.15rem);
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0;
+}
+
+.hq-card__note {
+  margin: 0.35rem 0 0;
+  color: var(--hq-ink-3);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.9;
+}
+
+.hq-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hq-card__arrow {
+  display: inline-flex;
+  align-items: center;
+  color: var(--hq-ink-4);
+  transition: transform 0.45s var(--hq-ease), color 0.45s var(--hq-ease-soft);
+}
+
+.hq-card__chip {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--hq-hairline-soft);
+  border-radius: 999px;
+  color: var(--hq-ink-4);
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.8;
+  white-space: nowrap;
+}
+
+/* ── the micro-interaction (interactive card only) ── */
+.hq-card--link { cursor: pointer; }
+.hq-card--link:hover,
+.hq-card--link:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--hq-hairline);
+  background: var(--hq-surface-hover);
+  box-shadow: var(--hq-shadow-lift);
+  outline: none;
+}
+.hq-card--link:hover .hq-card__arrow,
+.hq-card--link:focus-visible .hq-card__arrow {
+  color: var(--hq-ink);
+  transform: translateX(-4px);        /* RTL: forward is leftward */
+}
+.hq-card--link:active { transform: translateY(-1px) scale(0.995); }
+.hq-card--link:focus-visible { outline: 1px solid var(--hq-ink-4); outline-offset: 3px; }
+
+/* ── disabled ── */
+.hq-card--disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: transparent;
+  border-style: dashed;
+}
+.hq-card--disabled .hq-card__title { color: var(--hq-ink-2); }
+
+/* ══════════════════════════════════════════════════════════════════
+   6 · FOOT — one hairline and a whisper
+   ══════════════════════════════════════════════════════════════════ */
+.hq-foot {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1.25rem;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.5rem clamp(1.25rem, 4vw, 2.75rem) clamp(1.6rem, 4vh, 2.5rem);
+  color: var(--hq-ink-4);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.9;
+}
+.hq-foot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: clamp(1.25rem, 4vw, 2.75rem);
+  left: clamp(1.25rem, 4vw, 2.75rem);
+  height: 1px;
+  background: var(--hq-hairline-soft);
+}
+.hq-foot a { color: var(--hq-ink-3); transition: color 0.28s var(--hq-ease-soft); }
+.hq-foot a:hover { color: var(--hq-ink); }
+
+/* ══════════════════════════════════════════════════════════════════
+   7 · RESPONSIVE
+   ══════════════════════════════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .hq-cards { grid-template-columns: 1fr; gap: 0.75rem; }
+  .hq-card { min-height: 0; gap: 1.1rem; }
+  .hq-canvas { background-size: 56px 56px, 56px 56px, 14px 14px, 14px 14px; }
+  .hq-main { justify-content: flex-start; padding-top: clamp(1.75rem, 6vh, 3rem); }
+  .hq-lede { line-height: 1.95; }
+}
+
+@media (max-width: 420px) {
+  .hq-menu { width: calc(100vw - 2rem); right: 1rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   8 · REDUCED MOTION — the design must be complete without motion
+   ══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .home-quiet *,
+  .home-quiet *::before,
+  .home-quiet *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .hq-card--link:hover { transform: none; }
+  .hq-card--link:hover .hq-card__arrow { transform: none; }
+}

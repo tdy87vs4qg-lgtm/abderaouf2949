@@ -76,13 +76,16 @@ const sidebar = `
     </div>
   </nav>
 
-  <div class="gd-storage" id="gd-storage" aria-hidden="true">
-    <p class="gd-storage-title">تيسير</p>
-    <p class="gd-storage-text" id="gd-storage-text">The complete Baccalaureate study library.</p>
-    <a href="${TIKTOK_URL}" target="_blank" rel="noopener noreferrer" class="gd-storage-cta js-subscribe-cta">
-      ${icons.tiktok}<span>Get access</span>
-    </a>
-  </div>
+  <!-- The promotional "Get access" panel that used to sit at the bottom of
+       this rail (brand blurb + a TikTok call-to-action) has been REMOVED
+       entirely: the files page is now purely a file browser, with no banner
+       and no upsell prompt in the chrome.
+
+       This was PRESENTATION ONLY. Access is still enforced exactly as before
+       and entirely server-side (requireActiveSubscriber → gateContent → 402
+       in src/routes/library.ts), and the locked-file dialog below is
+       untouched — so a visitor who opens a gated file still gets the proper
+       subscription path. Nothing about auth, entitlement or the gate changed. -->
 </aside>
 <div class="gd-scrim" id="gd-scrim" hidden></div>`
 

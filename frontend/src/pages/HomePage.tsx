@@ -1,154 +1,292 @@
-import { motion } from 'framer-motion'
-import { ArrowDown, ArrowLeft, UserPlus, LogIn } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageTransition from '../components/PageTransition'
-import Reveal from '../components/Reveal'
-import SiteFooter from '../components/SiteFooter'
-import WriteInText from '../components/WriteInText'
-import DraggablePapers from '../components/DraggablePapers'
-import TopStudents from '../components/TopStudents'
+import ThemeToggle from '../components/ThemeToggle'
+import { LazyAnimatePresence, M } from '../lib/lazyMotion'
+import { useSession } from '../lib/useSession'
+import './home.css'
+
+/**
+ * HomePage — "Quiet Luxury / Scandinavian Minimalist".
+ *
+ * A complete structural rebuild, not a restyle. The page is now ONE calm
+ * screen instead of six scrolling acts:
+ *
+ *   ┌──────────────────────────────────────────────┐
+ *   │ تيسير                                     ⋮  │   ← the only chrome
+ *   │                                              │
+ *   │   — منصّة البكالوريا                          │
+ *   │   headline · lede                            │
+ *   │                                              │
+ *   │   [ الملفات ]  [ خطط التميز ]  [ النصائح ]     │
+ *   │                                              │
+ *   │ ─────────────────────────────────────────    │
+ *   └──────────────────────────────────────────────┘
+ *
+ * Everything visual lives in `home.css`, scoped under `.home-quiet`:
+ * the faint double grid, the iOS frosted menu material, and the card
+ * micro-interactions. Palette is strictly monochrome.
+ *
+ * IMPORTANT — this file touches NO session, auth, guard, crypto or drive
+ * logic. It only *reads* the existing `useSession()` hook to decide where
+ * the files card should point (library when signed in, login otherwise),
+ * exactly as SiteHeader already does.
+ */
+
+/* Reveal timings — short, soft, GPU-only. Shared so the whole screen
+   settles as one gesture rather than a sequence of separate animations. */
+const EASE_OUT = [0.32, 0.72, 0, 1] as const
+const rise = (delay: number) => ({
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease: EASE_OUT },
+})
 
 export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuId = useId()
+  const dotsRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  // Read-only session probe (same hook the header uses). Signed-in visitors
+  // go straight to the library; everyone else is routed through /login, which
+  // keeps the real server-side gate as the single source of truth.
+  const session = useSession()
+  const filesHref = session.authenticated ? session.destination || '/library' : '/login'
+  const filesIsExternal = session.authenticated
+
+  /* ── The page ground ─────────────────────────────────────────────
+     Flag <html> while home is mounted so the overscroll area, the mobile
+     URL bar and the scrollbar match the pristine white / near-black
+     ground instead of the site's gray. Cleaned up on unmount. */
+  useEffect(() => {
+    const root = document.documentElement
+    root.setAttribute('data-page', 'home')
+    return () => root.removeAttribute('data-page')
+  }, [])
+
+  /* ── Menu dismissal: Escape, outside pointer, and focus return ──── */
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation()
+        setMenuOpen(false)
+        dotsRef.current?.focus()
+      }
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (menuRef.current?.contains(target) || dotsRef.current?.contains(target)) return
+      setMenuOpen(false)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [menuOpen])
+
   return (
-    <PageTransition>
-      {/* ── HERO / INTRO ─────────────────────────────────────────── */}
-      <section
-        id="hero-section"
-        className="hero-section relative flex min-h-[100svh] items-center overflow-hidden px-5 pt-32 pb-24 lg:px-10"
-      >
-        <div className="hero-vignette" />
-        <div className="relative z-10 mx-auto w-full max-w-6xl">
-          {/* Small, quiet eyebrow — grounds the hero without a boxy badge */}
-          <motion.p
-            className="hero-eyebrow"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+    <div className="home-quiet" dir="rtl">
+      {/* ── The grid. Fixed, masked, purely decorative. ───────────── */}
+      <div className="hq-canvas" aria-hidden="true" />
+
+      {/* ── TOP BAR ───────────────────────────────────────────────────
+          Laid out LTR so the brand sits physically top-LEFT and the ⋮
+          top-RIGHT as specified, while the Arabic inside stays RTL. */}
+      <header className="hq-bar" dir="ltr">
+        <M.div {...rise(0.05)} style={{ display: 'inline-flex' }}>
+          <Link to="/" className="hq-brand" dir="rtl" aria-label="تيسير — الصفحة الرئيسية">
+            تيسير
+          </Link>
+        </M.div>
+
+        <M.div {...rise(0.1)} style={{ position: 'relative', display: 'inline-flex' }}>
+          <button
+            ref={dotsRef}
+            type="button"
+            className="hq-dots"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-controls={menuId}
           >
-            <span className="hero-eyebrow__dot" aria-hidden="true" />
-            منصّة البكالوريا
-          </motion.p>
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+          </button>
 
-          {/* The slogan writes itself in on scroll (re-triggers each time) */}
-          <WriteInText
-            as="h1"
-            className="hero-slogan mt-6"
-            ariaLabel="تيسير.. لأننا نؤمن أن خلف كل تفوقٍ، حلمٌ يستحق الدعم"
-            writeIn
-            duration={1.5}
-            start="top 92%"
-            segments={[
-              { text: 'تيسير', brand: true },
-              { text: '..\n' },
-              { text: 'لأننا نؤمن أن خلف كل تفوقٍ،\n' },
-              { text: 'حلمٌ يستحق الدعم' },
-            ]}
-          />
+          <LazyAnimatePresence>
+            {menuOpen && (
+              <>
+                {/* A whisper of a scrim — enough to catch the outside tap
+                    and lift the sheet, never enough to darken the page. */}
+                <M.div
+                  key="hq-scrim"
+                  className="hq-menu-scrim"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28, ease: 'easeOut' }}
+                  aria-hidden="true"
+                />
 
-          {/* Two premium entry actions — signup first (right in RTL) */}
-          <motion.div
-            className="hero-actions mt-11"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Link to="/signup" className="button-primary hero-cta">
-              <UserPlus size={18} strokeWidth={2.4} />
-              إنشاء حساب
+                {/* The iOS sheet: buttery scale + fade from the ⋮ corner.
+                    Only opacity/transform animate, so it stays composited. */}
+                <M.div
+                  key="hq-menu"
+                  ref={menuRef}
+                  id={menuId}
+                  role="menu"
+                  dir="rtl"
+                  className="hq-menu"
+                  initial={{ opacity: 0, scale: 0.94, y: -8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97, y: -6 }}
+                  transition={{ duration: 0.34, ease: EASE_OUT }}
+                >
+                  {filesIsExternal ? (
+                    <a href={filesHref} role="menuitem" className="hq-menu-item">
+                      <span>المكتبة</span>
+                    </a>
+                  ) : (
+                    <Link
+                      to="/login"
+                      role="menuitem"
+                      className="hq-menu-item"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <span>تسجيل الدخول</span>
+                    </Link>
+                  )}
+
+                  {!session.authenticated && (
+                    <Link
+                      to="/signup"
+                      role="menuitem"
+                      className="hq-menu-item"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <span>إنشاء حساب</span>
+                    </Link>
+                  )}
+
+                  <Link
+                    to="/subscription"
+                    role="menuitem"
+                    className="hq-menu-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>ماذا ستحصل؟</span>
+                  </Link>
+
+                  <div className="hq-menu-sep" aria-hidden="true" />
+
+                  <div className="hq-menu-row">
+                    <span>المظهر</span>
+                    <ThemeToggle />
+                  </div>
+                </M.div>
+              </>
+            )}
+          </LazyAnimatePresence>
+        </M.div>
+      </header>
+
+      {/* ── CONTENT ──────────────────────────────────────────────── */}
+      <main className="hq-main">
+        <M.p className="hq-eyebrow" {...rise(0.16)}>
+          منصّة البكالوريا
+        </M.p>
+
+        <M.h1 className="hq-title" {...rise(0.22)}>
+          كل ما تحتاجه للبكالوريا،
+          <br />
+          <em>في مكان واحد هادئ.</em>
+        </M.h1>
+
+        <M.p className="hq-lede" {...rise(0.3)}>
+          دروس، ملخّصات، وتمارين مصحّحة — مرتّبة بعناية حتى يبقى تركيزك على المراجعة وحدها.
+        </M.p>
+
+        {/* ── THE THREE CARDS ─────────────────────────────────────── */}
+        <M.div className="hq-cards" {...rise(0.38)}>
+          {/* 01 — the one live destination */}
+          {filesIsExternal ? (
+            <a href={filesHref} className="hq-card hq-card--link">
+              <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
+              <CardFoot label="ادخل" />
+            </a>
+          ) : (
+            <Link to={filesHref} className="hq-card hq-card--link">
+              <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
+              <CardFoot label="ادخل" />
             </Link>
-            <Link to="/login" className="button-secondary hero-cta">
-              <LogIn size={18} strokeWidth={2.2} />
-              تسجيل الدخول
-            </Link>
-          </motion.div>
+          )}
 
-          <div className="scroll-cue">
-            <span>اكتشف الحكاية</span>
-            <ArrowDown size={17} />
-          </div>
-        </div>
-      </section>
-
-      {/* ── STORY: our story paragraph ───────────────────────────── */}
-      <section id="story-section" className="section-shell relative px-5 py-28 lg:px-10 lg:py-40">
-        <div className="mx-auto max-w-5xl">
-          <Reveal>
-            <span className="section-index">01 — حكايتنا</span>
-          </Reveal>
-          <WriteInText
-            as="p"
-            className="story-paragraph mt-10"
-            ariaLabel="تيسير هي حكاية تعبنا"
-            start="top 80%"
-            segments={[
-              { text: 'تيسير', brand: true },
-              {
-                text:
-                  ' هي حكاية تعبنا، سهرنا، وشغفنا الكبير بأن نكون السند الذي تمنينا يوماً أن نجده. جمعنا كل ما نملك من علمٍ وحب، لنُسَهّل عليكم الطريق.. فقط لأننا نؤمن أن أحلامكم تستحق منا كل هذا الإخلاص.',
-              },
-            ]}
-          />
-        </div>
-      </section>
-
-      {/* ── PLATFORM DESCRIPTION ─────────────────────────────────── */}
-      <section id="platform-section" className="full-bleed-story relative my-8 overflow-hidden px-5 py-28 lg:px-10 lg:py-40">
-        <div className="story-line" />
-        <div className="relative z-10 mx-auto max-w-5xl">
-          <Reveal>
-            <span className="section-index">02 — ما هي تيسير</span>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="platform-paragraph mt-10">
-              <span className="platform-brand">تيسير</span> منصة تعليمية صُممت خصيصًا لطلاب الباكالوريا،
-              لتوفر لهم كل ما يحتاجونه خلال السنة الدراسية في مكان واحد. ستجد الدروس، الملخصات، التمارين،
-              والعديد من المصادر التي تساعدك على الفهم الجيد والاستعداد للاختبارات، حتى تتمكن من التركيز على
-              الدراسة بدل إضاعة الوقت في البحث.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── TOP STUDENTS (المتفوقون) — third section ─────────────── */}
-      <section id="laureates-section" className="full-bleed-story relative my-8 overflow-hidden px-5 py-28 lg:px-10 lg:py-40">
-        <div className="relative z-10 mx-auto max-w-7xl">
-          <Reveal className="max-w-3xl">
-            <span className="section-index">03 — المتفوقون</span>
-            <h2 className="display-quote mt-8">أسماء صنعت الفارق.</h2>
-            <p className="section-copy mt-6">
-              خلف تيسير طلبةٌ عاشوا ضغط البكالوريا، وبلغوا القمة. هذه أسماؤهم، ومدارسهم، وعلاماتهم — شهادةٌ
-              على أن الحلم يستحق كل هذا الإخلاص.
-            </p>
-          </Reveal>
-          <TopStudents />
-        </div>
-      </section>
-
-      {/* ── DRAGGABLE PAPERS (features) ──────────────────────────── */}
-      <section id="papers-section" className="section-shell relative px-5 py-24 lg:px-10 lg:py-36">
-        <div className="mx-auto max-w-7xl">
-          <Reveal className="mb-4 max-w-3xl">
-            <span className="section-index">04 — على طاولتك</span>
-            <h2 className="section-title mt-6">كل ما تحتاجه، ورقةً ورقة.</h2>
-          </Reveal>
-          <DraggablePapers />
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ────────────────────────────────────────────── */}
-      <section id="final-cta" className="px-5 pb-24 pt-12 lg:px-10 lg:pb-32">
-        <Reveal>
-          <div className="final-cta mx-auto max-w-7xl">
-            <h2>نجاحك لا يبدأ يوم الامتحان.<br /><span>يبدأ من قرارك اليوم.</span></h2>
-            <p>دع عنك ضجيج المصادر، وابدأ مراجعة تشبه طموحك مع تيسير.</p>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link to="/signup" className="button-primary">أنشئ حسابك الآن <ArrowLeft size={18} /></Link>
-              <Link to="/login" className="button-secondary">لدي حساب بالفعل</Link>
+          {/* 02 / 03 — elegant, but unmistakably inert */}
+          <div className="hq-card hq-card--disabled" aria-disabled="true">
+            <CardHead index="02" title="خطط التميز" note="برنامج مراجعة أسبوعي مُنظّم." />
+            <div className="hq-card__foot">
+              <span className="hq-card__chip">قريبًا</span>
             </div>
           </div>
-        </Reveal>
-      </section>
-      <SiteFooter />
-    </PageTransition>
+
+          <div className="hq-card hq-card--disabled" aria-disabled="true">
+            <CardHead index="03" title="النصائح" note="طرائق مراجعة وإدارة الوقت." />
+            <div className="hq-card__foot">
+              <span className="hq-card__chip">قريبًا</span>
+            </div>
+          </div>
+        </M.div>
+      </main>
+
+      {/* ── FOOT ─────────────────────────────────────────────────── */}
+      <M.footer className="hq-foot" {...rise(0.46)}>
+        <span>تيسير — منصّة تعليمية للبكالوريا</span>
+        <a
+          href="https://www.tiktok.com/@abderahmane.lovenature"
+          target="_blank"
+          rel="noreferrer"
+        >
+          تواصل معنا
+        </a>
+      </M.footer>
+    </div>
+  )
+}
+
+/* ── Card internals ─────────────────────────────────────────────────
+   Kept as tiny local components so the three cards stay structurally
+   identical and the markup above reads as the layout it describes. */
+
+function CardHead({ index, title, note }: { index: string; title: string; note: string }) {
+  return (
+    <div>
+      <span className="hq-card__index">{index}</span>
+      <h2 className="hq-card__title" style={{ marginTop: '0.6rem' }}>
+        {title}
+      </h2>
+      <p className="hq-card__note">{note}</p>
+    </div>
+  )
+}
+
+function CardFoot({ label }: { label: string }) {
+  return (
+    <div className="hq-card__foot">
+      <span className="hq-card__chip">{label}</span>
+      <span className="hq-card__arrow" aria-hidden="true">
+        {/* A 1.25px hairline arrow — drawn, not iconographic. */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5" />
+          <path d="m12 19-7-7 7-7" />
+        </svg>
+      </span>
+    </div>
   )
 }

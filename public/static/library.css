@@ -382,35 +382,12 @@ html[data-theme="light"] .gd-body {
 .gd-skel-nav:nth-child(4) { width: 60%; }
 .gd-skel-nav:nth-child(5) { width: 70%; }
 
-/* storage/promo card at bottom of sidebar */
-.gd-storage {
-  margin: auto 12px 4px 12px;
-  padding: 16px;
-  border-radius: var(--gd-radius);
-  background: var(--gd-bg);
-  border: 1px solid var(--gd-line);
-}
-.gd-storage-title {
-  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
-  color: var(--gd-blue);
-}
-.gd-storage-title { margin: 0 0 4px; font-size: 0.8125rem; font-weight: 600; color: var(--gd-text); }
-.gd-storage-text { margin: 0 0 12px; font-size: 0.78rem; color: var(--gd-text-2); line-height: 1.45; }
-.gd-storage-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--gd-blue);
-  text-decoration: none;
-  padding: 8px 14px;
-  border: 1px solid var(--gd-line);
-  border-radius: 999px;
-  background: var(--gd-surface);
-  transition: background var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
-}
-.gd-storage-cta:hover { background: var(--gd-blue-soft); border-color: var(--gd-blue-tint); }
+/* The storage/promo card that used to sit at the bottom of the sidebar
+   (`.gd-storage*`) was removed from the markup in src/pages/library.ts, so
+   its rules are deleted here too rather than left as dead CSS. The sidebar's
+   nav now simply ends after the subject list.
+   NOTE: purely presentational cleanup — the subscription gate itself is
+   server-side and untouched. */
 
 .gd-scrim {
   position: fixed;

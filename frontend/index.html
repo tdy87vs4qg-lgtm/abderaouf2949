@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#101010" />
+    <meta name="theme-color" content="#0a0a0a" />
     <meta name="description" content="تيسير — منصّتك التعليمية المتكاملة للتفوق في البكالوريا." />
     <link rel="icon" type="image/svg+xml" href="/react/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <title>تيسير | لأننا نؤمن أن خلف كل تفوقٍ حلمٌ يستحق الدعم</title>
+    <title>تيسير | كل ما تحتاجه للبكالوريا، في مكان واحد هادئ</title>
     <script>
       /* Apply the saved (or OS-preferred) theme before paint to avoid a flash
          of the wrong palette. Mirrors ThemeProvider's resolution logic. */
@@ -22,7 +22,7 @@
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var m = document.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', t === 'light' ? '#f5f5f5' : '#101010');
+          if (m) m.setAttribute('content', t === 'light' ? '#ffffff' : '#0a0a0a');
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
@@ -42,27 +42,27 @@
         <div class="app-boot__spinner"></div>
       </div>
       <style>
-        /* Matches the app's "Porcelain & Graphite" system exactly, so the
-           handoff from this static shell to React is invisible: same bg,
-           same San-Francisco-first stack, same neutral ink. Strictly
-           achromatic — white / black / gray only. */
+        /* Matches the redesigned "Quiet Luxury" home exactly, so the handoff
+           from this static shell to React is invisible: the same pristine
+           white (or near-black) ground, the same small 500-weight brand mark,
+           the same neutral ink. Strictly achromatic — white / black / gray
+           only, no hue anywhere. Light is the design's home base. */
         #app-boot{position:fixed;inset:0;display:flex;flex-direction:column;
           align-items:center;justify-content:center;gap:20px;
-          background:#101010;z-index:1;
-          font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Arabic',
-            'Segoe UI','Noto Kufi Arabic','Tajawal',system-ui,sans-serif;
+          background:#0a0a0a;z-index:1;
+          font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;
           -webkit-font-smoothing:antialiased}
-        html[data-theme="light"] #app-boot{background:#f5f5f5}
-        .app-boot__brand{font-size:1.75rem;font-weight:700;letter-spacing:-.022em;
-          color:#f5f5f5;
+        html[data-theme="light"] #app-boot{background:#fff}
+        .app-boot__brand{font-size:1.0625rem;font-weight:500;letter-spacing:0;
+          color:#fafafa;
           animation:app-boot-pulse 1.8s cubic-bezier(.4,0,.2,1) infinite}
-        html[data-theme="light"] .app-boot__brand{color:#1d1d1d}
-        /* A thin, quiet iOS-style indeterminate ring — neutral gray, no tint. */
-        .app-boot__spinner{width:26px;height:26px;border-radius:50%;
-          border:2px solid rgba(235,235,235,.18);border-top-color:#b4b4b4;
+        html[data-theme="light"] .app-boot__brand{color:#0a0a0a}
+        /* A thin, quiet indeterminate ring — neutral gray, no tint. */
+        .app-boot__spinner{width:22px;height:22px;border-radius:50%;
+          border:1.5px solid rgba(250,250,250,.14);border-top-color:#a3a3a3;
           animation:app-boot-spin .8s linear infinite}
         html[data-theme="light"] .app-boot__spinner{
-          border-color:rgba(0,0,0,.1);border-top-color:#4b4b4b}
+          border-color:rgba(10,10,10,.08);border-top-color:#737373}
         @keyframes app-boot-spin{to{transform:rotate(360deg)}}
         @keyframes app-boot-pulse{0%,100%{opacity:.55}50%{opacity:1}}
         @media (prefers-reduced-motion:reduce){

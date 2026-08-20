@@ -158,11 +158,14 @@ export const M = {
   nav: makeLazyTag('nav'),
   section: makeLazyTag('section'),
   header: makeLazyTag('header'),
+  footer: makeLazyTag('footer'),
   ul: makeLazyTag('ul'),
   li: makeLazyTag('li'),
   a: makeLazyTag('a'),
   button: makeLazyTag('button'),
   p: makeLazyTag('p'),
+  h1: makeLazyTag('h1'),
+  h2: makeLazyTag('h2'),
 }
 
 /**

@@ -28,23 +28,25 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   1 · TYPOGRAPHY
-   `-apple-system` / `BlinkMacSystemFont` lead the stack, so an iPhone,
-   iPad or Mac renders the interface in San Francisco — and Arabic in
-   SF Arabic, the exact face iOS uses. Everywhere else the cascade falls
-   through to the bundled Noto Kufi Arabic / Tajawal, so the design is
-   identical in structure and only the glyphs differ.
+   1 · TYPOGRAPHY  —  ONE family, self-hosted, no system fallback voice
+   IBM Plex Sans Arabic is now the ONLY typeface in the interface. It is a
+   modern, low-contrast humanist grotesque with a matching Latin, so the
+   headline, the body copy, the numerals and the brand word "تيسير" are
+   all rendered by the same face — which is precisely what makes a
+   monochrome minimalist page read as designed rather than default.
+
+   The previous stack deliberately led with `-apple-system` so iOS would
+   substitute San Francisco / SF Arabic. That is exactly what we no longer
+   want: the design must look identical on every device, and it must NOT
+   fall back to a system font. IBM Plex Sans Arabic therefore leads the
+   stack everywhere; the generics only exist as a last-resort safety net
+   in the milliseconds before the woff2 lands.
    ══════════════════════════════════════════════════════════════════ */
 :root {
-  --font-ui:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    "SF Arabic", "Segoe UI", "Tajawal", "Noto Kufi Arabic",
-    system-ui, sans-serif;
-  /* Display = the same family. On iOS the optical size axis handles the
-     large-title weight; elsewhere Noto Kufi Arabic carries the headline. */
-  --font-title:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Arabic",
-    "Segoe UI", "Noto Kufi Arabic", "Tajawal", system-ui, sans-serif;
+  --font-ui: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  /* Display = the same family. The hierarchy is built from size, weight
+     and generous line-height — never from a second, louder typeface. */
+  --font-title: "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
   /* Apple's real easing curves. */
@@ -200,7 +202,6 @@ html[data-theme="light"] ::selection { background: rgba(0, 0, 0, 0.14); color: #
 .auth-card,
 .offering-card,
 .value-item,
-.final-cta,
 .decision-card,
 .inapp-notice__panel {
   background: var(--glass-bg);
@@ -483,286 +484,27 @@ html[data-theme="light"] .mobile-menu__scrim { background: rgba(60, 60, 60, 0.24
 .section-shell { position: relative; z-index: 2; background: transparent; }
 
 /* ══════════════════════════════════════════════════════════════════
-   10 · HOME · hero
+   10 · HOME
+   The home page is a fully self-contained composition and ships its own
+   stylesheet: `src/pages/home.css`, scoped under `.home-quiet`.
+
+   Everything that used to live here — the hero, the write-in slogan, the
+   story / platform paragraphs, the draggable "papers" desk and the
+   laureates table — belonged to the previous multi-act home page and was
+   deleted along with it (components included), so this file no longer
+   carries a single dead rule for it.
    ══════════════════════════════════════════════════════════════════ */
-.hero-section::before {
-  content: ""; position: absolute; inset: 0; z-index: 1;
-  background: linear-gradient(180deg, transparent 0%, transparent 55%, var(--page-bg) 100%);
-  opacity: 0.85;
-}
-.hero-vignette { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 14vw rgba(0, 0, 0, 0.28); }
-html[data-theme="light"] .hero-vignette { box-shadow: inset 0 0 14vw rgba(130, 130, 130, 0.1); }
-
-.scroll-cue {
-  position: absolute; left: 0; bottom: -3.25rem;
-  display: flex; align-items: center; gap: 0.6rem;
-  color: var(--text-faint);
-  font-size: 0.74rem; font-weight: 500;
-  writing-mode: vertical-rl;
-}
-
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 0.55rem;
-  color: var(--text-muted);
-  font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 0.82rem;
-  letter-spacing: 0.005em;
-}
-.hero-eyebrow__dot {
-  width: 0.4rem; height: 0.4rem; border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
-  animation: hero-dot-pulse 3.4s var(--ease-soft) infinite;
-}
-@keyframes hero-dot-pulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.22); }
-}
-
-.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.hero-cta { font-family: var(--font-ui); letter-spacing: -0.01em; }
-.hero-cta.button-primary { padding: 1rem 1.75rem; font-size: 1rem; }
-.hero-cta.button-secondary { padding: 1rem 1.65rem; font-size: 1rem; }
-
-/* ── Write-in / reveal text ─────────────────────────────────────── */
-.write-in {
-  text-wrap: balance;
-  opacity: 0;
-  transform: translate3d(0, 12px, 0);
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
-}
-.write-in.write-in--shown { opacity: 1; transform: translate3d(0, 0, 0); }
-.write-in__plain { color: var(--text-base); }
-.write-in__brand { color: var(--text-strong); }
-
-/* RTL typewriter wipe — one clip-path, GPU only. */
-.write-in--type { opacity: 1; transform: none; }
-.write-in__wipe {
-  display: inline-block;
-  --wipe: 100%;
-  clip-path: inset(-0.25em 0 -0.25em var(--wipe));
-  will-change: clip-path;
-  transform: translateZ(0);
-}
-.write-in--type:not(.write-in--shown) .write-in__wipe { clip-path: inset(-0.25em 0 -0.25em 100%); }
-
-/* Hero slogan — an iOS "large title" taken to display size. The brand
-   word is the anchor: big, tight, solid ink. */
-.hero-slogan {
-  font-family: var(--font-title);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.24;
-  font-size: clamp(1.75rem, 3.4vw, 3rem);
-  color: var(--text-strong);
-  text-shadow: none;
-}
-.hero-slogan .write-in__plain {
-  font-size: clamp(1.5rem, 2.9vw, 2.5rem);
-  font-weight: 600;
-  color: var(--text-base);
-  letter-spacing: -0.024em;
-}
-.hero-slogan .write-in__brand {
-  display: inline-block;
-  font-size: clamp(3.5rem, 9.5vw, 8rem);
-  line-height: 1;
-  letter-spacing: -0.045em;   /* big type → tighter tracking */
-  font-weight: 700;
-  margin-bottom: 0.08em;
-  color: var(--text-strong);
-  text-shadow: none;
-}
-
-.story-paragraph {
-  font-family: var(--font-title);
-  font-weight: 500;
-  line-height: 1.95;
-  letter-spacing: -0.016em;
-  font-size: clamp(1.2rem, 2.2vw, 1.9rem);
-  color: var(--text-base);
-}
-.story-paragraph .write-in__plain { color: var(--text-base); }
-.story-paragraph .write-in__brand { font-size: 1.14em; font-weight: 700; letter-spacing: -0.026em; color: var(--text-strong); }
-
-.platform-paragraph {
-  font-family: var(--font-ui);
-  font-weight: 400;
-  line-height: 2;
-  color: var(--text-muted);
-  font-size: clamp(1.02rem, 1.5vw, 1.22rem);
-  letter-spacing: -0.004em;
-}
-.platform-brand {
-  font-family: var(--font-title);
-  font-weight: 700; font-size: 1.16em;
-  letter-spacing: -0.024em;
-  color: var(--text-strong);
-  -webkit-text-fill-color: currentColor;
-  background: none;
-}
-
-/* Band sections — separated by hairlines and a faint tinted fill only. */
-.full-bleed-story {
-  z-index: 2;
-  background: var(--surface-2);
-  border-block: 1px solid var(--hairline);
-}
-.story-line {
-  position: absolute; width: 1px; top: 0; bottom: 0; right: 14%;
-  background: linear-gradient(transparent, var(--hairline-strong), transparent);
-}
-.display-quote {
-  font-family: var(--font-title);
-  font-size: clamp(2.1rem, 4.4vw, 4.25rem);
-  line-height: 1.24;
-  letter-spacing: -0.032em;
-  font-weight: 700;
-  color: var(--text-strong);
-  text-wrap: balance;
-}
 
 /* ══════════════════════════════════════════════════════════════════
-   11 · PAPERS DESK
-   Real paper, now in pure grayscale: four neutral stocks separated only by
-   luminance, one soft contact shadow, no pastel tints. The pin/tape stay
-   for charm — but they are gray too.
+   13 · CTA PANEL — one big glass sheet (subscription page)
+   `.final-cta` lived only on the old home page and went with it.
    ══════════════════════════════════════════════════════════════════ */
-.papers-desk { position: relative; margin-top: 2rem; padding: 2.25rem 0 1rem; }
-.papers-desk__grain { position: absolute; inset: 0; opacity: 0.5; border-radius: var(--radius-xl); background: none; pointer-events: none; }
-.papers-desk__hint {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  color: var(--text-faint);
-  font-size: 0.84rem; font-weight: 500;
-}
-.papers-desk__hint-dot { width: 0.44rem; height: 0.44rem; border-radius: 50%; background: var(--accent); }
-.papers-board {
-  position: relative;
-  display: flex; flex-wrap: wrap; gap: 1.4rem 2rem;
-  justify-content: center; align-items: center;
-  min-height: 30rem; padding: 1.5rem;
-}
-.paper {
-  position: relative; flex: 0 0 auto;
-  width: clamp(13rem, 22vw, 16rem); min-height: 12rem;
-  padding: 2.1rem 1.55rem 1.55rem;
-  cursor: grab; user-select: none; touch-action: none;
-  border-radius: 4px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1), 0 14px 30px -12px rgba(0, 0, 0, 0.35);
-  color: #2f2f2f;
-}
-.paper::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent 16%);
-  pointer-events: none;
-}
-/* Four paper stocks, distinguished ONLY by luminance — never by hue. */
-.paper--cream { background: #f4f4f4; }
-.paper--mint  { background: #efefef; }
-.paper--sky   { background: #f1f1f1; }
-.paper--blush { background: #f2f2f2; }
-.paper__pin {
-  position: absolute; top: -0.5rem; right: 50%; translate: 50% 0;
-  width: 0.95rem; height: 0.95rem; border-radius: 50%;
-  background: #6e6e6e;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.45);
-}
-.paper__tape {
-  position: absolute; top: -0.65rem; left: 1.2rem;
-  width: 3.2rem; height: 1.4rem; rotate: -8deg;
-  background: rgba(255, 255, 255, 0.5);
-  border-inline: 1px dashed rgba(0, 0, 0, 0.07);
-}
-.paper__clip {
-  position: absolute; top: 1rem; left: 1.05rem;
-  font: 600 0.68rem/1 var(--font-ui);
-  color: #8a8a8a; letter-spacing: 0.01em;
-}
-.paper__text {
-  font-family: var(--font-ui);
-  font-weight: 500;
-  font-size: clamp(0.95rem, 1.35vw, 1.06rem);
-  line-height: 1.8;
-  letter-spacing: -0.008em;
-  margin-top: 0.55rem;
-  color: #2f2f2f;
-}
-.paper__ruling {
-  position: absolute; inset: 3.5rem 0.9rem 0.9rem;
-  background-image: repeating-linear-gradient(transparent, transparent 1.78rem, rgba(70, 70, 70, 0.1) 1.78rem, rgba(70, 70, 70, 0.1) calc(1.78rem + 1px));
-  pointer-events: none; opacity: 0.75;
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   12 · LAUREATES
-   A clean data list. Tabular numerals so every average lines up — the
-   detail that makes numeric UI look engineered rather than typed.
-   ══════════════════════════════════════════════════════════════════ */
-.laureates { margin-top: 3.25rem; }
-.laureate {
-  position: relative;
-  display: grid; grid-template-columns: auto 1fr auto auto;
-  align-items: center; gap: 1.4rem 2.4rem;
-  padding: 2.5rem 0;
-  opacity: 0; transform: translateY(18px);
-  transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
-}
-.laureate.is-visible { opacity: 1; transform: none; }
-.laureate__ordinal {
-  font: 600 clamp(1.5rem, 2.6vw, 2.1rem)/1 var(--font-title);
-  color: var(--text-faint);
-  -webkit-text-stroke: 0;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.55;
-}
-.laureate__identity { min-width: 0; }
-.laureate__name {
-  font: 700 clamp(1.2rem, 2.2vw, 1.85rem)/1.35 var(--font-title);
-  letter-spacing: -0.024em;
-  color: var(--text-strong);
-}
-.laureate__school { margin-top: 0.45rem; color: var(--text-muted); font-size: clamp(0.85rem, 1.15vw, 0.98rem); line-height: 1.6; }
-.laureate__average-wrap { display: flex; flex-direction: column; align-items: center; }
-.laureate__average-label { color: var(--text-faint); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; }
-.laureate__average {
-  margin-top: 0.2rem;
-  font: 700 clamp(2.1rem, 3.8vw, 3.1rem)/1 var(--font-title);
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-strong);
-  -webkit-text-fill-color: currentColor;
-  background: none;
-}
-.laureate__grades { display: flex; gap: 1.5rem; }
-.laureate__grades li { display: flex; flex-direction: column; align-items: center; gap: 0.28rem; }
-.laureate__grades span { color: var(--text-faint); font-size: 0.72rem; font-weight: 500; }
-.laureate__grades strong { font: 600 1.2rem/1 var(--font-title); color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.laureate__rule { position: absolute; right: 0; left: 0; bottom: 0; height: 1px; background: var(--hairline); transform-origin: right; }
-
-/* ══════════════════════════════════════════════════════════════════
-   13 · CTA PANELS — big glass sheets
-   ══════════════════════════════════════════════════════════════════ */
-.final-cta, .decision-card {
+.decision-card {
   position: relative; overflow: hidden;
   text-align: center;
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
 }
-.final-cta { padding: clamp(2.75rem, 7vw, 6rem) 1.5rem; }
-.final-cta::before { content: none; }         /* dot pattern removed */
-.final-cta > * { position: relative; z-index: 2; }
-.final-cta h2 {
-  margin-top: 1.25rem;
-  font: 700 clamp(1.9rem, 4.2vw, 3.5rem)/1.28 var(--font-title);
-  letter-spacing: -0.03em;
-  color: var(--text-strong);
-  text-wrap: balance;
-}
-.final-cta h2 span { color: var(--accent); }
-.final-cta p { margin-top: 0.9rem; color: var(--text-muted); font-size: 1.05rem; line-height: 1.8; }
 
 /* ══════════════════════════════════════════════════════════════════
    14 · AUTH
@@ -992,10 +734,10 @@ html[data-theme="light"] .hero-vignette { box-shadow: inset 0 0 14vw rgba(130, 1
 /* ══════════════════════════════════════════════════════════════════
    17 · THEME CROSSFADE targets
    ══════════════════════════════════════════════════════════════════ */
-.site-header, .section-shell, .full-bleed-story, .value-section,
-.offering-card, .value-item, .paper, .auth-card, .final-cta, .decision-card,
+.site-header, .section-shell, .value-section,
+.offering-card, .value-item, .auth-card, .decision-card,
 .button-primary, .button-secondary, .button-ghost, .nav-link, .brand-word,
-.section-copy, .section-title, .story-paragraph, .platform-paragraph {
+.section-copy, .section-title {
   transition-property: background-color, color, border-color, box-shadow;
   transition-duration: 0.4s;
   transition-timing-function: var(--ease-soft);
@@ -1024,24 +766,11 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
    ══════════════════════════════════════════════════════════════════ */
 @media (max-width: 1023px) {
   .offering-grid { grid-template-columns: repeat(2, 1fr); }
-  .scroll-cue { display: none; }
-  .laureate { grid-template-columns: auto 1fr auto; gap: 1.1rem 1.4rem; }
-  .laureate__grades { grid-column: 1 / -1; justify-content: flex-start; padding-right: 3.25rem; }
 }
 
 @media (max-width: 767px) {
   .ambient-photo { inset: -3%; background-position: 60% center; }
-  .hero-section { align-items: center; }
-  .hero-actions { flex-direction: column; align-items: stretch; }
-  .hero-cta { width: 100%; }
   .section-title { line-height: 1.34; }
-  .story-paragraph { line-height: 1.9; }
-  .platform-paragraph { line-height: 1.9; }
-  .papers-board { min-height: auto; gap: 1.1rem; }
-  .paper { width: min(88vw, 20rem); }
-  .laureate { grid-template-columns: auto 1fr; gap: 0.9rem 1.1rem; padding: 1.9rem 0; }
-  .laureate__average-wrap { grid-column: 2; align-items: flex-start; }
-  .laureate__grades { grid-column: 1 / -1; padding-right: 0; gap: 1.2rem; }
   .stats-ribbon { grid-template-columns: 1fr; gap: 2.25rem; text-align: center; }
   .stat-divider { width: 7rem; height: 1px; margin: auto; }
   .stat-message { text-align: center; }
@@ -1054,7 +783,6 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .ambient-photo { transform: scale(1.04) !important; }
-  .write-in__wipe { clip-path: none !important; }
   html.theme-vt::view-transition-old(root),
   html.theme-vt::view-transition-new(root) { animation: none !important; }
   html.theme-crossfade, html.theme-crossfade * { transition-duration: 0.01ms !important; }
