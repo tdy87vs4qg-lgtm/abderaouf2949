@@ -59,8 +59,9 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = theme
   const meta = document.querySelector('meta[name="theme-color"]')
   // Kept in lockstep with the pre-paint script in index.html and the home
-  // page's ground, so the mobile URL bar never flashes a different gray.
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0a0a0a')
+  // page's ground, so the mobile URL bar never flashes a different colour.
+  // Light = the brand cream #FAF7ED; dark = the green-leaning near-black.
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#faf7ed' : '#12160f')
 }
 
 /**

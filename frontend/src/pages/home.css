@@ -1,21 +1,27 @@
 /* ════════════════════════════════════════════════════════════════════
-   تيسير — HOME  ·  "Quiet Luxury / Scandinavian Minimalist"
+   تيسير — HOME  ·  "Playful Cream & Green"
    ────────────────────────────────────────────────────────────────────
-   A single, calm screen. Everything here obeys four rules:
+   One friendly screen built from TWO primary colours:
 
-   1. MONOCHROME ONLY. White, black, refined neutral grays. There is not
-      one hue in this file — every colour value is either achromatic
-      (R = G = B) or a neutral alpha over the page. No gold, no teal, no
-      neon, no colour gradient, no 3D.
-   2. THE GRID IS TEXTURE, NOT DECORATION. Two stacked hairline grids at
-      ~2–4% alpha, softly masked at the edges. It should read as paper
-      tooth — you should notice the quality, never the lines.
-   3. MATERIAL, NOT EFFECTS. The menu is one real iOS sheet: blur +
+     #469C59  the brand green  — the headline emphasis, the hand-drawn
+                                 underline, the chips, the arrows, the
+                                 focus rings, the live card.
+     #FAF7ED  the warm cream   — the ground of the whole page.
+
+   Black / gray survive only as secondary copy and hairlines.
+
+   FOUR RULES THIS FILE OBEYS
+   1. GREEN + CREAM ARE THE THEME, not accents. Anything that wants to
+      be noticed is green; anything behind it is cream.
+   2. PLAYFUL, NOT LOUD. Cartoon-adjacent geometry — big soft radii,
+      pill chips, a wobbly hand-drawn underline, two lazy blobs behind
+      the headline. Friendly, never childish.
+   3. THE GRID IS TEXTURE, NOT DECORATION. Kept deliberately minimal:
+      two hairline grids at 2–4% alpha, softly masked at the edges.
+   4. MATERIAL, NOT EFFECTS. The ⋮ menu stays one real iOS sheet: blur +
       saturation + a 1px inner highlight + a hairline + one wide, low
       shadow. Both `-webkit-backdrop-filter` and `backdrop-filter` are
       declared so Safari / iOS render the true frosted material.
-   4. MOTION IS A WHISPER. 200–420ms, GPU-only (opacity / transform),
-      Apple's own easing, and fully disabled under reduced-motion.
 
    Scoped under `.home-quiet` (plus `html[data-page="home"]` for the two
    things that must reach the document: the page ground and scrollbar),
@@ -23,60 +29,76 @@
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── Tokens ─────────────────────────────────────────────────────────
-   Light ("pristine white") is the design's home base; dark is the same
-   scale inverted onto near-black. Only luminance ever changes. */
+   Cream ("#FAF7ED") is the design's home base; dark is the same scale
+   rolled onto a green-leaning near-black. The green never changes role —
+   only its luminance shifts so it stays legible on either ground. */
 .home-quiet {
-  --hq-bg: #ffffff;
-  --hq-ground: #fafafa;          /* the faintest lift under the cards */
-  --hq-ink: #0a0a0a;             /* headline / brand */
-  --hq-ink-2: #404040;           /* body copy — neutral-700 */
-  --hq-ink-3: #737373;           /* secondary — neutral-500 */
-  --hq-ink-4: #a3a3a3;           /* labels / hairline type — neutral-400 */
+  /* the two primaries */
+  --hq-green: #469c59;           /* PRIMARY brand green */
+  --hq-green-deep: #35804a;      /* pressed / hover */
+  --hq-green-dark: #275c36;      /* max-contrast green text on cream */
+  --hq-green-soft: rgba(70, 156, 89, 0.12);
+  --hq-green-line: rgba(70, 156, 89, 0.28);
 
-  --hq-line: rgba(10, 10, 10, 0.042);      /* major grid (72px) */
-  --hq-line-fine: rgba(10, 10, 10, 0.022); /* minor grid (18px) */
-  --hq-hairline: rgba(10, 10, 10, 0.09);
-  --hq-hairline-soft: rgba(10, 10, 10, 0.06);
-  --hq-surface: rgba(255, 255, 255, 0.72);
-  --hq-surface-hover: #ffffff;
+  --hq-bg: #faf7ed;              /* PRIMARY cream ground */
+  --hq-ground: #f4efe0;          /* the faintest lift under the cards */
+  --hq-ink: #1b1d18;             /* headline / brand — warm near-black */
+  --hq-ink-2: #45483f;           /* body copy */
+  --hq-ink-3: #6b6f64;           /* secondary */
+  --hq-ink-4: #9a9d90;           /* labels / hairline type */
 
-  --hq-shadow: 0 1px 2px rgba(10, 10, 10, 0.03);
-  --hq-shadow-lift: 0 18px 40px -26px rgba(10, 10, 10, 0.22),
-                    0 2px 6px -2px rgba(10, 10, 10, 0.05);
+  --hq-line: rgba(70, 156, 89, 0.075);     /* major grid (72px) — green tinted */
+  --hq-line-fine: rgba(27, 29, 24, 0.028); /* minor grid (18px) */
+  --hq-hairline: rgba(27, 29, 24, 0.10);
+  --hq-hairline-soft: rgba(27, 29, 24, 0.07);
+  --hq-surface: rgba(255, 255, 255, 0.6);
+  --hq-surface-hover: #fffdf6;
 
-  --hq-glass: rgba(255, 255, 255, 0.55);
-  --hq-glass-border: rgba(10, 10, 10, 0.07);
-  --hq-glass-highlight: rgba(255, 255, 255, 0.85);
-  --hq-glass-shadow: 0 24px 60px -22px rgba(10, 10, 10, 0.24),
-                     0 2px 8px -4px rgba(10, 10, 10, 0.08);
-  --hq-scrim: rgba(120, 120, 120, 0.12);
+  --hq-shadow: 0 1px 2px rgba(40, 46, 32, 0.04);
+  --hq-shadow-lift: 0 18px 40px -26px rgba(40, 60, 40, 0.3),
+                    0 2px 6px -2px rgba(40, 60, 40, 0.07);
+
+  --hq-glass: rgba(250, 247, 237, 0.58);
+  --hq-glass-border: rgba(27, 29, 24, 0.08);
+  --hq-glass-highlight: rgba(255, 255, 255, 0.9);
+  --hq-glass-shadow: 0 24px 60px -22px rgba(40, 60, 40, 0.26),
+                     0 2px 8px -4px rgba(40, 60, 40, 0.1);
+  --hq-scrim: rgba(70, 156, 89, 0.1);
 
   --hq-ease: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS sheet curve */
   --hq-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  /* the playful curve — a touch of overshoot, used only on the blobs */
+  --hq-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 html[data-theme="dark"] .home-quiet {
-  --hq-bg: #0a0a0a;
-  --hq-ground: #0f0f0f;
-  --hq-ink: #fafafa;
-  --hq-ink-2: #d4d4d4;
-  --hq-ink-3: #a3a3a3;
-  --hq-ink-4: #737373;
+  --hq-green: #7cc08b;           /* lifted so the primary stays AA on dark */
+  --hq-green-deep: #469c59;
+  --hq-green-dark: #a6d6b0;
+  --hq-green-soft: rgba(124, 192, 139, 0.14);
+  --hq-green-line: rgba(124, 192, 139, 0.3);
 
-  --hq-line: rgba(255, 255, 255, 0.045);
-  --hq-line-fine: rgba(255, 255, 255, 0.022);
-  --hq-hairline: rgba(255, 255, 255, 0.10);
-  --hq-hairline-soft: rgba(255, 255, 255, 0.06);
-  --hq-surface: rgba(255, 255, 255, 0.022);
-  --hq-surface-hover: rgba(255, 255, 255, 0.045);
+  --hq-bg: #12160f;
+  --hq-ground: #191e15;
+  --hq-ink: #f3f1e6;
+  --hq-ink-2: #d3d2c6;
+  --hq-ink-3: #a0a396;
+  --hq-ink-4: #71756a;
+
+  --hq-line: rgba(124, 192, 139, 0.075);
+  --hq-line-fine: rgba(250, 247, 237, 0.024);
+  --hq-hairline: rgba(250, 247, 237, 0.10);
+  --hq-hairline-soft: rgba(250, 247, 237, 0.06);
+  --hq-surface: rgba(250, 247, 237, 0.024);
+  --hq-surface-hover: rgba(250, 247, 237, 0.048);
 
   --hq-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   --hq-shadow-lift: 0 20px 44px -26px rgba(0, 0, 0, 0.9),
                     0 2px 6px -2px rgba(0, 0, 0, 0.4);
 
-  --hq-glass: rgba(20, 20, 20, 0.55);
-  --hq-glass-border: rgba(255, 255, 255, 0.10);
-  --hq-glass-highlight: rgba(255, 255, 255, 0.08);
+  --hq-glass: rgba(24, 30, 22, 0.58);
+  --hq-glass-border: rgba(250, 247, 237, 0.10);
+  --hq-glass-highlight: rgba(250, 247, 237, 0.08);
   --hq-glass-shadow: 0 26px 64px -22px rgba(0, 0, 0, 0.85),
                      0 2px 8px -4px rgba(0, 0, 0, 0.5);
   --hq-scrim: rgba(0, 0, 0, 0.42);
@@ -85,11 +107,11 @@ html[data-theme="dark"] .home-quiet {
 /* ── The page ground ───────────────────────────────────────────────
    `data-page="home"` is set on <html> while the route is mounted, so the
    overscroll area, the mobile URL bar and the scrollbar all match the
-   pristine white / near-black ground instead of the site's gray. */
+   warm cream / green-black ground instead of anything neutral. */
 html[data-page="home"],
-html[data-page="home"] body { background: #ffffff; }
+html[data-page="home"] body { background: #faf7ed; }
 html[data-page="home"][data-theme="dark"],
-html[data-page="home"][data-theme="dark"] body { background: #0a0a0a; }
+html[data-page="home"][data-theme="dark"] body { background: #12160f; }
 html[data-page="home"] .app-shell { background: transparent; }
 
 .home-quiet {
@@ -126,16 +148,16 @@ html[data-page="home"] .app-shell { background: transparent; }
   mask-image: radial-gradient(115% 95% at 50% 6%, #000 42%, transparent 100%);
 }
 
-/* One extremely soft achromatic bloom so the white never looks flat.
-   Pure luminance — no hue, no visible edge. */
+/* One extremely soft GREEN bloom so the cream never looks flat. It reads
+   as warm light in the room, not as a colour wash — no visible edge. */
 .hq-canvas::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(72% 52% at 50% 0%, rgba(10, 10, 10, 0.026), transparent 72%);
+  background: radial-gradient(72% 52% at 50% 0%, rgba(70, 156, 89, 0.075), transparent 72%);
 }
 html[data-theme="dark"] .hq-canvas::after {
-  background: radial-gradient(72% 52% at 50% 0%, rgba(255, 255, 255, 0.035), transparent 72%);
+  background: radial-gradient(72% 52% at 50% 0%, rgba(124, 192, 139, 0.075), transparent 72%);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -154,18 +176,19 @@ html[data-theme="dark"] .hq-canvas::after {
   padding: clamp(1.1rem, 2.6vw, 1.75rem) clamp(1.25rem, 4vw, 2.75rem);
 }
 
+/* The wordmark is GREEN — the brand colour is the brand. */
 .hq-brand {
   display: inline-block;
-  color: var(--hq-ink);
+  color: var(--hq-green);
   font-family: var(--font-ui);
-  font-size: 1.0625rem;
-  font-weight: 500;
+  font-size: 1.125rem;
+  font-weight: 700;
   line-height: 1.6;
   letter-spacing: 0;                 /* Arabic is joined — never track it */
-  transition: opacity 0.3s var(--hq-ease-soft);
+  transition: opacity 0.3s var(--hq-ease-soft), color 0.3s var(--hq-ease-soft);
 }
-.hq-brand:hover { opacity: 0.62; }
-.hq-brand:focus-visible { outline: 1px solid var(--hq-ink-4); outline-offset: 6px; border-radius: 4px; }
+.hq-brand:hover { color: var(--hq-green-deep); opacity: 0.85; }
+.hq-brand:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 6px; border-radius: 8px; }
 
 /* ── the ⋮ button ── */
 .hq-dots {
@@ -188,18 +211,18 @@ html[data-theme="dark"] .hq-canvas::after {
 }
 .hq-dots span {
   display: block;
-  width: 3px;
-  height: 3px;
+  width: 3.5px;
+  height: 3.5px;
   border-radius: 50%;
   background: var(--hq-ink-3);
   transition: background-color 0.28s var(--hq-ease-soft);
 }
-.hq-dots:hover { background: var(--hq-surface-hover); border-color: var(--hq-hairline-soft); }
-.hq-dots:hover span { background: var(--hq-ink); }
+.hq-dots:hover { background: var(--hq-green-soft); border-color: var(--hq-green-line); }
+.hq-dots:hover span { background: var(--hq-green); }
 .hq-dots:active { transform: scale(0.94); }
-.hq-dots[aria-expanded="true"] { background: var(--hq-surface-hover); border-color: var(--hq-hairline-soft); }
-.hq-dots[aria-expanded="true"] span { background: var(--hq-ink); }
-.hq-dots:focus-visible { outline: 1px solid var(--hq-ink-4); outline-offset: 4px; }
+.hq-dots[aria-expanded="true"] { background: var(--hq-green-soft); border-color: var(--hq-green-line); }
+.hq-dots[aria-expanded="true"] span { background: var(--hq-green); }
+.hq-dots:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 4px; }
 
 /* ══════════════════════════════════════════════════════════════════
    3 · THE MENU — an authentic iOS translucent sheet
@@ -258,8 +281,9 @@ html[data-theme="dark"] .hq-canvas::after {
 }
 .hq-menu-item:hover,
 .hq-menu-item:focus-visible {
-  background: var(--hq-surface-hover);
-  color: var(--hq-ink);
+  background: var(--hq-green-soft);
+  color: var(--hq-green);            /* active link = primary green */
+  font-weight: 600;
   outline: none;
 }
 .hq-menu-item__hint { color: var(--hq-ink-4); font-size: 0.78rem; }
@@ -283,7 +307,16 @@ html[data-theme="dark"] .hq-canvas::after {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   4 · CONTENT — generous air, refined Arabic typography
+   4 · THE HERO — playful, centred, three stacked lines
+   ────────────────────────────────────────────────────────────────────
+       طريقك نحو            ← line 1, quiet, smaller
+       النجاح و التفوق       ← line 2, GREEN, largest + hand-drawn underline
+       عام الباكالوريا       ← line 3, ink, medium
+
+   Everything is centred (not RTL-flush) because the composition reads as
+   a friendly poster rather than a document. The whole hero is centred
+   with `text-align: center` + `align-items: center`, so it stays correct
+   in RTL without any logical-property gymnastics.
    ══════════════════════════════════════════════════════════════════ */
 .hq-main {
   position: relative;
@@ -291,55 +324,130 @@ html[data-theme="dark"] .hq-canvas::after {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;               /* playful hero = centred composition */
   justify-content: center;
   width: 100%;
   max-width: 64rem;
   margin: 0 auto;
   padding: clamp(2.5rem, 9vh, 6.5rem) clamp(1.25rem, 4vw, 2.75rem) clamp(2rem, 6vh, 4rem);
+  text-align: center;
 }
 
-.hq-eyebrow {
+/* ── The hero block ── */
+.hq-hero {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.7rem;
-  margin: 0;
-  color: var(--hq-ink-4);
-  font-size: 0.75rem;
-  font-weight: 400;
-  line-height: 1.8;
-}
-.hq-eyebrow::before {
-  content: "";
-  width: 1.5rem;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.7;
+  gap: clamp(0.15rem, 0.6vw, 0.4rem);
+  width: 100%;
+  padding: clamp(0.5rem, 2vw, 1.25rem) 0;
 }
 
-.hq-title {
-  margin: clamp(1.1rem, 2.4vw, 1.6rem) 0 0;
-  max-width: 30ch;
-  color: var(--hq-ink);
-  font-family: var(--font-title);
-  font-size: clamp(2rem, 5.4vw, 3.25rem);
-  font-weight: 500;
-  line-height: 1.5;                  /* generous for Arabic ascenders */
-  letter-spacing: 0;
+/* Two lazy cartoon blobs behind the headline. Big, soft, very low alpha —
+   they give the hero its friendly "sticker" feel without adding noise.
+   Purely decorative, pointer-events off, and they never move on their own
+   (no idle animation) so the page stays calm. */
+.hq-hero__blob {
+  position: absolute;
+  z-index: -1;
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;   /* imperfect, hand-made */
+  background: var(--hq-green);
+  opacity: 0.09;
+  filter: blur(2px);
+  pointer-events: none;
+}
+.hq-hero__blob--a {
+  width: clamp(9rem, 26vw, 17rem);
+  height: clamp(6.5rem, 18vw, 11rem);
+  top: -8%;
+  right: 2%;
+  transform: rotate(-9deg);
+}
+.hq-hero__blob--b {
+  width: clamp(7rem, 20vw, 13rem);
+  height: clamp(5.5rem, 15vw, 9rem);
+  bottom: -10%;
+  left: 4%;
+  transform: rotate(12deg);
+  opacity: 0.07;
+  border-radius: 58% 42% 46% 54% / 44% 56% 42% 58%;
+}
+
+/* The <h1> itself is just the stack container: one heading, three visual
+   lines, so the document outline stays a single honest title. */
+.hq-hero__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  max-width: 22ch;
   text-wrap: balance;
 }
-.hq-title em {
-  font-style: normal;
-  font-weight: 400;
+
+/* ── Line 1 · طريقك نحو ──
+   The soft opener: lighter weight, smaller, warm secondary ink. */
+.hq-hero__line-1 {
+  display: block;
+  margin: 0;
   color: var(--hq-ink-3);
+  font-family: var(--font-title);
+  font-size: clamp(1.15rem, 3.2vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: 0;
 }
 
-.hq-lede {
-  margin: clamp(1.1rem, 2.2vw, 1.5rem) 0 0;
-  max-width: 46ch;
-  color: var(--hq-ink-2);
-  font-size: clamp(0.95rem, 1.35vw, 1.0625rem);
-  font-weight: 400;
-  line-height: 2.05;                 /* the "high-end Arabic" measure */
+/* ── Line 2 · النجاح و التفوق ──
+   THE line. Brand green, the largest type on the page, and the anchor for
+   the hand-drawn underline that sits directly beneath it. `display:
+   inline-block` so the SVG can be width-matched to the glyphs, not to the
+   column. */
+.hq-hero__line-2 {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  padding-bottom: clamp(0.55rem, 1.8vw, 0.95rem);   /* room for the stroke */
+  color: var(--hq-green);
+  font-family: var(--font-title);
+  font-size: clamp(2.1rem, 8.2vw, 4.35rem);
+  font-weight: 700;
+  line-height: 1.34;
+  letter-spacing: 0;
+}
+
+/* ── The hand-drawn / chalk underline ──
+   An inline SVG (see HomePage.tsx), NOT a border-bottom: the path is a
+   wobbly double stroke with round caps, so it reads as one confident
+   marker sweep with a lighter chalk pass under it. Stretched to the exact
+   width of line 2 and allowed to bleed slightly past both ends, the way a
+   real hand overshoots. */
+.hq-hero__underline {
+  position: absolute;
+  right: -3%;
+  bottom: 0;
+  left: -3%;
+  width: 106%;
+  height: clamp(0.85rem, 2.6vw, 1.4rem);
+  overflow: visible;
+  pointer-events: none;
+  color: var(--hq-green);            /* the SVG strokes inherit this */
+}
+.hq-hero__underline path { vector-effect: non-scaling-stroke; }
+/* the second, fainter pass — the "chalk dust" */
+.hq-hero__underline .hq-chalk { opacity: 0.4; }
+
+/* ── Line 3 · عام الباكالوريا ──
+   The closing statement: ink, medium weight, sits calmly under the green. */
+.hq-hero__line-3 {
+  display: block;
+  margin: clamp(0.3rem, 1.1vw, 0.6rem) 0 0;
+  color: var(--hq-ink);
+  font-family: var(--font-title);
+  font-size: clamp(1.35rem, 4.4vw, 2.4rem);
+  font-weight: 500;
+  line-height: 1.55;
   letter-spacing: 0;
 }
 
@@ -350,11 +458,14 @@ html[data-theme="dark"] .hq-canvas::after {
    ══════════════════════════════════════════════════════════════════ */
 .hq-cards {
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(0.75rem, 1.6vw, 1.1rem);
   margin-top: clamp(2.5rem, 6.5vh, 4.5rem);
 }
 
+/* Cartoon-adjacent geometry: a big 28px radius and a warm cream fill, so
+   the cards read as soft friendly tiles rather than as document boxes. */
 .hq-card {
   position: relative;
   display: flex;
@@ -364,7 +475,7 @@ html[data-theme="dark"] .hq-canvas::after {
   gap: 1.5rem;
   padding: clamp(1.15rem, 2.2vw, 1.6rem);
   border: 1px solid var(--hq-hairline-soft);
-  border-radius: 1.25rem;
+  border-radius: 1.75rem;
   background: var(--hq-surface);
   box-shadow: var(--hq-shadow);
   text-align: right;
@@ -375,10 +486,16 @@ html[data-theme="dark"] .hq-canvas::after {
   will-change: transform;
 }
 
+/* The index is now a small green pill — the palette's primary showing up
+   in the smallest details, which is what makes it read as an identity. */
 .hq-card__index {
-  color: var(--hq-ink-4);
-  font-size: 0.72rem;
-  font-weight: 400;
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: var(--hq-green-soft);
+  color: var(--hq-green);
+  font-size: 0.7rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
 }
@@ -408,22 +525,27 @@ html[data-theme="dark"] .hq-canvas::after {
   gap: 0.75rem;
 }
 
+/* The arrow is green at rest — it is the affordance, so it is primary. */
 .hq-card__arrow {
   display: inline-flex;
   align-items: center;
-  color: var(--hq-ink-4);
+  color: var(--hq-green);
   transition: transform 0.45s var(--hq-ease), color 0.45s var(--hq-ease-soft);
 }
 
+/* The live card's chip is a filled GREEN pill (the primary CTA material);
+   the "قريبًا" chips stay a quiet outline — see `--disabled` below. */
 .hq-card__chip {
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--hq-hairline-soft);
+  padding: 0.28rem 0.75rem;
+  border: 1px solid transparent;
   border-radius: 999px;
-  color: var(--hq-ink-4);
-  font-size: 0.7rem;
-  font-weight: 400;
+  background: var(--hq-green);
+  color: #fbfdf9;
+  font-size: 0.72rem;
+  font-weight: 600;
   line-height: 1.8;
   white-space: nowrap;
+  transition: background-color 0.35s var(--hq-ease-soft);
 }
 
 /* ── the micro-interaction (interactive card only) ── */
@@ -431,28 +553,42 @@ html[data-theme="dark"] .hq-canvas::after {
 .hq-card--link:hover,
 .hq-card--link:focus-visible {
   transform: translateY(-3px);
-  border-color: var(--hq-hairline);
+  border-color: var(--hq-green-line);
   background: var(--hq-surface-hover);
   box-shadow: var(--hq-shadow-lift);
   outline: none;
 }
+.hq-card--link:hover .hq-card__chip,
+.hq-card--link:focus-visible .hq-card__chip { background: var(--hq-green-deep); }
+.hq-card--link:hover .hq-card__title,
+.hq-card--link:focus-visible .hq-card__title { color: var(--hq-green); }
 .hq-card--link:hover .hq-card__arrow,
 .hq-card--link:focus-visible .hq-card__arrow {
-  color: var(--hq-ink);
+  color: var(--hq-green-deep);
   transform: translateX(-4px);        /* RTL: forward is leftward */
 }
 .hq-card--link:active { transform: translateY(-1px) scale(0.995); }
-.hq-card--link:focus-visible { outline: 1px solid var(--hq-ink-4); outline-offset: 3px; }
+.hq-card--link:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 3px; }
 
-/* ── disabled ── */
+/* ── disabled ──
+   Still friendly (same big radius), but unmistakably inert: dashed border,
+   no fill, and the chip drops back to a quiet outline so the filled green
+   pill stays exclusive to the one live destination. */
 .hq-card--disabled {
-  opacity: 0.42;
+  opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
   background: transparent;
   border-style: dashed;
 }
 .hq-card--disabled .hq-card__title { color: var(--hq-ink-2); }
+.hq-card--disabled .hq-card__index { background: transparent; color: var(--hq-ink-4); }
+.hq-card--disabled .hq-card__chip {
+  border-color: var(--hq-hairline);
+  background: transparent;
+  color: var(--hq-ink-3);
+  font-weight: 400;
+}
 
 /* ══════════════════════════════════════════════════════════════════
    6 · FOOT — one hairline and a whisper
@@ -483,8 +619,13 @@ html[data-theme="dark"] .hq-canvas::after {
   height: 1px;
   background: var(--hq-hairline-soft);
 }
-.hq-foot a { color: var(--hq-ink-3); transition: color 0.28s var(--hq-ease-soft); }
-.hq-foot a:hover { color: var(--hq-ink); }
+.hq-foot a {
+  color: var(--hq-green);
+  font-weight: 600;
+  transition: color 0.28s var(--hq-ease-soft);
+}
+.hq-foot a:hover { color: var(--hq-green-deep); }
+.hq-foot a:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 3px; border-radius: 6px; }
 
 /* ══════════════════════════════════════════════════════════════════
    7 · RESPONSIVE
@@ -493,8 +634,11 @@ html[data-theme="dark"] .hq-canvas::after {
   .hq-cards { grid-template-columns: 1fr; gap: 0.75rem; }
   .hq-card { min-height: 0; gap: 1.1rem; }
   .hq-canvas { background-size: 56px 56px, 56px 56px, 14px 14px, 14px 14px; }
-  .hq-main { justify-content: flex-start; padding-top: clamp(1.75rem, 6vh, 3rem); }
-  .hq-lede { line-height: 1.95; }
+  .hq-main { justify-content: flex-start; padding-top: clamp(2.25rem, 8vh, 3.5rem); }
+  /* The hero keeps its three-line stack on phones; only the blobs shrink
+     back so they never crowd the green line. */
+  .hq-hero__blob--a { top: -4%; right: -4%; }
+  .hq-hero__blob--b { bottom: -6%; left: -6%; }
 }
 
 @media (max-width: 420px) {
@@ -513,4 +657,7 @@ html[data-theme="dark"] .hq-canvas::after {
   }
   .hq-card--link:hover { transform: none; }
   .hq-card--link:hover .hq-card__arrow { transform: none; }
+  /* The hand-drawn underline is a static path — nothing to disable — but
+     make sure no draw-in animation can ever be introduced silently. */
+  .hq-hero__underline path { animation: none !important; }
 }

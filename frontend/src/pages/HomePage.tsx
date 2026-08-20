@@ -6,25 +6,31 @@ import { useSession } from '../lib/useSession'
 import './home.css'
 
 /**
- * HomePage — "Quiet Luxury / Scandinavian Minimalist".
+ * HomePage — "Playful Cream & Green".
  *
- * A complete structural rebuild, not a restyle. The page is now ONE calm
- * screen instead of six scrolling acts:
+ * ONE friendly screen, built on the two primary brand colours:
+ * #469C59 (green) and #FAF7ED (warm cream).
  *
  *   ┌──────────────────────────────────────────────┐
  *   │ تيسير                                     ⋮  │   ← the only chrome
  *   │                                              │
- *   │   — منصّة البكالوريا                          │
- *   │   headline · lede                            │
+ *   │                 طريقك نحو                     │
+ *   │              النجاح و التفوق                   │  ← green + underline
+ *   │             ﹏﹏﹏﹏﹏﹏﹏﹏                      │  ← hand-drawn SVG
+ *   │              عام الباكالوريا                   │
  *   │                                              │
  *   │   [ الملفات ]  [ خطط التميز ]  [ النصائح ]     │
  *   │                                              │
  *   │ ─────────────────────────────────────────    │
  *   └──────────────────────────────────────────────┘
  *
+ * The eyebrow ("منصّة البكالوريا") and the old lede were removed; the hero
+ * is now the three centred lines above, with a wobbly chalk-style stroke
+ * under the green line (an inline SVG path, never a border-bottom).
+ *
  * Everything visual lives in `home.css`, scoped under `.home-quiet`:
- * the faint double grid, the iOS frosted menu material, and the card
- * micro-interactions. Palette is strictly monochrome.
+ * the minimal double grid, the two cartoon blobs, the iOS frosted menu
+ * material, and the card micro-interactions.
  *
  * IMPORTANT — this file touches NO session, auth, guard, crypto or drive
  * logic. It only *reads* the existing `useSession()` hook to decide where
@@ -199,19 +205,33 @@ export default function HomePage() {
 
       {/* ── CONTENT ──────────────────────────────────────────────── */}
       <main className="hq-main">
-        <M.p className="hq-eyebrow" {...rise(0.16)}>
-          منصّة البكالوريا
-        </M.p>
+        {/* ── THE HERO ───────────────────────────────────────────────
+            Three lines, stacked and centred:
 
-        <M.h1 className="hq-title" {...rise(0.22)}>
-          كل ما تحتاجه للبكالوريا،
-          <br />
-          <em>في مكان واحد هادئ.</em>
-        </M.h1>
+              طريقك نحو          ← quiet opener
+              النجاح و التفوق     ← GREEN, largest, hand-drawn underline
+              عام الباكالوريا     ← ink, the closing statement
 
-        <M.p className="hq-lede" {...rise(0.3)}>
-          دروس، ملخّصات، وتمارين مصحّحة — مرتّبة بعناية حتى يبقى تركيزك على المراجعة وحدها.
-        </M.p>
+            The two blobs behind are pure decoration (cartoon "sticker"
+            shapes at ~8% green) and are hidden from assistive tech. */}
+        <M.div className="hq-hero" {...rise(0.16)}>
+          <span className="hq-hero__blob hq-hero__blob--a" aria-hidden="true" />
+          <span className="hq-hero__blob hq-hero__blob--b" aria-hidden="true" />
+
+          <h1 className="hq-hero__stack">
+            <span className="hq-hero__line-1">طريقك نحو</span>
+
+            {/* Line 2 owns the underline: the SVG is absolutely positioned
+                inside this inline-block span, so it stretches to the exact
+                width of the glyphs rather than the column. */}
+            <span className="hq-hero__line-2">
+              النجاح و التفوق
+              <HandDrawnUnderline />
+            </span>
+
+            <span className="hq-hero__line-3">عام الباكالوريا</span>
+          </h1>
+        </M.div>
 
         {/* ── THE THREE CARDS ─────────────────────────────────────── */}
         <M.div className="hq-cards" {...rise(0.38)}>
@@ -257,6 +277,51 @@ export default function HomePage() {
         </a>
       </M.footer>
     </div>
+  )
+}
+
+/* ── The hand-drawn underline ───────────────────────────────────────
+   A chalk / marker sweep under «النجاح و التفوق» — deliberately NOT a
+   border-bottom. Two overlapping paths drawn with round caps:
+
+     1. the confident main stroke — it rises, dips, rises again, and
+        overshoots slightly past both ends the way a real hand does;
+     2. a fainter second pass ("chalk dust") offset a couple of units
+        below and traced at a slightly different amplitude, which is what
+        reads as hand-made rather than as a decorative wave.
+
+   `preserveAspectRatio="none"` lets the path stretch to the width of the
+   Arabic glyphs, while `vector-effect: non-scaling-stroke` (in the CSS)
+   keeps the stroke weight honest at any width. Colour comes from
+   `currentColor`, which the CSS pins to the brand green #469C59. */
+function HandDrawnUnderline() {
+  return (
+    <svg
+      className="hq-hero__underline"
+      viewBox="0 0 300 22"
+      preserveAspectRatio="none"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {/* main sweep — imperfect on purpose */}
+      <path
+        d="M3 14.5C26 9.8 49 7.6 74 8.4c25 .9 45 4.4 70 5 25 .7 47-2.4 71-5.6 24-3.2 55-3.9 82-1.2"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* the fainter chalk pass */}
+      <path
+        className="hq-chalk"
+        d="M11 19.4C38 16.2 62 14.8 88 15.4c26 .7 44 3 68 2.7 24-.3 50-2.9 76-5.4"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 

@@ -1,28 +1,52 @@
 @import "tailwindcss";
 
 /* ════════════════════════════════════════════════════════════════════
-   تيسير — DESIGN SYSTEM  ·  "Porcelain & Graphite"
+   تيسير — DESIGN SYSTEM  ·  "Green & Cream"
    ────────────────────────────────────────────────────────────────────
-   An iOS-flavoured material language: honest neutrals, one quiet accent,
-   real depth from translucency + a single soft shadow — never from glow.
+   TWO colours carry the whole brand. They are not accents — they ARE
+   the theme:
+
+     #469C59  «الأخضر»  — the primary brand green. Headline emphasis,
+                          buttons, active links, the hand-drawn
+                          underline, chips, icon tiles, focus rings.
+     #FAF7ED  «الكريمي» — the primary background of the entire site:
+                          a warm, paper-like cream.
+
+   Black / gray survive ONLY as secondary text and subtle hairlines.
 
    THREE RULES THIS FILE OBEYS
-   1. Type first. San Francisco (SF Pro / SF Arabic) when the OS has it,
-      the bundled Arabic faces otherwise. Optical tracking, never fake bold.
-   2. Neutral surfaces, one accent. Colour is information, not decoration.
-      No gradient text, no neon, no rainbow.
-   3. Depth is physical. Glass = blur + saturation + a 1px top highlight +
-      a hairline + one wide, low shadow. Exactly how iOS builds a sheet.
+   1. Type first. IBM Plex Sans Arabic everywhere; hierarchy comes from
+      size, weight and line-height — never from a second, louder face.
+   2. Two brand colours, warm neutrals underneath. Colour is identity
+      and information; never decoration for its own sake.
+   3. Depth is physical. Glass = blur + saturation + a 1px top highlight
+      + a hairline + one wide, low shadow. Exactly how iOS builds a sheet.
    ════════════════════════════════════════════════════════════════════ */
+
+/* ── Brand constants ────────────────────────────────────────────────
+   The two literal hex values live here, once. Everything else in the
+   codebase should reference these (or the semantic tokens below) so the
+   identity can never drift. */
+:root {
+  --brand-green: #469c59;        /* PRIMARY — the brand colour */
+  --brand-green-deep: #35804a;   /* pressed / hover state */
+  --brand-green-dark: #275c36;   /* text on cream when extra contrast is needed */
+  --brand-green-light: #7cc08b;  /* the dark-theme-legible tint */
+  --brand-cream: #faf7ed;        /* PRIMARY — the page ground */
+  --brand-cream-2: #f4efe0;      /* one step down: grounds, ribbons */
+  --brand-cream-3: #ece5d2;      /* hairline-adjacent cream */
+}
 
 /* ── Tailwind theme bridge ──────────────────────────────────────────
    Utilities used inline by the components (bg-ink, text-cyan, font-sans)
    resolve through these. The token NAMES are kept verbatim so no component
-   markup has to change; their VALUES are now pure neutral grays. */
+   markup has to change; their VALUES now carry the green/cream identity. */
 @theme {
-  --color-ink: #101010;
-  --color-cyan: #4b4b4b;   /* legacy name, neutral graphite value */
-  --color-gold: #6e6e6e;   /* legacy name, neutral gray value */
+  --color-ink: #14160f;
+  --color-cyan: #469c59;   /* legacy name, PRIMARY green value */
+  --color-gold: #35804a;   /* legacy name, deep green value */
+  --color-cream: #faf7ed;
+  --color-green: #469c59;
   --font-sans: var(--font-ui);
   --font-display: var(--font-ui);
 }
@@ -59,96 +83,96 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   2 · PALETTE — DARK (native default) · "Graphite"
-   Strictly achromatic: every value has R = G = B, so there is zero hue
-   anywhere in the system. Depth comes from luminance and translucency
-   alone — which is exactly what makes a monochrome UI read as material.
+   2 · PALETTE — DARK · "Forest"
+   The same identity after dark: the ground is a green-leaning near-black
+   (a cream inverted, not a pure gray), and the primary green is lifted to
+   `--brand-green-light` so it stays AA-legible on it.
    ══════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: dark;
   font-family: var(--font-ui);
-  background: #101010;
+  background: #12160f;
   font-synthesis: none;               /* never fake a weight */
   -webkit-text-size-adjust: 100%;
 
-  --ink: #101010;
-  --ink-soft: #171717;
-  --white: #f5f5f5;
+  --ink: #12160f;
+  --ink-soft: #191e15;
+  --white: #f3f1e6;
 
-  /* THE single accent — a silver gray. Grays only: no hue, ever.
+  /* THE PRIMARY colour — brand green (lifted for dark grounds).
      `--cyan` / `--gold` are kept purely as back-compatible ALIASES so the
      existing selectors and Tailwind utilities keep resolving. */
-  --accent: #b4b4b4;                  /* silver — the single accent */
-  --accent-2: #8e8e8e;                /* mid gray — secondary */
-  --cyan: var(--accent);              /* alias (legacy name, gray value) */
-  --gold: var(--accent-2);            /* alias (legacy name, gray value) */
+  --accent: var(--brand-green-light);   /* primary green — dark-legible */
+  --accent-2: var(--brand-green);       /* the true brand green */
+  --cyan: var(--accent);                /* alias (legacy name, green value) */
+  --gold: var(--accent-2);              /* alias (legacy name, green value) */
 
-  --page-bg: #101010;
-  --text-strong: #f5f5f5;
-  --text-base: rgba(235, 235, 235, 0.82);
-  --text-muted: rgba(235, 235, 235, 0.58);
-  --text-faint: rgba(235, 235, 235, 0.38);
+  --page-bg: #12160f;
+  --text-strong: #f3f1e6;
+  --text-base: rgba(240, 238, 226, 0.82);
+  --text-muted: rgba(240, 238, 226, 0.58);
+  --text-faint: rgba(240, 238, 226, 0.38);
 
-  --hairline: rgba(255, 255, 255, 0.085);
-  --hairline-strong: rgba(255, 255, 255, 0.16);
-  --surface: rgba(255, 255, 255, 0.055);
-  --surface-2: rgba(255, 255, 255, 0.032);
+  --hairline: rgba(250, 247, 237, 0.085);
+  --hairline-strong: rgba(250, 247, 237, 0.16);
+  --surface: rgba(250, 247, 237, 0.055);
+  --surface-2: rgba(250, 247, 237, 0.032);
 
   /* ── Glass recipe (iOS material) ── */
-  --glass-bg: rgba(28, 28, 28, 0.62);
-  --glass-bg-strong: rgba(22, 22, 22, 0.78);
+  --glass-bg: rgba(26, 32, 24, 0.62);
+  --glass-bg-strong: rgba(20, 25, 18, 0.78);
   --glass-blur: saturate(180%) blur(20px);
-  --glass-border: rgba(255, 255, 255, 0.11);
-  --glass-highlight: rgba(255, 255, 255, 0.10);   /* the 1px top edge */
-  --glass-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.72);
-  --glass-shadow-lg: 0 40px 100px -32px rgba(0, 0, 0, 0.8);
+  --glass-border: rgba(250, 247, 237, 0.11);
+  --glass-highlight: rgba(250, 247, 237, 0.10);   /* the 1px top edge */
+  --glass-shadow: 0 20px 60px -20px rgba(6, 12, 6, 0.72);
+  --glass-shadow-lg: 0 40px 100px -32px rgba(6, 12, 6, 0.8);
 
-  /* Solid fill for the primary control (no gradient — iOS uses flat tint) */
-  --fill-primary: #e9e9e9;
-  --fill-primary-ink: #141414;
+  /* Solid fill for the primary control — the brand green, flat (no gradient) */
+  --fill-primary: var(--brand-green);
+  --fill-primary-ink: #f7fbf6;
 
   --ambient-photo-opacity: 0.3;
   --ambient-veil-strength: 0.9;
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   3 · PALETTE — LIGHT · "Porcelain"
-   The same achromatic scale inverted: a near-white ground, near-black
-   label, mid-gray secondary. Every value is R = G = B, so the light theme
-   carries no hue either — only luminance.
+   3 · PALETTE — LIGHT · "Cream & Green"  ← the design's home base
+   The warm cream #FAF7ED is the ground of the ENTIRE site, and the brand
+   green #469C59 is the primary. Text is a warm near-black; gray survives
+   only as secondary label and hairline.
    ══════════════════════════════════════════════════════════════════ */
 html[data-theme="light"] {
   color-scheme: light;
-  background: #f5f5f5;
+  background: var(--brand-cream);
 
-  --page-bg: #f5f5f5;
-  --ink: #f5f5f5;
-  --ink-soft: #ffffff;
-  --white: #1d1d1d;
+  --page-bg: var(--brand-cream);
+  --ink: var(--brand-cream);
+  --ink-soft: #fffdf6;
+  --white: #1b1d18;
 
-  --accent: #4b4b4b;                /* graphite — AA on porcelain */
-  --accent-2: #6e6e6e;              /* mid gray — secondary */
+  --accent: var(--brand-green);        /* PRIMARY — brand green on cream */
+  --accent-2: var(--brand-green-deep); /* pressed / secondary green */
 
-  --text-strong: #1d1d1d;
-  --text-base: rgba(29, 29, 29, 0.86);
-  --text-muted: #6e6e6e;
-  --text-faint: rgba(29, 29, 29, 0.44);
+  --text-strong: #1b1d18;              /* warm near-black */
+  --text-base: rgba(27, 29, 24, 0.86);
+  --text-muted: #6b6f64;               /* warm gray — secondary only */
+  --text-faint: rgba(27, 29, 24, 0.44);
 
-  --hairline: rgba(0, 0, 0, 0.08);
-  --hairline-strong: rgba(0, 0, 0, 0.14);
-  --surface: rgba(0, 0, 0, 0.035);
-  --surface-2: rgba(0, 0, 0, 0.022);
+  --hairline: rgba(27, 29, 24, 0.09);
+  --hairline-strong: rgba(27, 29, 24, 0.16);
+  --surface: rgba(255, 255, 255, 0.6);
+  --surface-2: var(--brand-cream-2);
 
-  --glass-bg: rgba(255, 255, 255, 0.68);
-  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-bg: rgba(250, 247, 237, 0.68);
+  --glass-bg-strong: rgba(250, 247, 237, 0.86);
   --glass-blur: saturate(180%) blur(20px);
-  --glass-border: rgba(0, 0, 0, 0.07);
-  --glass-highlight: rgba(255, 255, 255, 0.9);
-  --glass-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.16);
-  --glass-shadow-lg: 0 36px 90px -30px rgba(0, 0, 0, 0.2);
+  --glass-border: rgba(27, 29, 24, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.92);
+  --glass-shadow: 0 18px 50px -18px rgba(40, 46, 32, 0.18);
+  --glass-shadow-lg: 0 36px 90px -30px rgba(40, 46, 32, 0.22);
 
-  --fill-primary: #1d1d1d;
-  --fill-primary-ink: #ffffff;
+  --fill-primary: var(--brand-green);  /* buttons are GREEN, not black */
+  --fill-primary-ink: #fbfdf9;
 
   --ambient-photo-opacity: 0.05;
   --ambient-veil-strength: 0.3;
@@ -184,8 +208,9 @@ a { color: inherit; text-decoration: none; }
 /* iOS auto-zooms a focused control whose font-size is under 16px. Pin it. */
 input, textarea, select { font-family: inherit; font-size: 16px; }
 
-::selection { background: rgba(235, 235, 235, 0.26); color: #0d0d0d; }
-html[data-theme="light"] ::selection { background: rgba(0, 0, 0, 0.14); color: #1d1d1d; }
+/* Selection carries the brand green — it is the primary, so it selects. */
+::selection { background: rgba(124, 192, 139, 0.32); color: #f3f1e6; }
+html[data-theme="light"] ::selection { background: rgba(70, 156, 89, 0.22); color: #1b1d18; }
 
 /* Focus rings: one consistent, accessible ring everywhere. */
 :where(a, button, [role="switch"]):focus-visible {
@@ -237,7 +262,7 @@ html.theme-crossfade * {
 .ambient-photo {
   position: absolute; inset: -6%;
   background-image:
-    linear-gradient(180deg, rgba(16, 16, 16, 0.55), rgba(16, 16, 16, 0.92) 68%, #101010 96%),
+    linear-gradient(180deg, rgba(18, 22, 15, 0.55), rgba(18, 22, 15, 0.92) 68%, #12160f 96%),
     url('/react/assets/study-night.webp');
   background-size: cover;
   background-position: center 40%;
@@ -248,21 +273,23 @@ html.theme-crossfade * {
 .ambient-veil {
   position: absolute; inset: 0;
   background:
-    radial-gradient(120% 90% at 72% 18%, transparent 0, rgba(16, 16, 16, 0.4) 46%, rgba(16, 16, 16, 0.94) 88%),
-    linear-gradient(180deg, rgba(16, 16, 16, 0.5), rgba(16, 16, 16, 0.86));
+    radial-gradient(120% 90% at 72% 18%, transparent 0, rgba(18, 22, 15, 0.4) 46%, rgba(18, 22, 15, 0.94) 88%),
+    linear-gradient(180deg, rgba(18, 22, 15, 0.5), rgba(18, 22, 15, 0.86));
 }
+/* The two blooms are now the brand green, held at a whisper so they read
+   as ambient light rather than as colour. */
 .ambient-orb { position: absolute; border-radius: 999px; filter: blur(130px); }
-.ambient-orb--cyan { width: 44rem; height: 44rem; background: #5a5a5a; top: 30%; right: -24rem; opacity: 0.14; }
-.ambient-orb--gold { width: 30rem; height: 30rem; background: #4a4a4a; left: -14rem; top: 8%; opacity: 0.1; }
+.ambient-orb--cyan { width: 44rem; height: 44rem; background: var(--brand-green); top: 30%; right: -24rem; opacity: 0.16; }
+.ambient-orb--gold { width: 30rem; height: 30rem; background: var(--brand-green-deep); left: -14rem; top: 8%; opacity: 0.12; }
 
 html[data-theme="light"] .ambient-photo { filter: grayscale(1) contrast(1) blur(3px) brightness(1.6); }
 html[data-theme="light"] .ambient-veil {
   background:
-    radial-gradient(120% 90% at 72% 18%, rgba(255, 255, 255, 0.6) 0, rgba(245, 245, 245, 0.86) 50%, #f5f5f5 92%),
-    linear-gradient(180deg, rgba(245, 245, 245, 0.7), rgba(245, 245, 245, 0.95));
+    radial-gradient(120% 90% at 72% 18%, rgba(255, 253, 246, 0.6) 0, rgba(250, 247, 237, 0.86) 50%, #faf7ed 92%),
+    linear-gradient(180deg, rgba(250, 247, 237, 0.7), rgba(250, 247, 237, 0.95));
 }
-html[data-theme="light"] .ambient-orb--cyan { background: #c8c8c8; opacity: 0.2; }
-html[data-theme="light"] .ambient-orb--gold { background: #d4d4d4; opacity: 0.22; }
+html[data-theme="light"] .ambient-orb--cyan { background: var(--brand-green-light); opacity: 0.2; }
+html[data-theme="light"] .ambient-orb--gold { background: var(--brand-green); opacity: 0.14; }
 
 /* ══════════════════════════════════════════════════════════════════
    7 · HEADER / NAVIGATION
