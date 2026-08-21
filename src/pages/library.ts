@@ -143,7 +143,26 @@ export const libraryPage = `<!DOCTYPE html>
   <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- PERF: start the library listing request during HTML parse, long before
+       the deferred library.js executes. Head-level hint only — library.js
+       behaviour is unchanged; the browser simply reuses the warmed response. -->
+  <link rel="preload" as="fetch" crossorigin="use-credentials" href="/api/library/list" />
+
+  <!-- PERF: preload the page's own CSS/JS so they download in parallel with
+       HTML parsing instead of being discovered late. -->
+  <link rel="preload" href="/static/tokens.css" as="style" />
+  <link rel="preload" href="/static/library.css" as="style" />
+  <link rel="preload" href="/static/library.js" as="script" />
+  <link rel="preload" href="/static/file-cache.js" as="script" />
+
+  <!-- PERF: Google Fonts stylesheet loads WITHOUT blocking first paint —
+       preloaded as a style, swapped to a live stylesheet onload. Text renders
+       immediately with fallback fonts (display=swap), then upgrades. The
+       <noscript> fallback keeps fonts working when JS is disabled. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/library.css" rel="stylesheet" />
 </head>
