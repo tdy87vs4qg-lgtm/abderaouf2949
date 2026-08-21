@@ -146,8 +146,13 @@ export const libraryPage = `<!DOCTYPE html>
 
   <!-- PERF: start the library listing request during HTML parse, long before
        the deferred library.js executes. Head-level hint only — library.js
-       behaviour is unchanged; the browser simply reuses the warmed response. -->
-  <link rel="preload" as="fetch" crossorigin="use-credentials" href="/api/library/list" />
+       behaviour is unchanged; the browser simply reuses the warmed response.
+       crossorigin="anonymous" ⇒ request mode "cors" + credentials "same-origin",
+       which is EXACTLY what library.js's fetch(url, {credentials:'same-origin'})
+       produces — required for the preload cache to match (use-credentials would
+       set credentials "include", mismatch, and waste the preload). Cookies are
+       still sent because the request is same-origin. -->
+  <link rel="preload" as="fetch" crossorigin="anonymous" href="/api/library/list" />
 
   <!-- PERF: preload the page's own CSS/JS so they download in parallel with
        HTML parsing instead of being discovered late. -->
