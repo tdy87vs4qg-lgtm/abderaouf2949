@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import BrandLoader, { InlineSpinner } from '../components/BrandLoader'
 import ThemeToggle from '../components/ThemeToggle'
 import { LazyAnimatePresence, M } from '../lib/lazyMotion'
 import { useSession } from '../lib/useSession'
@@ -12,7 +13,7 @@ import './home.css'
  * #469C59 (green) and #FAF7ED (warm cream).
  *
  *   ┌──────────────────────────────────────────────┐
- *   │ تيسير                                     ⋮  │   ← the only chrome
+ *   │ تيسير                                     ☰  │   ← the only chrome
  *   │                                              │
  *   │                 طريقك نحو                     │
  *   │              النجاح و التفوق                   │  ← green + underline
@@ -36,6 +37,31 @@ import './home.css'
  * logic. It only *reads* the existing `useSession()` hook to decide where
  * the files card should point (library when signed in, login otherwise),
  * exactly as SiteHeader already does.
+ *
+ * ── THE "FROZEN APP" FIX ──────────────────────────────────────────────
+ * `/library` is a SEPARATE server-rendered page, so entering it is a full
+ * document load, not a client route change. Two things used to make that
+ * feel like a freeze:
+ *
+ *   1. THE DOUBLE TRIP. The files card resolved its target from
+ *      `session.authenticated`, which is `false` for the first few hundred
+ *      ms while `/api/auth/me` is still in flight. A signed-in visitor who
+ *      tapped during that window was sent to `/login` first, and only then
+ *      bounced on to `/library` — two full page loads instead of one.
+ *      FIX: the card is GUARDED on `session.loading`. While the probe is
+ *      unresolved it resolves NO target at all: it renders as an inert
+ *      element with a small spinner in place of the "ادخل" chip, and it
+ *      only becomes a real link once `loading === false`.
+ *
+ *   2. THE BLANK WAIT. Once the navigation does start, the browser keeps
+ *      the old document until the new one arrives — and the SPA had nothing
+ *      to show for it. FIX: tapping the card raises `entering`, which
+ *      paints a full-screen <BrandLoader variant="overlay" /> so the wait
+ *      is branded instead of blank.
+ *
+ * Nothing about the server-side gate, the session hook, the auth flow or
+ * the library itself is changed — this is purely what the UI shows while
+ * it waits.
  */
 
 /* Reveal timings — short, soft, GPU-only. Shared so the whole screen
@@ -50,15 +76,50 @@ const rise = (delay: number) => ({
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
-  const dotsRef = useRef<HTMLButtonElement | null>(null)
+  const burgerRef = useRef<HTMLButtonElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   // Read-only session probe (same hook the header uses). Signed-in visitors
   // go straight to the library; everyone else is routed through /login, which
   // keeps the real server-side gate as the single source of truth.
   const session = useSession()
-  const filesHref = session.authenticated ? session.destination || '/library' : '/login'
-  const filesIsExternal = session.authenticated
+
+  /* ── THE GUARD ────────────────────────────────────────────────────
+     While the /me probe is in flight we know NOTHING, so we must not
+     resolve a target: guessing "/login" here is exactly what caused the
+     login → library double trip for already-signed-in visitors. During
+     this window the card is inert (no href, no navigation) and shows a
+     quiet pending state instead. */
+  const sessionPending = session.loading
+  const filesHref = sessionPending
+    ? null
+    : session.authenticated
+      ? session.destination || '/library'
+      : '/login'
+  // Only the signed-in destination is a real (server-rendered) page outside
+  // the SPA, so only that one is a full document navigation.
+  const filesIsExternal = !sessionPending && session.authenticated
+
+  /* ── THE ENTRY OVERLAY ────────────────────────────────────────────
+     Raised the moment a full page navigation to /library starts, so the
+     hand-off is a branded loader rather than a blank white screen. */
+  const [entering, setEntering] = useState(false)
+
+  // If the navigation never completes (back / bfcache restore, a cancelled
+  // load, or the tab being re-shown), drop the overlay so the page can never
+  // be left stuck behind it.
+  useEffect(() => {
+    if (!entering) return
+    const clear = () => setEntering(false)
+    window.addEventListener('pageshow', clear)
+    window.addEventListener('popstate', clear)
+    return () => {
+      window.removeEventListener('pageshow', clear)
+      window.removeEventListener('popstate', clear)
+    }
+  }, [entering])
+
+  const beginEntering = useCallback(() => setEntering(true), [])
 
   /* ── The page ground ─────────────────────────────────────────────
      Flag <html> while home is mounted so the overscroll area, the mobile
@@ -78,12 +139,12 @@ export default function HomePage() {
       if (event.key === 'Escape') {
         event.stopPropagation()
         setMenuOpen(false)
-        dotsRef.current?.focus()
+        burgerRef.current?.focus()
       }
     }
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node
-      if (menuRef.current?.contains(target) || dotsRef.current?.contains(target)) return
+      if (menuRef.current?.contains(target) || burgerRef.current?.contains(target)) return
       setMenuOpen(false)
     }
 
@@ -100,8 +161,13 @@ export default function HomePage() {
       {/* ── The grid. Fixed, masked, purely decorative. ───────────── */}
       <div className="hq-canvas" aria-hidden="true" />
 
+      {/* ── THE ENTRY LOADER ──────────────────────────────────────────
+          Full-screen, branded, and only ever mounted while a real full
+          page load to the library is under way. */}
+      {entering && <BrandLoader variant="overlay" label="جارٍ فتح المكتبة…" />}
+
       {/* ── TOP BAR ───────────────────────────────────────────────────
-          Laid out LTR so the brand sits physically top-LEFT and the ⋮
+          Laid out LTR so the brand sits physically top-LEFT and the ☰
           top-RIGHT as specified, while the Arabic inside stays RTL. */}
       <header className="hq-bar" dir="ltr">
         <M.div {...rise(0.05)} style={{ display: 'inline-flex' }}>
@@ -111,19 +177,28 @@ export default function HomePage() {
         </M.div>
 
         <M.div {...rise(0.1)} style={{ position: 'relative', display: 'inline-flex' }}>
+          {/* ── THE HAMBURGER ──────────────────────────────────────────
+              Three stacked horizontal rules, clean and minimal, in the
+              brand green. When the panel opens the lines morph into a
+              close mark (top and bottom rotate onto each other, the
+              middle fades) — one gesture, transform-only, so it stays
+              composited. Same button, same handler, same a11y contract
+              as the ⋮ it replaces. */}
           <button
-            ref={dotsRef}
+            ref={burgerRef}
             type="button"
-            className="hq-dots"
+            className="hq-burger"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-controls={menuId}
           >
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
+            <span className="hq-burger__lines" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
           </button>
 
           <LazyAnimatePresence>
@@ -141,8 +216,15 @@ export default function HomePage() {
                   aria-hidden="true"
                 />
 
-                {/* The iOS sheet: buttery scale + fade from the ⋮ corner.
-                    Only opacity/transform animate, so it stays composited. */}
+                {/* The panel: one iOS frosted sheet that fades in while it
+                    slides down and scales up a hair from the ☰ corner. The
+                    items are stacked vertically and each one settles a beat
+                    after the one above it (a pure CSS stagger in home.css),
+                    which is what makes the open read as a sheet unfolding
+                    rather than a box appearing.
+
+                    SAME items, SAME links, SAME auth conditions as before —
+                    only the material and the motion were beautified. */}
                 <M.div
                   key="hq-menu"
                   ref={menuRef}
@@ -150,14 +232,20 @@ export default function HomePage() {
                   role="menu"
                   dir="rtl"
                   className="hq-menu"
-                  initial={{ opacity: 0, scale: 0.94, y: -8 }}
+                  initial={{ opacity: 0, scale: 0.96, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.97, y: -6 }}
+                  exit={{ opacity: 0, scale: 0.97, y: -8 }}
                   transition={{ duration: 0.34, ease: EASE_OUT }}
                 >
-                  {filesIsExternal ? (
-                    <a href={filesHref} role="menuitem" className="hq-menu-item">
+                  {filesIsExternal && filesHref ? (
+                    <a
+                      href={filesHref}
+                      role="menuitem"
+                      className="hq-menu-item"
+                      onClick={beginEntering}
+                    >
                       <span>المكتبة</span>
+                      <MenuChevron />
                     </a>
                   ) : (
                     <Link
@@ -167,6 +255,7 @@ export default function HomePage() {
                       onClick={() => setMenuOpen(false)}
                     >
                       <span>تسجيل الدخول</span>
+                      <MenuChevron />
                     </Link>
                   )}
 
@@ -178,6 +267,7 @@ export default function HomePage() {
                       onClick={() => setMenuOpen(false)}
                     >
                       <span>إنشاء حساب</span>
+                      <MenuChevron />
                     </Link>
                   )}
 
@@ -188,6 +278,7 @@ export default function HomePage() {
                     onClick={() => setMenuOpen(false)}
                   >
                     <span>ماذا ستحصل؟</span>
+                    <MenuChevron />
                   </Link>
 
                   <div className="hq-menu-sep" aria-hidden="true" />
@@ -235,14 +326,34 @@ export default function HomePage() {
 
         {/* ── THE THREE CARDS ─────────────────────────────────────── */}
         <M.div className="hq-cards" {...rise(0.38)}>
-          {/* 01 — the one live destination */}
-          {filesIsExternal ? (
-            <a href={filesHref} className="hq-card hq-card--link">
+          {/* 01 — the one live destination.
+
+              THREE states, in the order they actually occur:
+                a) session still resolving → INERT. No href is rendered at
+                   all, so an early tap can no longer be sent to /login and
+                   bounced on to /library (the old double trip).
+                b) signed in → a real <a>, i.e. a full page load into the
+                   server-rendered library, with the branded overlay raised
+                   on click so the wait is never blank.
+                c) signed out → the SPA /login route, unchanged. */}
+          {sessionPending ? (
+            <div
+              className="hq-card hq-card--pending"
+              aria-busy="true"
+              aria-disabled="true"
+            >
+              <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
+              <div className="hq-card__foot">
+                <InlineSpinner label="لحظة…" />
+              </div>
+            </div>
+          ) : filesIsExternal && filesHref ? (
+            <a href={filesHref} className="hq-card hq-card--link" onClick={beginEntering}>
               <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
               <CardFoot label="ادخل" />
             </a>
           ) : (
-            <Link to={filesHref} className="hq-card hq-card--link">
+            <Link to={filesHref || '/login'} className="hq-card hq-card--link">
               <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
               <CardFoot label="ادخل" />
             </Link>
@@ -322,6 +433,29 @@ function HandDrawnUnderline() {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+/* ── The menu chevron ───────────────────────────────────────────────
+   A 1.25px hairline chevron at the end of every menu row. Purely an
+   affordance hint: it sits faint at rest and slides a couple of pixels
+   forward (leftward, because the panel is RTL) on hover / focus. */
+function MenuChevron() {
+  return (
+    <span className="hq-menu-item__chev" aria-hidden="true">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m14 6-6 6 6 6" />
+      </svg>
+    </span>
   )
 }
 

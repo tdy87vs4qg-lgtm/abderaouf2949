@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import AmbientBackdrop from './components/AmbientBackdrop'
+import BrandLoader from './components/BrandLoader'
 import InAppBrowserNotice from './components/InAppBrowserNotice'
 import ScrollToTop from './components/ScrollToTop'
 import SiteHeader from './components/SiteHeader'
@@ -37,7 +38,12 @@ export default function App() {
           Renders null everywhere else and touches no auth logic. */}
       <InAppBrowserNotice />
       {!isHome && <SiteHeader />}
-      <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
+      {/* A REAL loading indicator, never a blank screen. The old fallback was
+          an empty aria-hidden box, so every lazy route change flashed pure
+          white and felt like a freeze. BrandLoader keeps the same full-height
+          reservation (no layout jump) but paints the تيسير wordmark + a thin
+          green ring, and announces the wait via role="status". */}
+      <Suspense fallback={<BrandLoader variant="route" />}>
         <LazyAnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<HomePage />} />

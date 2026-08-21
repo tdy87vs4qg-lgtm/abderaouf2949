@@ -190,13 +190,23 @@ html[data-theme="dark"] .hq-canvas::after {
 .hq-brand:hover { color: var(--hq-green-deep); opacity: 0.85; }
 .hq-brand:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 6px; border-radius: 8px; }
 
-/* ── the ⋮ button ── */
-.hq-dots {
+/* ── the ☰ button (replaces the old ⋮) ──────────────────────────────
+   Three horizontal stacked rules — clean, minimal, brand green. The lines
+   live inside a fixed 18×12 box so their positions can be described in
+   absolute terms, which is what lets them morph into a close mark on open:
+
+     rest    open
+     ───     ╲
+     ───      ╳     top rotates +45° down onto the centre line,
+     ───     ╱      bottom rotates −45° up onto it, middle fades out.
+
+   Only `transform` and `opacity` animate, so the whole gesture stays on
+   the compositor. The button keeps the exact same 38px round hit target,
+   hover/active/expanded states and focus ring as the ⋮ it replaces. */
+.hq-burger {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
   width: 2.375rem;
   height: 2.375rem;
   padding: 0;
@@ -209,20 +219,53 @@ html[data-theme="dark"] .hq-canvas::after {
               border-color 0.28s var(--hq-ease-soft),
               transform 0.28s var(--hq-ease);
 }
-.hq-dots span {
+
+.hq-burger__lines {
+  position: relative;
   display: block;
-  width: 3.5px;
-  height: 3.5px;
-  border-radius: 50%;
-  background: var(--hq-ink-3);
-  transition: background-color 0.28s var(--hq-ease-soft);
+  width: 18px;
+  height: 12px;
 }
-.hq-dots:hover { background: var(--hq-green-soft); border-color: var(--hq-green-line); }
-.hq-dots:hover span { background: var(--hq-green); }
-.hq-dots:active { transform: scale(0.94); }
-.hq-dots[aria-expanded="true"] { background: var(--hq-green-soft); border-color: var(--hq-green-line); }
-.hq-dots[aria-expanded="true"] span { background: var(--hq-green); }
-.hq-dots:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 4px; }
+
+.hq-burger__lines span {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1.75px;
+  border-radius: 999px;
+  background: var(--hq-ink-3);
+  transition: transform 0.4s var(--hq-ease),
+              opacity 0.24s var(--hq-ease-soft),
+              background-color 0.28s var(--hq-ease-soft),
+              width 0.4s var(--hq-ease);
+}
+.hq-burger__lines span:nth-child(1) { top: 0; }
+.hq-burger__lines span:nth-child(2) { top: 5.125px; }
+.hq-burger__lines span:nth-child(3) { top: 10.25px; }
+
+/* A whisper of asymmetry at rest — the bottom rule is a touch shorter, and
+   in RTL it shortens from the left, so the stack reads as drawn by hand
+   rather than stamped. It snaps to full width on hover / open. */
+.hq-burger__lines span:nth-child(3) { left: 4px; }
+
+.hq-burger:hover { background: var(--hq-green-soft); border-color: var(--hq-green-line); }
+.hq-burger:hover .hq-burger__lines span { background: var(--hq-green); left: 0; }
+.hq-burger:active { transform: scale(0.94); }
+.hq-burger:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 4px; }
+
+/* ── open: ☰ → ✕ ── */
+.hq-burger[aria-expanded="true"] { background: var(--hq-green-soft); border-color: var(--hq-green-line); }
+.hq-burger[aria-expanded="true"] .hq-burger__lines span { background: var(--hq-green); left: 0; }
+.hq-burger[aria-expanded="true"] .hq-burger__lines span:nth-child(1) {
+  transform: translateY(5.125px) rotate(45deg);
+}
+.hq-burger[aria-expanded="true"] .hq-burger__lines span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.4);
+}
+.hq-burger[aria-expanded="true"] .hq-burger__lines span:nth-child(3) {
+  transform: translateY(-5.125px) rotate(-45deg);
+}
 
 /* ══════════════════════════════════════════════════════════════════
    3 · THE MENU — an authentic iOS translucent sheet
@@ -238,19 +281,34 @@ html[data-theme="dark"] .hq-canvas::after {
   backdrop-filter: blur(1px);
 }
 
+/* THE PANEL.
+   One real iOS sheet, hung from under the ☰ and anchored to its corner
+   (`transform-origin: top right`) so the fade + slide + hair of scale that
+   framer-motion runs on mount appears to grow out of the button itself.
+
+   The material is unchanged in kind — blur + saturation, a hairline, a 1px
+   inner top highlight, one wide low shadow — only more generous: a larger
+   28px radius, roomier padding, and a slightly stronger blur so the cream
+   ground behind it reads as frosted glass rather than tint. BOTH
+   `-webkit-backdrop-filter` and `backdrop-filter` stay declared, in that
+   order, so Safari / iOS render the true material. */
 .hq-menu {
   position: absolute;
-  top: calc(100% - 0.35rem);
+  top: calc(100% + 0.3rem);
   right: clamp(1.25rem, 4vw, 2.75rem);
   z-index: 50;
-  width: min(17.5rem, calc(100vw - 2.5rem));
-  padding: 0.5rem;
+  width: min(18.5rem, calc(100vw - 2.5rem));
+  padding: 0.6rem;
   transform-origin: top right;
+  /* Items are stacked one under the other, with a comfortable rhythm. */
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
   border: 1px solid var(--hq-glass-border);
-  border-radius: 1.5rem;                       /* rounded-3xl */
+  border-radius: 1.75rem;                      /* softer, friendlier corners */
   background: var(--hq-glass);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  backdrop-filter: blur(32px) saturate(190%);
   box-shadow: var(--hq-glass-shadow), inset 0 1px 0 var(--hq-glass-highlight);
 }
 
@@ -260,24 +318,49 @@ html[data-theme="dark"] .hq-canvas::after {
   .hq-menu { background: var(--hq-bg); }
 }
 
+/* ── The stagger ──
+   Each row settles a beat after the one above it, so the panel unfolds
+   top-to-bottom instead of appearing all at once. Pure CSS (no JS, no
+   per-item motion components) and opacity/transform only. The delays are
+   tiny on purpose: the whole cascade is over in ~200ms. */
+.hq-menu > * {
+  animation: hq-menu-item-in 0.34s var(--hq-ease) both;
+}
+.hq-menu > *:nth-child(1) { animation-delay: 0.04s; }
+.hq-menu > *:nth-child(2) { animation-delay: 0.08s; }
+.hq-menu > *:nth-child(3) { animation-delay: 0.12s; }
+.hq-menu > *:nth-child(4) { animation-delay: 0.15s; }
+.hq-menu > *:nth-child(5) { animation-delay: 0.18s; }
+
+@keyframes hq-menu-item-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── The rows ──
+   RTL-correct by construction: the panel carries `dir="rtl"`, the label sits
+   at the start (right) edge and the chevron at the end (left), and the text
+   is aligned with the logical `start` rather than a hard `right`. */
 .hq-menu-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.72rem 0.9rem;
+  padding: 0.8rem 0.95rem;
   border: 0;
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   background: transparent;
   color: var(--hq-ink-2);
   font-family: var(--font-ui);
   font-size: 0.9375rem;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.7;
-  text-align: right;
+  text-align: start;
   cursor: pointer;
-  transition: background-color 0.24s var(--hq-ease-soft), color 0.24s var(--hq-ease-soft);
+  transition: background-color 0.24s var(--hq-ease-soft),
+              color 0.24s var(--hq-ease-soft),
+              transform 0.28s var(--hq-ease);
 }
 .hq-menu-item:hover,
 .hq-menu-item:focus-visible {
@@ -286,11 +369,33 @@ html[data-theme="dark"] .hq-canvas::after {
   font-weight: 600;
   outline: none;
 }
+/* RTL: "forward" is leftward, so the row nudges toward -x on hover. */
+.hq-menu-item:hover { transform: translateX(-2px); }
+.hq-menu-item:active { transform: translateX(-1px) scale(0.99); }
+.hq-menu-item:focus-visible { box-shadow: inset 0 0 0 1px var(--hq-green-line); }
 .hq-menu-item__hint { color: var(--hq-ink-4); font-size: 0.78rem; }
+
+/* The trailing chevron: faint at rest, green and a step forward on hover. */
+.hq-menu-item__chev {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--hq-ink-4);
+  opacity: 0.7;
+  transition: transform 0.32s var(--hq-ease),
+              color 0.24s var(--hq-ease-soft),
+              opacity 0.24s var(--hq-ease-soft);
+}
+.hq-menu-item:hover .hq-menu-item__chev,
+.hq-menu-item:focus-visible .hq-menu-item__chev {
+  color: var(--hq-green);
+  opacity: 1;
+  transform: translateX(-3px);
+}
 
 .hq-menu-sep {
   height: 1px;
-  margin: 0.4rem 0.55rem;
+  margin: 0.45rem 0.6rem;
   background: var(--hq-glass-border);
 }
 
@@ -299,7 +404,7 @@ html[data-theme="dark"] .hq-canvas::after {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.5rem 0.9rem 0.55rem;
+  padding: 0.5rem 0.95rem 0.6rem;
   color: var(--hq-ink-3);
   font-size: 0.84rem;
   font-weight: 400;
@@ -570,6 +675,26 @@ html[data-theme="dark"] .hq-canvas::after {
 .hq-card--link:active { transform: translateY(-1px) scale(0.995); }
 .hq-card--link:focus-visible { outline: 2px solid var(--hq-green); outline-offset: 3px; }
 
+/* ── pending (the session probe is still in flight) ──
+   NOT the same thing as "قريبًا". This card IS live — we simply do not know
+   yet WHERE it goes, so it must not be clickable (that ambiguity is what
+   produced the /login → /library double trip). It therefore keeps the live
+   card's solid border and fill so it never looks broken or coming-soon; it
+   just stops responding, dims a touch, and shows a small spinner where the
+   «ادخل» chip will be. A very soft breathing of the surface makes the wait
+   feel alive rather than stuck. */
+.hq-card--pending {
+  cursor: progress;
+  opacity: 0.78;
+  animation: hq-card-breathe 2.2s var(--hq-ease-soft) infinite;
+}
+.hq-card--pending .hq-card__title { color: var(--hq-ink-2); }
+
+@keyframes hq-card-breathe {
+  0%, 100% { opacity: 0.72; }
+  50%      { opacity: 0.9; }
+}
+
 /* ── disabled ──
    Still friendly (same big radius), but unmistakably inert: dashed border,
    no fill, and the chip drops back to a quiet outline so the filled green
@@ -657,6 +782,15 @@ html[data-theme="dark"] .hq-canvas::after {
   }
   .hq-card--link:hover { transform: none; }
   .hq-card--link:hover .hq-card__arrow { transform: none; }
+  /* Motion is decoration here — every state above is already legible from
+     colour, weight and opacity alone, so it can all be switched off. */
+  .hq-menu > *,
+  .hq-card--pending { animation: none !important; }
+  .hq-menu-item:hover,
+  .hq-menu-item:active { transform: none; }
+  .hq-menu-item:hover .hq-menu-item__chev,
+  .hq-menu-item:focus-visible .hq-menu-item__chev { transform: none; }
+  .hq-burger__lines span { transition: none; }
   /* The hand-drawn underline is a static path — nothing to disable — but
      make sure no draw-in animation can ever be introduced silently. */
   .hq-hero__underline path { animation: none !important; }

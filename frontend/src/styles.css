@@ -815,9 +815,123 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
   html.theme-crossfade, html.theme-crossfade * { transition-duration: 0.01ms !important; }
 }
 
-/* Suspense fallback — holds the viewport height so the lazy route swaps
-   in without a layout jump. */
-.route-loading { min-height: 100svh; }
+/* ══════════════════════════════════════════════════════════════════
+   18b · THE LOADING INDICATOR  (BrandLoader / InlineSpinner)
+   ────────────────────────────────────────────────────────────────────
+   Replaces the old blank `.route-loading` box. Two jobs:
+
+     .brand-loader--route    the Suspense fallback. Holds the full
+                             viewport height so the lazy route swaps in
+                             without a layout jump — but now shows the
+                             brand instead of nothing.
+     .brand-loader--overlay  fixed + frosted, shown the instant a FULL
+                             page navigation to /library begins, while
+                             the old document is still painted. This is
+                             what removes the "frozen white screen".
+
+   Deliberately identical in voice to the static `#app-boot` shell in
+   index.html: same cream/near-black ground, same 700-weight green
+   wordmark, same thin green ring. Boot → route → library entry all read
+   as one continuous handoff.
+   ══════════════════════════════════════════════════════════════════ */
+.brand-loader {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  font-family: var(--font-ui);
+}
+
+/* Kept as an alias so anything still referencing the old class name gets
+   the height reservation rather than a collapsed box. */
+.route-loading,
+.brand-loader--route { min-height: 100svh; }
+
+.brand-loader--route { background: transparent; }
+
+.brand-loader--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;                       /* above the header + the menu sheet */
+  background: var(--page-bg);
+  /* A touch of frost so the page underneath dissolves rather than cuts. */
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
+  animation: brand-loader-in 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.brand-loader__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.05rem;
+}
+
+.brand-loader__brand {
+  color: var(--accent);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0;                   /* Arabic is joined — never track it */
+  animation: brand-loader-pulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* A thin, quiet indeterminate ring — the same weight as the boot shell's. */
+.brand-loader__ring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  /* Plain rgba first as the universal fallback, then the token-derived
+     color-mix for browsers that support it — so the ring is never invisible
+     on an engine without color-mix(). */
+  border: 1.5px solid rgba(124, 192, 139, 0.18);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-top-color: var(--accent);
+  animation: brand-loader-spin 0.8s linear infinite;
+}
+
+.brand-loader__label {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.9;
+}
+
+/* ── the small in-place spinner (used inside the files card chip) ── */
+.inline-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.inline-spinner__ring {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid rgba(124, 192, 139, 0.22);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: brand-loader-spin 0.8s linear infinite;
+}
+.inline-spinner__label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.8;
+}
+
+@keyframes brand-loader-spin { to { transform: rotate(360deg); } }
+@keyframes brand-loader-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes brand-loader-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader--overlay,
+  .brand-loader__brand,
+  .brand-loader__ring,
+  .inline-spinner__ring { animation: none !important; }
+  /* Without spin, keep the ring readable as a static ring rather than a
+     lopsided arc. */
+  .brand-loader__ring,
+  .inline-spinner__ring { border-top-color: var(--accent); opacity: 0.6; }
+}
 
 /* ══════════════════════════════════════════════════════════════════
    19 · IN-APP BROWSER NOTICE
