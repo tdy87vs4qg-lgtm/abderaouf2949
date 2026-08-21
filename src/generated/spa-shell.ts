@@ -5,11 +5,11 @@ export const spaShell = `<!doctype html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="theme-color" content="#12160f" />
     <meta name="description" content="تيسير — منصّتك التعليمية المتكاملة للتفوق في البكالوريا." />
     <link rel="icon" type="image/svg+xml" href="/react/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <title>تيسير | كل ما تحتاجه للبكالوريا، في مكان واحد هادئ</title>
+    <title>تيسير | طريقك نحو النجاح و التفوق — عام الباكالوريا</title>
     <script>
       /* Apply the saved (or OS-preferred) theme before paint to avoid a flash
          of the wrong palette. Mirrors ThemeProvider's resolution logic. */
@@ -24,17 +24,17 @@ export const spaShell = `<!doctype html>
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var m = document.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', t === 'light' ? '#ffffff' : '#0a0a0a');
+          if (m) m.setAttribute('content', t === 'light' ? '#faf7ed' : '#12160f');
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
       })();
     </script>
-    <script type="module" crossorigin src="/react/assets/index-BmIxk_92.js"></script>
+    <script type="module" crossorigin src="/react/assets/index-ApEDYns2.js"></script>
     <link rel="modulepreload" crossorigin href="/react/assets/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/assets/react-vendor-C5_X-1Nf.js">
     <link rel="modulepreload" crossorigin href="/react/assets/icons-DFwQVwPe.js">
-    <link rel="stylesheet" crossorigin href="/react/assets/index-D9JJPlDf.css">
+    <link rel="stylesheet" crossorigin href="/react/assets/index-rq6Kad-j.css">
     <link rel="stylesheet" crossorigin href="/react/assets/vendor-C0vUvEoS.css">
   </head>
   <body>
@@ -50,27 +50,26 @@ export const spaShell = `<!doctype html>
         <div class="app-boot__spinner"></div>
       </div>
       <style>
-        /* Matches the redesigned "Quiet Luxury" home exactly, so the handoff
-           from this static shell to React is invisible: the same pristine
-           white (or near-black) ground, the same small 500-weight brand mark,
-           the same neutral ink. Strictly achromatic — white / black / gray
-           only, no hue anywhere. Light is the design's home base. */
+        /* Matches the redesigned "Cream & Green" home exactly, so the handoff
+           from this static shell to React is invisible: the same warm cream
+           #FAF7ED ground, the same green 700-weight brand mark, the same
+           green spinner. Cream is the design's home base. */
         #app-boot{position:fixed;inset:0;display:flex;flex-direction:column;
           align-items:center;justify-content:center;gap:20px;
-          background:#0a0a0a;z-index:1;
+          background:#12160f;z-index:1;
           font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;
           -webkit-font-smoothing:antialiased}
-        html[data-theme="light"] #app-boot{background:#fff}
-        .app-boot__brand{font-size:1.0625rem;font-weight:500;letter-spacing:0;
-          color:#fafafa;
+        html[data-theme="light"] #app-boot{background:#faf7ed}
+        .app-boot__brand{font-size:1.125rem;font-weight:700;letter-spacing:0;
+          color:#7cc08b;
           animation:app-boot-pulse 1.8s cubic-bezier(.4,0,.2,1) infinite}
-        html[data-theme="light"] .app-boot__brand{color:#0a0a0a}
-        /* A thin, quiet indeterminate ring — neutral gray, no tint. */
+        html[data-theme="light"] .app-boot__brand{color:#469c59}
+        /* A thin, quiet indeterminate ring — tinted with the brand green. */
         .app-boot__spinner{width:22px;height:22px;border-radius:50%;
-          border:1.5px solid rgba(250,250,250,.14);border-top-color:#a3a3a3;
+          border:1.5px solid rgba(124,192,139,.18);border-top-color:#7cc08b;
           animation:app-boot-spin .8s linear infinite}
         html[data-theme="light"] .app-boot__spinner{
-          border-color:rgba(10,10,10,.08);border-top-color:#737373}
+          border-color:rgba(70,156,89,.16);border-top-color:#469c59}
         @keyframes app-boot-spin{to{transform:rotate(360deg)}}
         @keyframes app-boot-pulse{0%,100%{opacity:.55}50%{opacity:1}}
         @media (prefers-reduced-motion:reduce){
