@@ -60,8 +60,8 @@ function applyTheme(theme: Theme) {
   const meta = document.querySelector('meta[name="theme-color"]')
   // Kept in lockstep with the pre-paint script in index.html and the home
   // page's ground, so the mobile URL bar never flashes a different colour.
-  // Light = the brand cream #FAF7ED; dark = the green-leaning near-black.
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#faf7ed' : '#12160f')
+  // Light = the brand cream #FAF7ED; dark = the warm charcoal #171511.
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#faf7ed' : '#171511')
 }
 
 /**

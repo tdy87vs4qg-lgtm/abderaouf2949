@@ -50,9 +50,11 @@ export default function SiteHeader() {
   return (
     <header className={`site-header ${scrolled ? 'site-header--scrolled' : ''}`}>
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-10" aria-label="التنقل الرئيسي">
-        <Link to="/" className="brand-lockup group relative z-10" aria-label="تيسير — الرئيسية">
+        {/* THE brand mark — identical to the home page's `.hq-brand`:
+            same face, same 700 weight, same size, same brand green, and the
+            same corner (the START edge of the RTL bar = top-right). */}
+        <Link to="/" className="brand-lockup relative z-10" dir="rtl" aria-label="تيسير — الرئيسية">
           <span className="brand-word">تيسير</span>
-          <span className="brand-underscore" aria-hidden="true" />
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">

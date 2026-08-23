@@ -31,10 +31,19 @@
   --brand-green: #469c59;        /* PRIMARY — the brand colour */
   --brand-green-deep: #35804a;   /* pressed / hover state */
   --brand-green-dark: #275c36;   /* text on cream when extra contrast is needed */
-  --brand-green-light: #7cc08b;  /* the dark-theme-legible tint */
+  --brand-green-light: #7cc98c;  /* the dark-theme-legible tint — a touch
+                                    brighter than before so it stays elegant
+                                    and AA-legible on the warm charcoal */
   --brand-cream: #faf7ed;        /* PRIMARY — the page ground */
   --brand-cream-2: #f4efe0;      /* one step down: grounds, ribbons */
   --brand-cream-3: #ece5d2;      /* hairline-adjacent cream */
+
+  /* ── The dark ground — a WARM charcoal, not a green-black ──
+     Deep, calm, slightly brown-leaning so cream text feels at home on it.
+     Every dark surface below derives from these three steps. */
+  --charcoal: #171511;           /* the page ground */
+  --charcoal-2: #1e1b15;         /* one step up: ribbons, grounds */
+  --charcoal-3: #24211a;         /* elevated surfaces */
 }
 
 /* ── Tailwind theme bridge ──────────────────────────────────────────
@@ -42,7 +51,7 @@
    resolve through these. The token NAMES are kept verbatim so no component
    markup has to change; their VALUES now carry the green/cream identity. */
 @theme {
-  --color-ink: #14160f;
+  --color-ink: #171511;
   --color-cyan: #469c59;   /* legacy name, PRIMARY green value */
   --color-gold: #35804a;   /* legacy name, deep green value */
   --color-cream: #faf7ed;
@@ -80,52 +89,65 @@
   --radius: 18px;
   --radius-lg: 24px;
   --radius-xl: 32px;
+
+  /* One shared clock for the light/dark switch. Paint-only properties
+     (background-color, color, border-color) ride this everywhere, so the
+     whole page breathes as ONE surface when the theme flips. */
+  --theme-dur: 0.4s;
+  --theme-ease: cubic-bezier(0.45, 0.05, 0.25, 1);
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   2 · PALETTE — DARK · "Forest"
-   The same identity after dark: the ground is a green-leaning near-black
-   (a cream inverted, not a pure gray), and the primary green is lifted to
-   `--brand-green-light` so it stays AA-legible on it.
+   2 · PALETTE — DARK · "Warm Charcoal"
+   Redesigned: the ground is a deep, WARM neutral (a soft brown-leaning
+   charcoal — never pure black, never green-black), the text is a warm
+   off-white cream, and the brand green is lifted to `--brand-green-light`
+   so it stays legible and elegant. Calm, editorial, intentional.
    ══════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: dark;
   font-family: var(--font-ui);
-  background: #12160f;
+  background: #171511;
   font-synthesis: none;               /* never fake a weight */
   -webkit-text-size-adjust: 100%;
 
-  --ink: #12160f;
-  --ink-soft: #191e15;
-  --white: #f3f1e6;
+  --ink: var(--charcoal);
+  --ink-soft: var(--charcoal-2);
+  --white: #f2eee3;
 
   /* THE PRIMARY colour — brand green (lifted for dark grounds).
      `--cyan` / `--gold` are kept purely as back-compatible ALIASES so the
      existing selectors and Tailwind utilities keep resolving. */
   --accent: var(--brand-green-light);   /* primary green — dark-legible */
-  --accent-2: var(--brand-green);       /* the true brand green */
+  --accent-2: #5cb271;                  /* hover / pressed — one step deeper,
+                                           matches the home page's dark hover */
   --cyan: var(--accent);                /* alias (legacy name, green value) */
   --gold: var(--accent-2);              /* alias (legacy name, green value) */
 
-  --page-bg: #12160f;
-  --text-strong: #f3f1e6;
-  --text-base: rgba(240, 238, 226, 0.82);
-  --text-muted: rgba(240, 238, 226, 0.58);
-  --text-faint: rgba(240, 238, 226, 0.38);
+  --page-bg: var(--charcoal);
+  --text-strong: #f2eee3;              /* warm off-white cream */
+  --text-base: rgba(242, 238, 227, 0.84);
+  --text-muted: rgba(242, 238, 227, 0.6);
+  --text-faint: rgba(242, 238, 227, 0.4);
 
-  --hairline: rgba(250, 247, 237, 0.085);
-  --hairline-strong: rgba(250, 247, 237, 0.16);
-  --surface: rgba(250, 247, 237, 0.055);
-  --surface-2: rgba(250, 247, 237, 0.032);
+  --hairline: rgba(242, 238, 227, 0.09);
+  --hairline-strong: rgba(242, 238, 227, 0.17);
+  --surface: rgba(242, 238, 227, 0.055);
+  --surface-2: rgba(242, 238, 227, 0.032);
 
-  /* ── Glass recipe (iOS material) ── */
-  --glass-bg: rgba(26, 32, 24, 0.62);
-  --glass-bg-strong: rgba(20, 25, 18, 0.78);
+  /* ── Glass recipe (iOS material) ──
+     The alphas are deliberately HIGH: even if a browser drops the backdrop
+     blur (e.g. inside a View Transition snapshot) the panel still reads as
+     a solid, intentional sheet — never a transparent hole. */
+  --glass-bg: rgba(32, 29, 23, 0.74);
+  --glass-bg-strong: rgba(26, 23, 18, 0.86);
+  --glass-solid: #211e18;              /* the fully-opaque stand-in used
+                                          while a theme transition runs */
   --glass-blur: saturate(180%) blur(20px);
-  --glass-border: rgba(250, 247, 237, 0.11);
-  --glass-highlight: rgba(250, 247, 237, 0.10);   /* the 1px top edge */
-  --glass-shadow: 0 20px 60px -20px rgba(6, 12, 6, 0.72);
-  --glass-shadow-lg: 0 40px 100px -32px rgba(6, 12, 6, 0.8);
+  --glass-border: rgba(242, 238, 227, 0.12);
+  --glass-highlight: rgba(242, 238, 227, 0.09);   /* the 1px top edge */
+  --glass-shadow: 0 20px 60px -20px rgba(10, 8, 5, 0.7);
+  --glass-shadow-lg: 0 40px 100px -32px rgba(10, 8, 5, 0.78);
 
   /* Solid fill for the primary control — the brand green, flat (no gradient) */
   --fill-primary: var(--brand-green);
@@ -163,8 +185,9 @@ html[data-theme="light"] {
   --surface: rgba(255, 255, 255, 0.6);
   --surface-2: var(--brand-cream-2);
 
-  --glass-bg: rgba(250, 247, 237, 0.68);
-  --glass-bg-strong: rgba(250, 247, 237, 0.86);
+  --glass-bg: rgba(250, 247, 237, 0.78);
+  --glass-bg-strong: rgba(250, 247, 237, 0.9);
+  --glass-solid: #fbf8ef;
   --glass-blur: saturate(180%) blur(20px);
   --glass-border: rgba(27, 29, 24, 0.08);
   --glass-highlight: rgba(255, 255, 255, 0.92);
@@ -199,7 +222,8 @@ body {
   font-optical-sizing: auto;
   letter-spacing: 0;
   overflow-x: hidden;
-  transition: background-color 0.42s var(--ease), color 0.42s var(--ease);
+  transition: background-color var(--theme-dur) var(--theme-ease),
+              color var(--theme-dur) var(--theme-ease);
 }
 
 button { font: inherit; color: inherit; }
@@ -209,7 +233,7 @@ a { color: inherit; text-decoration: none; }
 input, textarea, select { font-family: inherit; font-size: 16px; }
 
 /* Selection carries the brand green — it is the primary, so it selects. */
-::selection { background: rgba(124, 192, 139, 0.32); color: #f3f1e6; }
+::selection { background: rgba(124, 201, 140, 0.32); color: #f2eee3; }
 html[data-theme="light"] ::selection { background: rgba(70, 156, 89, 0.22); color: #1b1d18; }
 
 /* Focus rings: one consistent, accessible ring everywhere. */
@@ -236,6 +260,33 @@ html[data-theme="light"] ::selection { background: rgba(70, 156, 89, 0.22); colo
   box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
 }
 
+/* ── Frosted panels DURING a theme switch ──────────────────────
+   View-Transition snapshots (and some engines mid-crossfade) drop
+   backdrop-filter entirely, which used to leave every glass sheet fully
+   transparent for the length of the animation — page content bled through
+   and the "frosted frame" broke. While either theme-switch class is on
+   <html>, glass panels stand on a near-solid theme-correct fill instead of
+   the blur, then hand back to the true frosted material the moment the
+   switch ends. Paint-only; the transition itself stays silky. */
+html.theme-vt .glass-surface,
+html.theme-vt .mobile-menu,
+html.theme-vt .auth-card,
+html.theme-vt .offering-card,
+html.theme-vt .value-item,
+html.theme-vt .decision-card,
+html.theme-vt .inapp-notice__panel,
+html.theme-vt .site-header--scrolled,
+html.theme-crossfade .glass-surface,
+html.theme-crossfade .mobile-menu,
+html.theme-crossfade .auth-card,
+html.theme-crossfade .offering-card,
+html.theme-crossfade .value-item,
+html.theme-crossfade .decision-card,
+html.theme-crossfade .inapp-notice__panel,
+html.theme-crossfade .site-header--scrolled {
+  background: var(--glass-solid);
+}
+
 .app-shell { isolation: isolate; }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -246,11 +297,15 @@ html.theme-vt::view-transition-new(root) { animation: none; mix-blend-mode: norm
 html.theme-vt::view-transition-old(root) { z-index: 1; }
 html.theme-vt::view-transition-new(root) { z-index: 2; }
 
+/* Paint-only crossfade fallback: background-color, color and border-color
+   ride one shared clock — no layout properties, no filter, no transform —
+   so the whole page shifts as a single calm surface, alpha-dz style. */
 html.theme-crossfade,
 html.theme-crossfade * {
-  transition: background-color 0.42s var(--ease), color 0.42s var(--ease),
-              border-color 0.42s var(--ease), fill 0.42s var(--ease),
-              box-shadow 0.42s var(--ease) !important;
+  transition: background-color var(--theme-dur) var(--theme-ease),
+              color var(--theme-dur) var(--theme-ease),
+              border-color var(--theme-dur) var(--theme-ease),
+              fill var(--theme-dur) var(--theme-ease) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -262,7 +317,7 @@ html.theme-crossfade * {
 .ambient-photo {
   position: absolute; inset: -6%;
   background-image:
-    linear-gradient(180deg, rgba(18, 22, 15, 0.55), rgba(18, 22, 15, 0.92) 68%, #12160f 96%),
+    linear-gradient(180deg, rgba(23, 21, 17, 0.55), rgba(23, 21, 17, 0.92) 68%, #171511 96%),
     url('/react/assets/study-night.webp');
   background-size: cover;
   background-position: center 40%;
@@ -273,8 +328,8 @@ html.theme-crossfade * {
 .ambient-veil {
   position: absolute; inset: 0;
   background:
-    radial-gradient(120% 90% at 72% 18%, transparent 0, rgba(18, 22, 15, 0.4) 46%, rgba(18, 22, 15, 0.94) 88%),
-    linear-gradient(180deg, rgba(18, 22, 15, 0.5), rgba(18, 22, 15, 0.86));
+    radial-gradient(120% 90% at 72% 18%, transparent 0, rgba(23, 21, 17, 0.4) 46%, rgba(23, 21, 17, 0.94) 88%),
+    linear-gradient(180deg, rgba(23, 21, 17, 0.5), rgba(23, 21, 17, 0.86));
 }
 /* The two blooms are now the brand green, held at a whisper so they read
    as ambient light rather than as colour. */
@@ -316,26 +371,31 @@ html[data-theme="light"] .ambient-orb--gold { background: var(--brand-green); op
   border-color: var(--hairline);
 }
 
-/* Wordmark — solid ink with a real optical tracking, not a gradient. */
-.brand-lockup { display: inline-flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+/* ── THE WORDMARK — one brand, everywhere ──────────────────────
+   تيسير is rendered identically on the home page (`.hq-brand`) and in
+   the app header (`.brand-lockup`): the same face, the same 700 weight,
+   the same 1.125rem size, the same BRAND GREEN, no letter-spacing (Arabic
+   is joined — never track it), and the same corner: the START edge of the
+   bar, i.e. top-RIGHT in the RTL document. */
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.3s var(--ease-soft);
+}
+.brand-lockup:hover { opacity: 0.85; }
 .brand-word {
   font-family: var(--font-title);
   font-weight: 700;
-  font-size: 1.4rem;
-  line-height: 1;
-  letter-spacing: -0.022em;
-  color: var(--text-strong);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  letter-spacing: 0;                       /* Arabic is joined — never track it */
+  color: var(--accent);                    /* the brand colour IS the brand */
   -webkit-text-fill-color: currentColor;   /* undo any inherited clip-text */
   background: none;
+  transition: color 0.3s var(--ease-soft);
 }
-.brand-underscore {
-  width: 100%; height: 1.5px; border-radius: 2px;
-  background: var(--accent);
-  transform: scaleX(0.4); transform-origin: right;
-  opacity: 0.75;
-  transition: transform 0.45s var(--ease), opacity 0.45s var(--ease);
-}
-.brand-lockup:hover .brand-underscore { transform: scaleX(1); opacity: 1; }
+.brand-lockup:hover .brand-word { color: var(--accent-2); }
+.brand-underscore { display: none; }       /* retired — the home mark has no rule */
 
 .footer-brand {
   font-family: var(--font-title);
@@ -367,7 +427,7 @@ html[data-theme="light"] .ambient-orb--gold { background: var(--brand-green); op
   display: grid; place-items: center;
   width: 42px; height: 42px;
   border: 1px solid var(--hairline);
-  border-radius: 13px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-strong);
   -webkit-tap-highlight-color: transparent;
@@ -385,11 +445,21 @@ html[data-theme="light"] .ambient-orb--gold { background: var(--brand-green); op
 }
 html[data-theme="light"] .mobile-menu__scrim { background: rgba(60, 60, 60, 0.24); }
 
+/* Fully constrained inside the viewport at every phone width (320–430px):
+   anchored with safe-area-aware insets on BOTH edges so it can never spill
+   off-screen in RTL or LTR, and capped in height so long menus scroll
+   inside the sheet instead of running past the fold. */
 .mobile-menu {
   position: absolute;
   top: calc(100% + 0.5rem);
-  right: 1rem; left: 1rem;
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
   z-index: 45;
+  max-width: calc(100vw - max(1rem, env(safe-area-inset-right, 0px)) - max(1rem, env(safe-area-inset-left, 0px)));
+  max-height: calc(100svh - 6rem - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   transform-origin: top center;
   will-change: transform, opacity;
   padding: 0.5rem;
@@ -650,7 +720,7 @@ html[data-theme="light"] .mobile-menu__scrim { background: rgba(60, 60, 60, 0.24
   border-radius: var(--radius-lg);
   transition: transform 0.35s var(--ease), border-color 0.3s var(--ease-soft), box-shadow 0.3s var(--ease-soft);
 }
-.offering-card:hover { border-color: var(--hairline-strong); }
+.offering-card:hover { border-color: var(--hairline-strong); transform: translateY(-3px); box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight); }
 .offering-card__number {
   position: absolute; left: 1.5rem; top: 1.25rem;
   color: var(--text-faint); opacity: 0.55;
@@ -761,13 +831,26 @@ html[data-theme="light"] .mobile-menu__scrim { background: rgba(60, 60, 60, 0.24
 /* ══════════════════════════════════════════════════════════════════
    17 · THEME CROSSFADE targets
    ══════════════════════════════════════════════════════════════════ */
+/* Paint-only: background-color, color and border-color ride one shared
+   clock — no box-shadow, no filter, no layout — so the switch stays silky. */
 .site-header, .section-shell, .value-section,
 .offering-card, .value-item, .auth-card, .decision-card,
 .button-primary, .button-secondary, .button-ghost, .nav-link, .brand-word,
+.mobile-menu, .mobile-menu__link, .menu-button,
 .section-copy, .section-title {
-  transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 0.4s;
-  transition-timing-function: var(--ease-soft);
+  transition-property: background-color, color, border-color;
+  transition-duration: var(--theme-dur);
+  transition-timing-function: var(--theme-ease);
+}
+
+/* Cards also lift on hover, so they keep transform + shadow in the list. */
+.offering-card, .value-item {
+  transition-property: background-color, color, border-color, transform, box-shadow;
+}
+
+/* Buttons press (scale) and soften (opacity) — keep those silky too. */
+.button-primary, .button-secondary, .button-ghost {
+  transition-property: background-color, color, border-color, transform, opacity;
 }
 
 /* ── Light-mode fixes for the few hard-coded utility colours ────────
@@ -883,7 +966,7 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
   /* Plain rgba first as the universal fallback, then the token-derived
      color-mix for browsers that support it — so the ring is never invisible
      on an engine without color-mix(). */
-  border: 1.5px solid rgba(124, 192, 139, 0.18);
+  border: 1.5px solid rgba(124, 201, 140, 0.18);
   border: 1.5px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-top-color: var(--accent);
   animation: brand-loader-spin 0.8s linear infinite;
@@ -907,7 +990,7 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
   height: 14px;
   flex: none;
   border-radius: 50%;
-  border: 1.5px solid rgba(124, 192, 139, 0.22);
+  border: 1.5px solid rgba(124, 201, 140, 0.22);
   border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-top-color: var(--accent);
   animation: brand-loader-spin 0.8s linear infinite;

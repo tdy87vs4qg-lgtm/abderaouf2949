@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#12160f" />
+    <meta name="theme-color" content="#171511" />
     <meta name="description" content="تيسير — منصّتك التعليمية المتكاملة للتفوق في البكالوريا." />
     <link rel="icon" type="image/svg+xml" href="/react/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
@@ -22,7 +22,7 @@
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var m = document.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', t === 'light' ? '#faf7ed' : '#12160f');
+          if (m) m.setAttribute('content', t === 'light' ? '#faf7ed' : '#171511');
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
@@ -48,17 +48,17 @@
            green spinner. Cream is the design's home base. */
         #app-boot{position:fixed;inset:0;display:flex;flex-direction:column;
           align-items:center;justify-content:center;gap:20px;
-          background:#12160f;z-index:1;
+          background:#171511;z-index:1;
           font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;
           -webkit-font-smoothing:antialiased}
         html[data-theme="light"] #app-boot{background:#faf7ed}
         .app-boot__brand{font-size:1.125rem;font-weight:700;letter-spacing:0;
-          color:#7cc08b;
+          color:#7cc98c;
           animation:app-boot-pulse 1.8s cubic-bezier(.4,0,.2,1) infinite}
         html[data-theme="light"] .app-boot__brand{color:#469c59}
         /* A thin, quiet indeterminate ring — tinted with the brand green. */
         .app-boot__spinner{width:22px;height:22px;border-radius:50%;
-          border:1.5px solid rgba(124,192,139,.18);border-top-color:#7cc08b;
+          border:1.5px solid rgba(124,201,140,.18);border-top-color:#7cc98c;
           animation:app-boot-spin .8s linear infinite}
         html[data-theme="light"] .app-boot__spinner{
           border-color:rgba(70,156,89,.16);border-top-color:#469c59}

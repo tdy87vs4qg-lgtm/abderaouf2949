@@ -167,11 +167,12 @@ export default function HomePage() {
       {entering && <BrandLoader variant="overlay" label="جارٍ فتح المكتبة…" />}
 
       {/* ── TOP BAR ───────────────────────────────────────────────────
-          Laid out LTR so the brand sits physically top-LEFT and the ☰
-          top-RIGHT as specified, while the Arabic inside stays RTL. */}
-      <header className="hq-bar" dir="ltr">
+          RTL like the app header (SiteHeader), so the تيسير wordmark sits
+          in the SAME corner in both places: the start edge — top-RIGHT —
+          with the ☰ at the end edge (top-left). One brand, one anchor. */}
+      <header className="hq-bar" dir="rtl">
         <M.div {...rise(0.05)} style={{ display: 'inline-flex' }}>
-          <Link to="/" className="hq-brand" dir="rtl" aria-label="تيسير — الصفحة الرئيسية">
+          <Link to="/" className="hq-brand" aria-label="تيسير — الصفحة الرئيسية">
             تيسير
           </Link>
         </M.div>
@@ -418,6 +419,7 @@ function HandDrawnUnderline() {
       {/* main sweep — imperfect on purpose */}
       <path
         d="M3 14.5C26 9.8 49 7.6 74 8.4c25 .9 45 4.4 70 5 25 .7 47-2.4 71-5.6 24-3.2 55-3.9 82-1.2"
+        pathLength="1"
         stroke="currentColor"
         strokeWidth="4.5"
         strokeLinecap="round"
@@ -427,6 +429,7 @@ function HandDrawnUnderline() {
       <path
         className="hq-chalk"
         d="M11 19.4C38 16.2 62 14.8 88 15.4c26 .7 44 3 68 2.7 24-.3 50-2.9 76-5.4"
+        pathLength="1"
         stroke="currentColor"
         strokeWidth="2.6"
         strokeLinecap="round"

@@ -58,7 +58,11 @@
   --hq-shadow-lift: 0 18px 40px -26px rgba(40, 60, 40, 0.3),
                     0 2px 6px -2px rgba(40, 60, 40, 0.07);
 
-  --hq-glass: rgba(250, 247, 237, 0.58);
+  /* The frosted sheet. The alpha is HIGH on purpose: even when a browser
+     drops backdrop-filter (View-Transition snapshots do), the panel still
+     reads as a warm frosted card — never a transparent hole. */
+  --hq-glass: rgba(250, 247, 237, 0.72);
+  --hq-glass-solid: #fbf8ef;     /* opaque stand-in while the theme animates */
   --hq-glass-border: rgba(27, 29, 24, 0.08);
   --hq-glass-highlight: rgba(255, 255, 255, 0.9);
   --hq-glass-shadow: 0 24px 60px -22px rgba(40, 60, 40, 0.26),
@@ -71,37 +75,42 @@
   --hq-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ── DARK · "Warm Charcoal" ──────────────────────────────────
+   Redesigned: a deep, warm, brown-leaning neutral (never pure black, never
+   green-black), warm off-white cream text, and the brand green lifted one
+   step so it stays elegant and legible. Calm, editorial, intentional. */
 html[data-theme="dark"] .home-quiet {
-  --hq-green: #7cc08b;           /* lifted so the primary stays AA on dark */
-  --hq-green-deep: #469c59;
-  --hq-green-dark: #a6d6b0;
-  --hq-green-soft: rgba(124, 192, 139, 0.14);
-  --hq-green-line: rgba(124, 192, 139, 0.3);
+  --hq-green: #7cc98c;           /* lifted so the primary stays AA on dark */
+  --hq-green-deep: #5cb271;
+  --hq-green-dark: #a8d9b2;
+  --hq-green-soft: rgba(124, 201, 140, 0.13);
+  --hq-green-line: rgba(124, 201, 140, 0.3);
 
-  --hq-bg: #12160f;
-  --hq-ground: #191e15;
-  --hq-ink: #f3f1e6;
-  --hq-ink-2: #d3d2c6;
-  --hq-ink-3: #a0a396;
-  --hq-ink-4: #71756a;
+  --hq-bg: #171511;              /* warm charcoal — the page ground */
+  --hq-ground: #1e1b15;
+  --hq-ink: #f2eee3;             /* warm off-white cream */
+  --hq-ink-2: #d6d2c4;
+  --hq-ink-3: #a3a094;
+  --hq-ink-4: #737065;
 
-  --hq-line: rgba(124, 192, 139, 0.075);
-  --hq-line-fine: rgba(250, 247, 237, 0.024);
-  --hq-hairline: rgba(250, 247, 237, 0.10);
-  --hq-hairline-soft: rgba(250, 247, 237, 0.06);
-  --hq-surface: rgba(250, 247, 237, 0.024);
-  --hq-surface-hover: rgba(250, 247, 237, 0.048);
+  --hq-line: rgba(124, 201, 140, 0.07);
+  --hq-line-fine: rgba(242, 238, 227, 0.022);
+  --hq-hairline: rgba(242, 238, 227, 0.10);
+  --hq-hairline-soft: rgba(242, 238, 227, 0.06);
+  --hq-surface: rgba(242, 238, 227, 0.028);
+  --hq-surface-hover: rgba(242, 238, 227, 0.055);
 
-  --hq-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --hq-shadow-lift: 0 20px 44px -26px rgba(0, 0, 0, 0.9),
-                    0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --hq-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --hq-shadow-lift: 0 20px 44px -26px rgba(0, 0, 0, 0.8),
+                    0 2px 6px -2px rgba(0, 0, 0, 0.35);
 
-  --hq-glass: rgba(24, 30, 22, 0.58);
-  --hq-glass-border: rgba(250, 247, 237, 0.10);
-  --hq-glass-highlight: rgba(250, 247, 237, 0.08);
-  --hq-glass-shadow: 0 26px 64px -22px rgba(0, 0, 0, 0.85),
-                     0 2px 8px -4px rgba(0, 0, 0, 0.5);
-  --hq-scrim: rgba(0, 0, 0, 0.42);
+  --hq-glass: rgba(35, 32, 26, 0.74);
+  --hq-glass-solid: #221f19;
+  --hq-glass-border: rgba(242, 238, 227, 0.11);
+  --hq-glass-highlight: rgba(242, 238, 227, 0.08);
+  --hq-glass-shadow: 0 26px 64px -22px rgba(0, 0, 0, 0.8),
+                     0 2px 8px -4px rgba(0, 0, 0, 0.45);
+  --hq-scrim: rgba(10, 8, 5, 0.44);
 }
 
 /* ── The page ground ───────────────────────────────────────────────
@@ -111,7 +120,7 @@ html[data-theme="dark"] .home-quiet {
 html[data-page="home"],
 html[data-page="home"] body { background: #faf7ed; }
 html[data-page="home"][data-theme="dark"],
-html[data-page="home"][data-theme="dark"] body { background: #12160f; }
+html[data-page="home"][data-theme="dark"] body { background: #171511; }
 html[data-page="home"] .app-shell { background: transparent; }
 
 .home-quiet {
@@ -123,7 +132,10 @@ html[data-page="home"] .app-shell { background: transparent; }
   background: var(--hq-bg);
   color: var(--hq-ink);
   font-family: var(--font-ui);
-  transition: background-color 0.42s var(--hq-ease), color 0.42s var(--hq-ease);
+  /* One shared clock with the rest of the site (styles.css --theme-dur),
+     paint-only, so the theme flip reads as a single silky surface. */
+  transition: background-color var(--theme-dur, 0.4s) var(--theme-ease, var(--hq-ease)),
+              color var(--theme-dur, 0.4s) var(--theme-ease, var(--hq-ease));
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -157,14 +169,14 @@ html[data-page="home"] .app-shell { background: transparent; }
   background: radial-gradient(72% 52% at 50% 0%, rgba(70, 156, 89, 0.075), transparent 72%);
 }
 html[data-theme="dark"] .hq-canvas::after {
-  background: radial-gradient(72% 52% at 50% 0%, rgba(124, 192, 139, 0.075), transparent 72%);
+  background: radial-gradient(72% 52% at 50% 0%, rgba(124, 201, 140, 0.06), transparent 72%);
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   2 · TOP BAR — brand physically left, ⋮ physically right
-   The bar is laid out LTR on purpose (dir="ltr" in the markup) so the
-   two anchors sit exactly where the design asks, while every piece of
-   Arabic text inside stays `dir="rtl"`.
+   2 · TOP BAR — brand at the START (top-right in RTL), ☰ at the end
+   The bar is RTL like the rest of the document AND like SiteHeader, so
+   the تيسير wordmark occupies the exact same corner on the home page and
+   inside the app: the top-right. The ☰ balances it at the top-left.
    ══════════════════════════════════════════════════════════════════ */
 .hq-bar {
   position: relative;
@@ -283,7 +295,8 @@ html[data-theme="dark"] .hq-canvas::after {
 
 /* THE PANEL.
    One real iOS sheet, hung from under the ☰ and anchored to its corner
-   (`transform-origin: top right`) so the fade + slide + hair of scale that
+   (`transform-origin: top left` — the ☰ sits at the end of the RTL bar,
+   i.e. physically top-left) so the fade + slide + hair of scale that
    framer-motion runs on mount appears to grow out of the button itself.
 
    The material is unchanged in kind — blur + saturation, a hairline, a 1px
@@ -294,12 +307,26 @@ html[data-theme="dark"] .hq-canvas::after {
    order, so Safari / iOS render the true material. */
 .hq-menu {
   position: absolute;
-  top: calc(100% + 0.3rem);
-  right: clamp(1.25rem, 4vw, 2.75rem);
+  top: calc(100% + 0.55rem);
+  /* The bar is RTL with the ☰ at its END (physical LEFT), so the sheet
+     hangs from the button's LEFT edge and grows rightwards INTO the
+     viewport. Its width is capped against the space that actually
+     remains (bar padding + a safe-area-aware right margin), so at
+     320–430px the panel always sits fully inside the phone frame. */
+  left: 0;
   z-index: 50;
-  width: min(18.5rem, calc(100vw - 2.5rem));
+  width: min(
+    18.5rem,
+    calc(100vw
+      - max(clamp(1.25rem, 4vw, 2.75rem), env(safe-area-inset-left, 0px))
+      - max(1rem, env(safe-area-inset-right, 0px)))
+  );
+  max-height: calc(100svh - 7rem - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 0.6rem;
-  transform-origin: top right;
+  transform-origin: top left;                  /* grows out of the ☰ corner */
   /* Items are stacked one under the other, with a comfortable rhythm. */
   display: flex;
   flex-direction: column;
@@ -310,12 +337,26 @@ html[data-theme="dark"] .hq-canvas::after {
   -webkit-backdrop-filter: blur(32px) saturate(190%);
   backdrop-filter: blur(32px) saturate(190%);
   box-shadow: var(--hq-glass-shadow), inset 0 1px 0 var(--hq-glass-highlight);
+  transition: background-color var(--theme-dur, 0.4s) var(--theme-ease, var(--hq-ease-soft)),
+              border-color var(--theme-dur, 0.4s) var(--theme-ease, var(--hq-ease-soft));
+}
+
+/* ── The frosted frame DURING a theme switch ──────────────────────
+   View-Transition snapshots and mid-crossfade paints drop backdrop-filter,
+   which used to leave the sheet fully transparent when switching dark→light
+   — the page bled straight through the "glass". While a switch is running
+   the panel stands on an opaque theme-correct fill; the blur (declared with
+   BOTH -webkit-backdrop-filter and backdrop-filter) resumes the instant the
+   class comes off. It is never transparent, in either theme or in between. */
+html.theme-vt .hq-menu,
+html.theme-crossfade .hq-menu {
+  background: var(--hq-glass-solid);
 }
 
 /* Safari on iOS ignores backdrop-filter when the element is composited
    inside a filtered ancestor; the fallback keeps it legible either way. */
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .hq-menu { background: var(--hq-bg); }
+  .hq-menu { background: var(--hq-glass-solid); }
 }
 
 /* ── The stagger ──
@@ -543,6 +584,21 @@ html[data-theme="dark"] .hq-canvas::after {
 /* the second, fainter pass — the "chalk dust" */
 .hq-hero__underline .hq-chalk { opacity: 0.4; }
 
+/* Micro-motion: the stroke draws itself in once, right-to-left (the way an
+   Arabic hand actually writes), just after the hero settles. Both paths
+   carry pathLength="1" so the dash math is trivial; the chalk pass follows
+   a beat behind the marker. Paint-only, ~500ms, ease-out, runs once. */
+.hq-hero__underline path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: -1;                       /* negative = draws from the right */
+  animation: hq-underline-draw 0.55s cubic-bezier(0.33, 1, 0.68, 1) 0.55s both;
+}
+.hq-hero__underline .hq-chalk { animation-delay: 0.72s; animation-duration: 0.5s; }
+
+@keyframes hq-underline-draw {
+  to { stroke-dashoffset: 0; }
+}
+
 /* ── Line 3 · عام الباكالوريا ──
    The closing statement: ink, medium weight, sits calmly under the green. */
 .hq-hero__line-3 {
@@ -584,10 +640,11 @@ html[data-theme="dark"] .hq-canvas::after {
   background: var(--hq-surface);
   box-shadow: var(--hq-shadow);
   text-align: right;
-  transition: transform 0.45s var(--hq-ease),
-              box-shadow 0.45s var(--hq-ease),
-              border-color 0.45s var(--hq-ease-soft),
-              background-color 0.45s var(--hq-ease-soft);
+  /* Hover is a short, silky gesture — transform + paint only, ~320ms out. */
+  transition: transform 0.32s cubic-bezier(0.33, 1, 0.68, 1),
+              box-shadow 0.32s cubic-bezier(0.33, 1, 0.68, 1),
+              border-color 0.32s var(--hq-ease-soft),
+              background-color 0.32s var(--hq-ease-soft);
   will-change: transform;
 }
 
@@ -635,7 +692,7 @@ html[data-theme="dark"] .hq-canvas::after {
   display: inline-flex;
   align-items: center;
   color: var(--hq-green);
-  transition: transform 0.45s var(--hq-ease), color 0.45s var(--hq-ease-soft);
+  transition: transform 0.32s cubic-bezier(0.33, 1, 0.68, 1), color 0.28s var(--hq-ease-soft);
 }
 
 /* The live card's chip is a filled GREEN pill (the primary CTA material);
@@ -766,8 +823,15 @@ html[data-theme="dark"] .hq-canvas::after {
   .hq-hero__blob--b { bottom: -6%; left: -6%; }
 }
 
-@media (max-width: 420px) {
-  .hq-menu { width: calc(100vw - 2rem); right: 1rem; }
+@media (max-width: 430px) {
+  /* The sheet is anchored to the ☰ (its left edge = the bar's padding),
+     so the width only has to leave the right-hand margin free. Both sides
+     stay safe-area-aware; the panel can never exceed the phone frame. */
+  .hq-menu {
+    width: calc(100vw
+      - max(clamp(1.25rem, 4vw, 2.75rem), env(safe-area-inset-left, 0px))
+      - max(1rem, env(safe-area-inset-right, 0px)));
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -780,6 +844,8 @@ html[data-theme="dark"] .hq-canvas::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+  /* The underline must be COMPLETE, not un-drawn, when motion is off. */
+  .hq-hero__underline path { animation: none !important; stroke-dashoffset: 0; }
   .hq-card--link:hover { transform: none; }
   .hq-card--link:hover .hq-card__arrow { transform: none; }
   /* Motion is decoration here — every state above is already legible from
@@ -791,7 +857,4 @@ html[data-theme="dark"] .hq-canvas::after {
   .hq-menu-item:hover .hq-menu-item__chev,
   .hq-menu-item:focus-visible .hq-menu-item__chev { transform: none; }
   .hq-burger__lines span { transition: none; }
-  /* The hand-drawn underline is a static path — nothing to disable — but
-     make sure no draw-in animation can ever be introduced silently. */
-  .hq-hero__underline path { animation: none !important; }
 }
