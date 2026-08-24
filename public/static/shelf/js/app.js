@@ -606,6 +606,64 @@
 
   var LIBRARY_API = "/api/library";
 
+  /* ------------------------------------------------------------
+     POSITION MEMORY for the shelf folder pages.
+     These pages navigate with FULL page loads (folders → new URL,
+     files → the gated content URL rendered by the browser), so when
+     the user presses Back after reading a file the page reloads from
+     scratch and would land at the top. To make the return seamless,
+     the scroll position is saved per page-URL in sessionStorage just
+     before leaving, and restored right after the real Drive items
+     are rendered (so the page has its final height). sessionStorage:
+     per-tab, survives refresh/back, wiped when the tab closes.
+     Pure navigation state — stores only scroll offsets, never grants
+     anything; the server-side 402 gate on file content is untouched.
+     All storage access is try/catch-guarded: with storage disabled
+     everything still works, just without restoration — no errors.
+     ------------------------------------------------------------ */
+  var SHELF_POS_KEY = "taysir:shelf:pos:v1";
+
+  function shelfPosKey() {
+    return window.location.pathname + window.location.search;
+  }
+  function readShelfPosMap() {
+    try {
+      var raw = sessionStorage.getItem(SHELF_POS_KEY);
+      var map = raw ? JSON.parse(raw) : null;
+      return (map && typeof map === "object") ? map : {};
+    } catch (e) { return {}; }
+  }
+  function saveShelfScroll() {
+    try {
+      var map = readShelfPosMap();
+      map[shelfPosKey()] = Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0));
+      // Keep the map small: cap at 40 entries (drop arbitrary extras).
+      var keys = Object.keys(map);
+      if (keys.length > 40) { for (var i = 0; i < keys.length - 40; i++) delete map[keys[i]]; }
+      sessionStorage.setItem(SHELF_POS_KEY, JSON.stringify(map));
+    } catch (e) { /* storage unavailable → silently skip */ }
+  }
+  function restoreShelfScroll() {
+    try {
+      var map = readShelfPosMap();
+      var top = map[shelfPosKey()];
+      if (typeof top === "number" && top > 0) {
+        // Instant jump — no smooth scrolling, so prefers-reduced-motion is
+        // respected by construction.
+        window.scrollTo(0, top);
+      }
+    } catch (e) { /* never break the page over a scroll restore */ }
+  }
+  function initShelfScrollMemory() {
+    // Only meaningful on the folder pages (full-page navigation flow).
+    if (!document.getElementById("folder-main")) return;
+    // Save on every navigation away (link click or back/forward/unload).
+    window.addEventListener("pagehide", saveShelfScroll);
+    // Some browsers restore bfcache pages without re-running scripts fully;
+    // pageshow covers the back-forward cache return as well.
+    window.addEventListener("pageshow", function () { restoreShelfScroll(); });
+  }
+
   /** Deeper navigation INSIDE the themed shelf UI (same page, new folder). */
   function shelfFolderHref(subjectKey, folderId) {
     var url = "/shelf/folder";
@@ -693,6 +751,10 @@
         /* Empty folder → renderFolderItems paints the existing
            "لا توجد مجلدات هنا بعد." message on its own. */
         window.TAYSIR_RENDER_FOLDER_ITEMS(items);
+
+        /* The page now has its final height → restore the exact position
+           the visitor was at before opening a file / sub-folder here. */
+        restoreShelfScroll();
       })
       .catch(function (err) {
         if (err && err.notAuthorized) {
@@ -818,6 +880,7 @@
     watchReducedMotion();
     initTheme();
     initSessionSync();   /* merge step 7/10 — banner follows the real session */
+    initShelfScrollMemory();
     initFolderPage();
   }
 

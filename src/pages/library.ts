@@ -274,6 +274,21 @@ export const libraryPage = `<!DOCTYPE html>
     <div class="gd-viewer-stage" id="gd-viewer-stage" aria-live="polite">
       <div class="gd-viewer-spinner" id="gd-viewer-spinner" aria-hidden="true"><span class="gd-spin"></span></div>
     </div>
+
+    <!-- "الملف السابق" — previous-file chain navigation (Goal 2). Rendered at
+         the bottom of the viewer; library.js shows it ONLY when a previous
+         file actually exists in this tab's chain (hidden entirely otherwise —
+         no disabled/broken button). Pressing it re-opens the previous file
+         through the SAME gated showViewer path as any normal open, so the
+         server-side subscription gate (402 on /api/library/file/:id/*) is
+         fully enforced — this is navigation, never a bypass. -->
+    <div class="gd-viewer-prev" dir="rtl" style="display:none">
+      <button type="button" class="gd-prev-file-btn" id="gd-prev-file" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5A5.5 5.5 0 0 1 20 14.5v0A5.5 5.5 0 0 1 14.5 20H11"/></svg>
+        <span class="gd-prev-file-label">الملف السابق</span>
+        <span class="gd-prev-file-name" id="gd-prev-file-name"></span>
+      </button>
+    </div>
   </div>
 
   <script src="/static/file-cache.js" defer></script>

@@ -1244,3 +1244,62 @@ html[data-theme="light"] .gd-body {
      out to baseline still returns to fit-to-width. */
   .gd-zoom-fit { display: none; }
 }
+
+/* ============================================================== prev-file
+   "الملف السابق" — previous-file chain button (bottom of the viewer).
+   Shown by library.js only when a previous file exists in this tab's chain;
+   otherwise it stays hidden entirely. Pure navigation UI — access to the
+   file it re-opens is still decided server-side (gated /meta + /content). */
+.gd-viewer-prev {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--gd-surface);
+  border-top: 1px solid var(--gd-line);
+}
+/* Collapse the strip completely when the button is hidden, so the viewer
+   keeps its full-height stage when there is no previous file. */
+.gd-viewer-prev:has(> [hidden]) { display: none; }
+.gd-prev-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--gd-line);
+  border-radius: 999px;
+  background: var(--gd-blue-soft);
+  color: var(--gd-blue, #16324F);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--duration-base, 200ms) ease,
+              box-shadow var(--duration-base, 200ms) ease;
+}
+.gd-prev-file-btn:hover { background: var(--gd-blue-tint, rgba(110,231,220,.42)); box-shadow: var(--gd-shadow-1); }
+.gd-prev-file-btn:focus-visible { outline: 2px solid var(--gd-blue); outline-offset: 2px; }
+.gd-prev-file-btn[hidden] { display: none; }
+.gd-prev-file-btn svg { flex: 0 0 auto; }
+.gd-prev-file-label { flex: 0 0 auto; white-space: nowrap; }
+.gd-prev-file-name {
+  flex: 0 1 auto;
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+  font-weight: 400;
+  font-size: 0.82rem;
+}
+.gd-prev-file-name:empty { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .gd-prev-file-btn { transition: none; }
+}
+@media (max-width: 640px) {
+  .gd-viewer-prev { padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .gd-prev-file-btn { height: 38px; font-size: 0.86rem; }
+  .gd-prev-file-name { max-width: 38vw; }
+}
