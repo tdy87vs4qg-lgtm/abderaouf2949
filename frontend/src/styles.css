@@ -287,6 +287,86 @@ html.theme-crossfade .site-header--scrolled {
   background: var(--glass-solid);
 }
 
+/* ── AND the blur itself goes away for the length of the switch ──
+   A backdrop-filter layer must re-read and re-blur everything painted
+   behind it on EVERY frame of the animation. With ~8 such layers on
+   screen that is the dominant cost of the theme toggle on mobile.
+   Because the rule above already puts these panels on the fully OPAQUE
+   `--glass-solid` fill, dropping the filter leaves no transparent hole
+   and no visible seam — the panel simply reads as frosted-then-solid.
+   The real frosted material returns the instant the class comes off. */
+html.theme-vt .glass-surface,
+html.theme-vt .mobile-menu,
+html.theme-vt .auth-card,
+html.theme-vt .offering-card,
+html.theme-vt .value-item,
+html.theme-vt .decision-card,
+html.theme-vt .inapp-notice__panel,
+html.theme-vt .site-header--scrolled,
+html.theme-vt .button-secondary,
+html.theme-vt .mobile-menu__scrim,
+html.theme-vt .inapp-notice__backdrop,
+html.theme-vt .brand-loader--overlay,
+html.theme-crossfade .glass-surface,
+html.theme-crossfade .mobile-menu,
+html.theme-crossfade .auth-card,
+html.theme-crossfade .offering-card,
+html.theme-crossfade .value-item,
+html.theme-crossfade .decision-card,
+html.theme-crossfade .inapp-notice__panel,
+html.theme-crossfade .site-header--scrolled,
+html.theme-crossfade .button-secondary,
+html.theme-crossfade .mobile-menu__scrim,
+html.theme-crossfade .inapp-notice__backdrop,
+html.theme-crossfade .brand-loader--overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The scrims/backdrops are not covered by the `--glass-solid` rule above
+   (they are deliberately see-through), so they get their own solid-enough
+   fill for the duration of the switch — never a transparent hole. */
+html.theme-vt .mobile-menu__scrim,
+html.theme-crossfade .mobile-menu__scrim { background: rgba(10, 10, 10, 0.55); }
+html[data-theme="light"].theme-vt .mobile-menu__scrim,
+html[data-theme="light"].theme-crossfade .mobile-menu__scrim { background: rgba(60, 60, 60, 0.34); }
+html.theme-vt .inapp-notice__backdrop,
+html.theme-crossfade .inapp-notice__backdrop { background: rgba(10, 10, 10, 0.78); }
+html[data-theme="light"].theme-vt .inapp-notice__backdrop,
+html[data-theme="light"].theme-crossfade .inapp-notice__backdrop { background: rgba(60, 60, 60, 0.46); }
+html.theme-vt .button-secondary,
+html.theme-crossfade .button-secondary { background: var(--glass-solid); }
+
+/* ── MOBILE: permanently cheaper glass ────────────────────────────
+   `offering-card` and `value-item` are the high-frequency classes (many
+   instances, all on screen at once, all scrolled). A per-instance
+   backdrop-filter on a phone means a blur pass per card per frame while
+   scrolling. On small screens they trade the blur for the solid theme fill
+   (`--glass-solid`, the same token the theme-switch guard uses), so the
+   material still matches the design — it just stops costing a repaint. */
+@media (max-width: 820px) {
+  .offering-card,
+  .value-item {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--glass-solid);
+  }
+  /* Sheets keep a hint of frost, at a radius a phone GPU can afford. */
+  .glass-surface,
+  .mobile-menu,
+  .auth-card,
+  .decision-card,
+  .site-header--scrolled {
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
+    backdrop-filter: saturate(140%) blur(8px);
+  }
+  /* Buttons are small but numerous — no blur is worth a repaint here. */
+  .button-secondary {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 .app-shell { isolation: isolate; }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -299,13 +379,31 @@ html.theme-vt::view-transition-new(root) { z-index: 2; }
 
 /* Paint-only crossfade fallback: background-color, color and border-color
    ride one shared clock — no layout properties, no filter, no transform —
-   so the whole page shifts as a single calm surface, alpha-dz style. */
+   so the whole page shifts as a single calm surface, alpha-dz style.
+
+   SCOPED, deliberately. This used to be `html.theme-crossfade *` with
+   `!important`, which attached a transition to EVERY node in the document
+   (thousands of them) and overrode each element's own transition. Every one
+   of those became an animating paint target for ~400ms, which is what made
+   the toggle stutter. Now only the major containers carry the crossfade —
+   children simply inherit the colour change from the surface behind them,
+   which looks identical while animating a couple of dozen nodes instead of
+   the whole tree. No `!important`, so per-component transitions still win. */
 html.theme-crossfade,
-html.theme-crossfade * {
+html.theme-crossfade body,
+html.theme-crossfade .app-shell,
+html.theme-crossfade main,
+html.theme-crossfade section,
+html.theme-crossfade .site-header,
+html.theme-crossfade .site-footer,
+html.theme-crossfade .glass-surface,
+html.theme-crossfade .auth-card,
+html.theme-crossfade .mobile-menu,
+html.theme-crossfade .hq-shell,
+html.theme-crossfade .hq-menu {
   transition: background-color var(--theme-dur) var(--theme-ease),
               color var(--theme-dur) var(--theme-ease),
-              border-color var(--theme-dur) var(--theme-ease),
-              fill var(--theme-dur) var(--theme-ease) !important;
+              border-color var(--theme-dur) var(--theme-ease);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -358,10 +456,17 @@ html[data-theme="light"] .ambient-orb--gold { background: var(--brand-green); op
   z-index: 50;
   border-bottom: 1px solid transparent;
   transform: translate3d(0, 0, 0);
-  will-change: background-color, backdrop-filter;
+  /* `will-change: backdrop-filter` kept a permanent blur-capable
+     compositing layer alive for the header on EVERY page, on every scroll
+     frame, whether or not the header was frosted. Only the paint-cheap
+     background-color is hinted now. */
+  will-change: background-color;
   backface-visibility: hidden;
+  /* backdrop-filter is NOT transitionable cheaply: animating the blur radius
+     forces a full re-blur of everything behind the header on every frame.
+     The blur now snaps in with the .site-header--scrolled class while the
+     colours still ease, which is visually near-identical and free. */
   transition: background-color 0.4s var(--ease-soft),
-              backdrop-filter 0.4s var(--ease-soft),
               border-color 0.4s var(--ease-soft);
 }
 .site-header--scrolled {
@@ -843,9 +948,12 @@ html[data-theme="light"] .mobile-menu__scrim { background: rgba(60, 60, 60, 0.24
   transition-timing-function: var(--theme-ease);
 }
 
-/* Cards also lift on hover, so they keep transform + shadow in the list. */
+/* Cards also lift on hover, so they keep transform in the list.
+   box-shadow was removed: it is a non-compositable property, so every frame
+   re-rasterised the card's shadow — for every card at once during a theme
+   switch. transform still carries the lift, which is GPU-only. */
 .offering-card, .value-item {
-  transition-property: background-color, color, border-color, transform, box-shadow;
+  transition-property: background-color, color, border-color, transform;
 }
 
 /* Buttons press (scale) and soften (opacity) — keep those silky too. */
@@ -940,6 +1048,23 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
   -webkit-backdrop-filter: blur(10px) saturate(150%);
   backdrop-filter: blur(10px) saturate(150%);
   animation: brand-loader-in 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* ── MOBILE: no full-screen blur when opening a file ──────────────
+   This overlay is raised on CLICK, at which point the browser must blur the
+   ENTIRE viewport in the same frame as the tap — the exact stall that made
+   opening a file feel frozen on a phone. On small screens the frost is
+   dropped and replaced by a semi-opaque page-coloured wash, which reads the
+   same (the page dissolves rather than cuts) at zero repaint cost. Desktop
+   keeps the real frost. */
+@media (max-width: 820px) {
+  .brand-loader--overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    /* colour-mix keeps this tied to the live theme token, so it is correct
+       in both palettes and never a transparent hole. */
+    background: color-mix(in srgb, var(--page-bg) 92%, transparent);
+  }
 }
 
 .brand-loader__inner {

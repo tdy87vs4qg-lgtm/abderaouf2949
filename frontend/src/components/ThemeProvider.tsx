@@ -48,6 +48,20 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
+ * True on phone-class viewports. A View Transition has to rasterise TWO
+ * full-screen snapshots of the document (old + new) and then animate a
+ * clip-path over them. On a desktop GPU that is free; on a mid-range phone
+ * it is the single most expensive thing the page ever does, and it is what
+ * made the theme toggle freeze the UI for a second or more. Small screens
+ * therefore skip the snapshot entirely (see `commitThemeWithTransition`).
+ */
+function isSmallScreen(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.matchMedia) return window.matchMedia('(max-width: 820px)').matches
+  return window.innerWidth <= 820
+}
+
+/**
  * Applies the theme to <html>: sets `data-theme` (drives the CSS token
  * overrides) and syncs `color-scheme` + the browser theme-color meta so
  * native UI (scrollbars, mobile URL bar) matches the palette.
@@ -89,11 +103,22 @@ function commitThemeWithTransition(theme: Theme, origin?: ToggleOrigin) {
     return
   }
 
+  // ── MOBILE FAST PATH ───────────────────────────────────────────────
+  // On small screens we do NOT take a View Transition snapshot and we do
+  // NOT add any transition class: the palette is swapped in one frame.
+  // The double full-screen snapshot + clip-path animation is what locked
+  // up the main thread on phones. Desktop keeps the full circular reveal
+  // below, unchanged.
+  if (isSmallScreen()) {
+    applyTheme(theme)
+    return
+  }
+
   const doc = document as Document & {
     startViewTransition?: (cb: () => void) => { ready: Promise<void> }
   }
 
-  // Preferred path: native circular reveal via View Transitions API.
+  // Preferred path (desktop): native circular reveal via View Transitions API.
   if (typeof doc.startViewTransition === 'function') {
     const root = document.documentElement
     // Expand from the toggle if we have coordinates, else the top-left corner.

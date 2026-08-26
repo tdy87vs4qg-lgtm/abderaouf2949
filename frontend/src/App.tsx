@@ -8,11 +8,18 @@ import SiteHeader from './components/SiteHeader'
 import { LazyAnimatePresence } from './lib/lazyMotion'
 
 // ── Route-based code splitting ────────────────────────────────────────────
-// Each page is loaded in its own lazy chunk so the initial bundle only carries
-// the shell (header, backdrop, router) plus whatever the first route needs.
+// Each SECONDARY page is loaded in its own lazy chunk so the initial bundle
+// only carries the shell (header, backdrop, router) plus the landing route.
 // The remaining pages are fetched on demand, keeping first paint fast on
 // mobile. No features or animations are removed — they are only deferred.
-const HomePage = lazy(() => import('./pages/HomePage'))
+//
+// HomePage is deliberately NOT lazy. It is the landing route AND the catch-all,
+// so lazy-loading it cost a second network round-trip AFTER the critical bundle
+// had already parsed — on a mobile connection that gap rendered as a white
+// screen on first load. A static import lets it paint from the same bundle, in
+// the same frame. Every other page stays lazy.
+import HomePage from './pages/HomePage'
+
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const SignupPage = lazy(() => import('./pages/SignupPage'))
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'))

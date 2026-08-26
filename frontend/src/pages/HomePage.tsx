@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import BrandLoader, { InlineSpinner } from '../components/BrandLoader'
 import ThemeToggle from '../components/ThemeToggle'
 import { LazyAnimatePresence, M } from '../lib/lazyMotion'
@@ -85,19 +85,35 @@ export default function HomePage() {
   const session = useSession()
 
   /* ── THE GUARD ────────────────────────────────────────────────────
-     While the /me probe is in flight we know NOTHING, so we must not
-     resolve a target: guessing "/login" here is exactly what caused the
-     login → library double trip for already-signed-in visitors. During
-     this window the card is inert (no href, no navigation) and shows a
-     quiet pending state instead. */
+     While the /me probe is in flight we do not yet know who this is, so we
+     must not hard-code "/login" — that is what caused the login → library
+     double trip for already-signed-in visitors.
+
+     The old code solved that by rendering NO href during the probe, which
+     made the card genuinely DEAD: on a slow mobile connection that is the
+     whole first second of the page, and a tap in that window did nothing at
+     all. The card is now always a real, clickable link:
+
+       • A tap while the probe is still running is CAPTURED, not dropped:
+         the branded overlay goes up immediately (so the tap is visibly
+         acknowledged) and the intent is remembered. The moment /me answers,
+         we navigate to the destination the SERVER reported.
+       • `href` is still a real URL (/library) so long-press / middle-click /
+         "open in new tab" behave, and so the element is a true link for
+         assistive tech.
+
+     No auth decision is made here: the destination always comes from the
+     server's own /me answer, and every piece of content behind it stays
+     gated server-side. */
   const sessionPending = session.loading
+  const PENDING_HREF = '/library'
   const filesHref = sessionPending
-    ? null
+    ? PENDING_HREF
     : session.authenticated
       ? session.destination || '/library'
       : '/login'
-  // Only the signed-in destination is a real (server-rendered) page outside
-  // the SPA, so only that one is a full document navigation.
+  // Only the server-rendered library is a real page outside the SPA, so only
+  // that one is a full document navigation.
   const filesIsExternal = !sessionPending && session.authenticated
 
   /* ── THE ENTRY OVERLAY ────────────────────────────────────────────
@@ -120,6 +136,43 @@ export default function HomePage() {
   }, [entering])
 
   const beginEntering = useCallback(() => setEntering(true), [])
+
+  /* ── DEFERRED ENTRY (the tap that used to be swallowed) ───────────
+     Set when the visitor taps the files entry point BEFORE the /me probe
+     has answered. We acknowledge the tap instantly (overlay up) and park
+     the intent here; the effect below completes it as soon as the server
+     tells us where this visitor belongs. */
+  const navigate = useNavigate()
+  const [pendingEntry, setPendingEntry] = useState(false)
+
+  // Capture a tap made during the probe window: never let it do nothing.
+  const requestEntry = useCallback(
+    (event: { preventDefault: () => void }) => {
+      // The probe is still running — take over the click and remember it.
+      event.preventDefault()
+      setMenuOpen(false)
+      setPendingEntry(true)
+      setEntering(true)
+    },
+    [],
+  )
+
+  // The probe answered while an intent was parked → complete the journey to
+  // whichever destination the SERVER reported for this visitor.
+  useEffect(() => {
+    if (!pendingEntry || sessionPending) return
+    setPendingEntry(false)
+    if (session.authenticated) {
+      // Real page outside the SPA → full document navigation (overlay stays
+      // up until the browser paints the library).
+      window.location.assign(session.destination || '/library')
+    } else {
+      // Confirmed anonymous → the SPA login route, in-app, no reload.
+      setEntering(false)
+      navigate('/login')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingEntry, sessionPending, session.authenticated, session.destination])
 
   /* ── The page ground ─────────────────────────────────────────────
      Flag <html> while home is mounted so the overscroll area, the mobile
@@ -238,7 +291,26 @@ export default function HomePage() {
                   exit={{ opacity: 0, scale: 0.97, y: -8 }}
                   transition={{ duration: 0.34, ease: EASE_OUT }}
                 >
-                  {filesIsExternal && filesHref ? (
+                  {/* SAME three states as the 01 card, deliberately, and via
+                      the SAME `requestEntry` handler, so the two entry points
+                      can never disagree. This row used to read "تسجيل الدخول"
+                      (→ /login) while the probe was in flight, so an
+                      already-signed-in visitor who opened the menu early was
+                      sent to login only to be bounced back to the library —
+                      the double round-trip. It now reads "المكتبة" and defers
+                      to the server's own answer. */}
+                  {sessionPending ? (
+                    <a
+                      href={filesHref}
+                      role="menuitem"
+                      className="hq-menu-item"
+                      aria-busy="true"
+                      onClick={requestEntry}
+                    >
+                      <span>المكتبة</span>
+                      <MenuChevron />
+                    </a>
+                  ) : filesIsExternal && filesHref ? (
                     <a
                       href={filesHref}
                       role="menuitem"
@@ -330,24 +402,30 @@ export default function HomePage() {
           {/* 01 — the one live destination.
 
               THREE states, in the order they actually occur:
-                a) session still resolving → INERT. No href is rendered at
-                   all, so an early tap can no longer be sent to /login and
-                   bounced on to /library (the old double trip).
+                a) session still resolving → a REAL, CLICKABLE link. It is
+                   never inert: the old version rendered no href at all, so
+                   an early tap (the common case on mobile, where the probe
+                   is still in flight) was silently swallowed and the card
+                   felt broken. It still shows the quiet pending indicator,
+                   but the tap is now acknowledged instantly and replayed
+                   against the server's answer — so there is still no
+                   login → library double trip.
                 b) signed in → a real <a>, i.e. a full page load into the
                    server-rendered library, with the branded overlay raised
                    on click so the wait is never blank.
                 c) signed out → the SPA /login route, unchanged. */}
           {sessionPending ? (
-            <div
-              className="hq-card hq-card--pending"
+            <a
+              href={filesHref}
+              className="hq-card hq-card--link"
               aria-busy="true"
-              aria-disabled="true"
+              onClick={requestEntry}
             >
               <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
               <div className="hq-card__foot">
                 <InlineSpinner label="لحظة…" />
               </div>
-            </div>
+            </a>
           ) : filesIsExternal && filesHref ? (
             <a href={filesHref} className="hq-card hq-card--link" onClick={beginEntering}>
               <CardHead index="01" title="جزء الملفات" note="الدروس والملخّصات والتمارين المصحّحة." />
