@@ -75,12 +75,19 @@
   /* ================================================================
      POSITION MEMORY (Goal 1) + PREVIOUS-FILE CHAIN (Goal 2)
      ----------------------------------------------------------------
-     Storage choice: sessionStorage. It survives a page refresh (so the
-     "previous file" button and the folder scroll positions come back),
-     is isolated per tab (two tabs don't fight over one chain), and is
-     wiped when the tab closes (no stale state days later). Everything
-     is wrapped in try/catch so a browser with storage disabled simply
-     degrades to in-memory behaviour — never an error, never a crash.
+     Storage choice, split by lifetime:
+       • Folder scroll positions → localStorage. Reading a long subject
+         folder spans several sittings, so "where I was" MUST survive
+         closing the tab / quitting the browser and coming back. On
+         sessionStorage every reopen dumped the user back at page 1.
+         Growth is bounded by the POS_MAX LRU trim below.
+       • Previous-file chain / last-viewed file → sessionStorage. That is
+         deliberately per-tab and short-lived: two tabs must not fight
+         over one back-chain, and a days-old "previous file" step is
+         noise, not memory.
+     Everything is wrapped in try/catch so a browser with storage
+     disabled (or a full quota) simply degrades to in-memory behaviour —
+     never an error, never a crash.
 
      SECURITY: this block stores ONLY navigation state (folder ids,
      scroll offsets, file ids + display names the listing already shows
@@ -95,9 +102,18 @@
   var POS_MAX = 60;     // remember scroll for up to 60 folders (LRU-trimmed)
 
   // Per-folder scroll positions: { <folderId>: { t: scrollTop, at: ts } }
+  // Persisted in localStorage (same key + :v1 versioning as before) so the
+  // reading position survives a tab close / browser restart, not just a
+  // refresh. Reads also fall back to any value left behind by the previous
+  // sessionStorage implementation, so an in-flight session isn't reset once.
   var _posMap = {};
   try {
-    var _rawPos = sessionStorage.getItem(POS_KEY);
+    var _rawPos = null;
+    try { _rawPos = localStorage.getItem(POS_KEY); } catch (e) { _rawPos = null; }
+    if (!_rawPos) {
+      // One-time migration from the old per-tab store.
+      try { _rawPos = sessionStorage.getItem(POS_KEY); } catch (e) { _rawPos = null; }
+    }
     if (_rawPos) {
       var _parsedPos = JSON.parse(_rawPos);
       if (_parsedPos && typeof _parsedPos === 'object') _posMap = _parsedPos;
@@ -105,7 +121,7 @@
   } catch (e) { _posMap = {}; }
 
   function persistPos() {
-    try { sessionStorage.setItem(POS_KEY, JSON.stringify(_posMap)); } catch (e) {}
+    try { localStorage.setItem(POS_KEY, JSON.stringify(_posMap)); } catch (e) {}
   }
   function saveScroll(folderId, top) {
     if (!folderId) return;
@@ -216,9 +232,13 @@
   function updatePrevFileBtn() {
     var btn = els.prevFileBtn;
     if (!btn) return;
-    // Also toggle the wrapper strip so its border/padding never show as an
-    // empty bar (belt-and-braces alongside the CSS :has() rule, which not
-    // every browser supports).
+    // The wrapper strip carries the surface colour + top border, so it must be
+    // driven EXPLICITLY from here. The old code relied on a CSS :has() rule
+    // plus `style.display = ''`, which fell back to `display:flex` in every
+    // browser without :has() support and painted an empty coloured bar across
+    // the bottom of the screen. Now the strip is hidden by default in CSS and
+    // only the `is-visible` class (plus clearing the inline display) reveals
+    // it — no :has(), no implicit fallback.
     var strip = btn.parentElement;
     var top = _chain.length ? _chain[_chain.length - 1] : null;
     // A stale top equal to the file already on screen (possible after a
@@ -228,12 +248,23 @@
     }
     if (!viewerOpen || !top) {
       btn.hidden = true;
-      if (strip) strip.style.display = 'none';
+      if (strip) {
+        strip.classList.remove('is-visible');
+        strip.setAttribute('aria-hidden', 'true');
+        // Inline `none` wins over any stylesheet, so the bar can never be
+        // resurrected by a cascade change.
+        strip.style.display = 'none';
+      }
       return;
     }
     if (els.prevFileName) els.prevFileName.textContent = top.name || '';
     btn.hidden = false;
-    if (strip) strip.style.display = '';
+    if (strip) {
+      // Drop the inline override so the stylesheet (.is-visible → flex) rules.
+      strip.style.removeProperty('display');
+      strip.removeAttribute('aria-hidden');
+      strip.classList.add('is-visible');
+    }
   }
 
   // Step back one file in the chain (B → A → …). Navigation only: the file is
@@ -1021,11 +1052,39 @@
       els.scroller.scrollTop = 0;
     } else if (opts.restoreScroll && els.scroller) {
       // Goal 1: restore the exact saved listing position (breadcrumb back,
-      // browser back/forward, previous-file chain, page refresh). Instant
-      // assignment — no animated scrolling (prefers-reduced-motion safe).
-      var saved = savedScroll(folderId);
-      if (saved != null) els.scroller.scrollTop = saved;
+      // sidebar / parent-card return, browser back/forward, previous-file
+      // chain, page refresh). Instant assignment — no animated scrolling
+      // (prefers-reduced-motion safe).
+      //
+      // WHY DEFERRED: writing scrollTop in the same task as renderContent()
+      // happens while the scroller is still short — the freshly inserted rows
+      // have not been laid out yet — so the browser CLAMPS the value to
+      // (scrollHeight - clientHeight) and a deep position in a large folder
+      // collapses back to the first page. Two chained requestAnimationFrame
+      // callbacks push the write past layout of the new content (no arbitrary
+      // timeout, no guessing): rAF #1 runs before the paint that lays the
+      // rows out, rAF #2 runs after it, when scrollHeight is final.
+      restoreScrollDeferred(folderId);
     }
+  }
+
+  // Apply a remembered scroll offset after the new listing has been laid out.
+  // Guarded by folder identity so a fast folder switch never lands the previous
+  // folder's offset on the current one.
+  function restoreScrollDeferred(folderId) {
+    var saved = savedScroll(folderId);
+    if (saved == null || !els.scroller) return;
+    var apply = function () {
+      if (!els.scroller || state.folder !== folderId || state.searching) return;
+      els.scroller.scrollTop = saved;
+    };
+    // Immediate best-effort write (keeps cached/short listings jump-free),
+    // then re-assert once layout of the new rows is settled.
+    apply();
+    if (typeof requestAnimationFrame !== 'function') return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(apply);
+    });
   }
 
   function navigate(folderId, opts) {
@@ -1862,11 +1921,15 @@
     var folderEl = e.target.closest('[data-folder]');
     if (folderEl && (els.content.contains(folderEl) || els.breadcrumb.contains(folderEl) || els.subjects.contains(folderEl) || inResults)) {
       e.preventDefault();
-      // Going UP via the breadcrumb (back / home) returns the user to where
-      // they were in that folder (Goal 1); descending into a folder starts
-      // at the top as before.
-      var goingUp = els.breadcrumb.contains(folderEl);
-      navigate(folderEl.getAttribute('data-folder'), goingUp ? { restoreScroll: true } : { scrollTop: true });
+      // Goal 1 — RETURN-AWARE, not direction-aware. Any folder we have a
+      // remembered position for is a folder the user has already read, so
+      // coming back to it restores that exact spot regardless of HOW the
+      // user got there: breadcrumb, sidebar subject link, a parent folder
+      // card, or a search result. Only a folder with no stored position
+      // (a genuinely new destination) starts at the top.
+      var targetFolder = folderEl.getAttribute('data-folder');
+      var hasSavedPos = savedScroll(targetFolder || 'root') != null;
+      navigate(targetFolder, hasSavedPos ? { restoreScroll: true } : { scrollTop: true });
       return;
     }
     var fileEl = e.target.closest('[data-file]');
@@ -2058,6 +2121,15 @@
     // Goal 2 — "الملف السابق": step back to the previously-opened file.
     if (els.prevFileBtn) els.prevFileBtn.addEventListener('click', goPrevFile);
 
+    // Reconcile the previous-file button/strip with the REAL chain state once
+    // at boot. _chain is rehydrated from storage before this point, but nothing
+    // used to call updatePrevFileBtn() until a file was opened or closed — so
+    // the strip kept whatever the markup shipped with, which is how an empty
+    // coloured bar could sit at the bottom of a freshly loaded page. The viewer
+    // is closed here, so this call collapses the strip; showViewer() will call
+    // it again with real chain data when a file is opened.
+    updatePrevFileBtn();
+
     // Goal 1 — persist the current listing position when the page is being
     // hidden/unloaded, so a refresh (or returning from an external page)
     // restores the user to the exact same spot.
@@ -2141,8 +2213,9 @@
     // stored files are preserved and become available again as soon as the same
     // user signs back in.
     function startApp() {
-      // Goal 1: a page refresh restores the saved listing position (when one
-      // exists for this folder in sessionStorage) instead of resetting to top.
+      // Goal 1: a page refresh (or a reopen after the tab was closed) restores
+      // the saved listing position for this folder — see the localStorage-backed
+      // position map above — instead of resetting to top.
       navigate(start, { replace: true, restoreScroll: true });
       // Deep link with ?view=<id> → open the SPA viewer over the folder. Mark it
       // so the close button removes the ?view= param instead of leaving the app.
