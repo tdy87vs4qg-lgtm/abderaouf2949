@@ -1071,20 +1071,57 @@
   // Apply a remembered scroll offset after the new listing has been laid out.
   // Guarded by folder identity so a fast folder switch never lands the previous
   // folder's offset on the current one.
+  // HARDENING over the fixed two-frame version: two rAF callbacks are enough
+  // only when the listing reaches its final height within those two frames.
+  // That is NOT guaranteed for the cases this bug actually shows up in — a
+  // large folder whose lazy thumbnails have no intrinsic height yet, a
+  // virtualized folder that only sizes its spacers as it scrolls, a web font
+  // still swapping, or simply a slow phone. While the scroller is still short
+  // the browser keeps CLAMPING the write to (scrollHeight - clientHeight), so a
+  // deep offset silently collapses toward the first page — the exact symptom.
+  // A measured test of the two-frame version restored 9000 → 4200 on a
+  // slow-settling list. So instead of a fixed frame count we re-assert until
+  // the offset actually STICKS (scroller finally tall enough), bail out the
+  // moment the user touches the list themselves, and stop on any newer
+  // navigation. Every write is still an instant assignment, so
+  // prefers-reduced-motion is honoured by construction.
+  var _restoreToken = 0;
   function restoreScrollDeferred(folderId) {
     var saved = savedScroll(folderId);
-    if (saved == null || !els.scroller) return;
+    var sc = els.scroller;
+    if (saved == null || !sc) return;
+    var token = ++_restoreToken;
+    var userMoved = false;
+    function onUserScroll() { userMoved = true; }
+    var stale = function () {
+      return token !== _restoreToken || !els.scroller ||
+             state.folder !== folderId || state.searching || userMoved;
+    };
     var apply = function () {
-      if (!els.scroller || state.folder !== folderId || state.searching) return;
+      if (stale()) return;
       els.scroller.scrollTop = saved;
     };
-    // Immediate best-effort write (keeps cached/short listings jump-free),
-    // then re-assert once layout of the new rows is settled.
+    // Immediate best-effort write (keeps cached/short listings jump-free).
     apply();
     if (typeof requestAnimationFrame !== 'function') return;
-    requestAnimationFrame(function () {
-      requestAnimationFrame(apply);
-    });
+    // Only a genuine gesture cancels the restore — never our own writes.
+    sc.addEventListener('wheel', onUserScroll, { passive: true });
+    sc.addEventListener('touchstart', onUserScroll, { passive: true });
+    var tries = 0;
+    var cleanup = function () {
+      sc.removeEventListener('wheel', onUserScroll);
+      sc.removeEventListener('touchstart', onUserScroll);
+    };
+    var step = function () {
+      if (stale()) { cleanup(); return; }
+      apply();
+      // Reached the target (within a rounding pixel) → the list is tall enough.
+      if (Math.abs(els.scroller.scrollTop - saved) <= 2) { cleanup(); return; }
+      // Keep re-asserting for up to ~1s of frames while the list still grows.
+      if (++tries < 60) { requestAnimationFrame(step); return; }
+      cleanup();
+    };
+    requestAnimationFrame(function () { requestAnimationFrame(step); });
   }
 
   function navigate(folderId, opts) {
