@@ -55,7 +55,15 @@
 // Bump this on EVERY future shell change (any edit to a SHELL_ASSETS file or
 // to this list). The activate handler deletes every cache whose name differs,
 // so a bump is what actually ships the new shell to returning visitors.
-const CACHE_NAME = 'taysir-shell-v5';
+//
+// v6: CRITICAL. The v5 cache was cut BEFORE commits 45c0ec7/b66a2af, which
+// fixed the intercepting closed-viewer overlay (pointer-events) and the dead
+// bottom bar (.gd-viewer-prev default display + :has() removal) in
+// library.css/library.js. Because these shell assets are served CACHE-FIRST
+// (stale-while-revalidate), phones holding the v5 cache kept running the
+// PRE-FIX files indefinitely — which is exactly why both "fixed" bugs kept
+// reappearing on real devices. This bump wipes v5 and ships the fixed shell.
+const CACHE_NAME = 'taysir-shell-v6';
 
 // Exactly the 6 stable shell assets + the web app manifest. Nothing else.
 const SHELL_ASSETS = [
@@ -161,27 +169,45 @@ self.addEventListener('fetch', (event) => {
 /* ------------------------------------------------------------------ helpers */
 
 // Network-first for the /library document, falling back to the pre-cached
-// shell when the network fails. A successful response also refreshes the
-// cached '/library' entry so the offline fallback stays reasonably current.
+// shell when the network fails OR STALLS. A successful response also refreshes
+// the cached '/library' entry so the offline fallback stays reasonably current.
+//
+// THE TIMEOUT: on iOS/Android the first request after the app returns from
+// background can sit on a dead pooled socket for ~30s before the OS gives up —
+// which held the whole /library navigation hostage even though a byte-identical
+// shell was already cached on the device. After 4s we stop waiting and serve
+// the cached shell; the network fetch keeps running in the background and
+// still refreshes the cache when it eventually lands. With no cached copy we
+// keep waiting on the network exactly as before (nothing better to serve).
+const LIBRARY_NAV_TIMEOUT_MS = 4000;
+
 function networkFirstLibrary(request) {
-  return fetch(request).then(
-    (response) => {
-      if (response && response.ok) {
-        const copy = response.clone();
-        caches
-          .open(CACHE_NAME)
-          .then((cache) => cache.put('/library', copy))
-          .catch(() => { /* cache refresh is best-effort — never fatal */ });
-      }
-      return response;
-    },
-    () =>
-      // Offline (or the request errored): serve the pre-cached shell. If even
-      // that is missing, re-throw so the browser shows its own offline page.
+  const networkFetch = fetch(request).then((response) => {
+    if (response && response.ok) {
+      const copy = response.clone();
       caches
-        .match('/library', { cacheName: CACHE_NAME })
-        .then((cached) => cached || Promise.reject(new Error('offline: no cached /library')))
-  );
+        .open(CACHE_NAME)
+        .then((cache) => cache.put('/library', copy))
+        .catch(() => { /* cache refresh is best-effort — never fatal */ });
+    }
+    return response;
+  });
+
+  // Race the live fetch against the timeout. `undefined` marks a timeout win
+  // (and a network error is normalised to `undefined` too, so both take the
+  // cached-shell path below).
+  const timer = new Promise((resolve) => {
+    setTimeout(() => resolve(undefined), LIBRARY_NAV_TIMEOUT_MS);
+  });
+
+  return Promise.race([networkFetch.catch(() => undefined), timer]).then((response) => {
+    if (response) return response; // network answered in time
+    // Timed out or errored → cached shell if we have one; otherwise fall back
+    // to the still-running network fetch (and let a real failure surface).
+    return caches
+      .match('/library', { cacheName: CACHE_NAME })
+      .then((cached) => cached || networkFetch);
+  });
 }
 
 // Stale-while-revalidate for the fixed shell asset list: serve the cached copy

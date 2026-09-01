@@ -2223,6 +2223,54 @@
       if (els.sidebar && els.sidebar.classList.contains('is-open')) closeSidebar();
     });
 
+    // ── bfcache / tab-restore reconciliation ─────────────────────────────
+    // iOS Safari and Android Chrome snapshot the whole page into the
+    // back/forward cache; restoring it resumes JS mid-flight with NO reload
+    // and NO popstate. Nothing used to run on that path, so a viewer frozen
+    // mid-transition came back inconsistent: the bar chrome (close / title /
+    // zoom) could be missing its is-open styling, the fixed overlay could be
+    // laid out against the pre-restore viewport, and the previous-file strip
+    // could keep a stale visible state — the "chrome vanished + dead bottom
+    // bar" report. On pageshow with event.persisted we re-derive the whole
+    // viewer state from the URL (the single source of truth) and re-assert
+    // every piece of chrome + layout. Pure presentation: file access is still
+    // decided server-side by the gated /meta + /content routes on any re-open.
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted || !els.viewer) return;
+      var viewId = viewFromUrl();
+      if (viewId) {
+        if (viewerOpen && _viewerId === viewId) {
+          // Same file, still open → re-assert the chrome the restore may have
+          // dropped, then re-fit the zoom layout to the restored viewport
+          // (fixed-position overlays are notorious for coming back misplaced).
+          els.viewer.hidden = false;
+          els.viewer.classList.add('is-open');
+          document.body.style.overflow = 'hidden';
+          updatePrevFileBtn();
+          if (_zoomKind) {
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () { applyZoom(); });
+            });
+          }
+        } else {
+          // URL says a file should be open but the viewer isn't (or shows the
+          // wrong one) → open it through the normal gated path.
+          showViewer(viewId, null);
+        }
+      } else if (viewerOpen) {
+        // URL says closed but the snapshot restored an open viewer → close.
+        closeViewer(true);
+      } else {
+        // Closed on both sides → clear any half-finished close animation the
+        // freeze may have stranded (is-open gone but hidden never set), and
+        // collapse the previous-file strip so no empty bar can sit on screen.
+        els.viewer.classList.remove('is-open');
+        els.viewer.hidden = true;
+        document.body.style.overflow = '';
+        updatePrevFileBtn();
+      }
+    });
+
     window.addEventListener('popstate', function (e) {
       var viewId = (e.state && e.state.view) || viewFromUrl();
       var f = (e.state && e.state.folder) || folderFromUrl() || 'root';

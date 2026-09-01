@@ -122,11 +122,14 @@ export default function HomePage() {
   const [entering, setEntering] = useState(false)
 
   // If the navigation never completes (back / bfcache restore, a cancelled
-  // load, or the tab being re-shown), drop the overlay so the page can never
-  // be left stuck behind it.
+  // load, or the tab being re-shown), drop the overlay AND any parked entry
+  // intent so the page can never be left stuck behind it.
   useEffect(() => {
     if (!entering) return
-    const clear = () => setEntering(false)
+    const clear = () => {
+      setEntering(false)
+      setPendingEntry(false)
+    }
     window.addEventListener('pageshow', clear)
     window.addEventListener('popstate', clear)
     return () => {
@@ -173,6 +176,29 @@ export default function HomePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEntry, sessionPending, session.authenticated, session.destination])
+
+  /* ── THE ENTRY DEADLINE (the 30-second hang, killed) ──────────────
+     A parked tap used to wait for the /me probe with NO time limit. On real
+     phones the first fetch after returning from background can sit on a dead
+     socket for ~30s before the OS gives up — during which every tap was
+     preventDefault()ed into nothing. Two layers of defence now exist:
+       1. useSession aborts the probe itself after 6s (see useSession.ts).
+       2. This deadline is the belt-and-braces: if an intent has been parked
+          for >2.5s and the probe still hasn't answered, we stop waiting and
+          hard-navigate to /library. That is SAFE with no auth decision made
+          client-side: /library is served unguarded (src/index.tsx:102) and
+          every piece of content behind it stays gated server-side — an
+          anonymous visitor simply sees the library shell with locked files,
+          exactly what a direct URL visit already shows them. */
+  useEffect(() => {
+    if (!pendingEntry || !sessionPending) return
+    const deadline = window.setTimeout(() => {
+      setPendingEntry(false)
+      window.location.assign(PENDING_HREF)
+    }, 2500)
+    return () => window.clearTimeout(deadline)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingEntry, sessionPending])
 
   /* ── The page ground ─────────────────────────────────────────────
      Flag <html> while home is mounted so the overscroll area, the mobile

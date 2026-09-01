@@ -48,12 +48,26 @@ export function useSession(): SessionState {
   useEffect(() => {
     let cancelled = false
 
+    // HARD DEADLINE on the probe. On iOS/Android the first fetch after the
+    // app returns from background can reuse a dead pooled connection and hang
+    // for ~30s until the OS gives up on the socket. Nothing in the UI may
+    // wait that long: after 6s the request is aborted and the hook resolves
+    // to the neutral signed-out state (the same state a failed probe already
+    // produces). The server stays the only authority — this never asserts a
+    // logout server-side, it only stops the UI from hanging on a dead socket.
+    const PROBE_TIMEOUT_MS = 6000
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+    const probeTimer = controller
+      ? window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
+      : null
+
     async function load() {
       try {
         const res = await fetch('/api/auth/me', {
           method: 'GET',
           credentials: 'same-origin',
           headers: { Accept: 'application/json' },
+          signal: controller ? controller.signal : undefined,
         })
         let data: any = null
         try {
@@ -92,9 +106,12 @@ export function useSession(): SessionState {
       }
     }
 
-    load()
+    load().finally(() => {
+      if (probeTimer != null) window.clearTimeout(probeTimer)
+    })
     return () => {
       cancelled = true
+      if (probeTimer != null) window.clearTimeout(probeTimer)
     }
   }, [])
 
