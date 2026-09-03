@@ -261,18 +261,51 @@
   }
 
   /* ------------------------------------------------------------------ open */
+  // HARD DEADLINE on indexedDB.open(). The IDB spec gives an open request no
+  // time limit, and real devices exploit that: after the app returns from
+  // background, under storage pressure, or with another tab holding an old
+  // connection, open() can sit for many seconds without firing success, error
+  // OR blocked. Every read/write in this module funnels through openDb(), so
+  // an open that never settles used to leave the library blank forever. Past
+  // this deadline the pending open is treated as a failure: callers fall back
+  // to the network for this call (they already handle rejection), and the
+  // next call simply retries the open. If the late open eventually does
+  // succeed, its handle is closed rather than leaked.
+  var OPEN_TIMEOUT_MS = 3000;
+
   function openDb() {
     if (!_supported) return Promise.reject(new Error('no-idb'));
     if (_dbPromise) return _dbPromise;
     _dbPromise = new Promise(function (resolve, reject) {
       var req;
+      var settled = false;
+      var timer = null;
+      function finish(fn, value) {
+        if (settled) return false;
+        settled = true;
+        if (timer != null) { clearTimeout(timer); timer = null; }
+        fn(value);
+        return true;
+      }
       try { req = indexedDB.open(DB_NAME, DB_VERSION); }
       catch (e) { reject(e); return; }
+      timer = setTimeout(function () {
+        if (settled) return;
+        log('idb open TIMEOUT after ' + OPEN_TIMEOUT_MS + 'ms → network-only for this call');
+        finish(reject, new Error('idb-open-timeout'));
+      }, OPEN_TIMEOUT_MS);
       req.onupgradeneeded = function () {
         ensureStores(req.result);
       };
       req.onsuccess = function () {
         var db = req.result;
+        if (settled) {
+          // Arrived after the deadline: the caller has moved on. Do not keep a
+          // stray connection open (it would block future version upgrades).
+          log('idb open OK but LATE (after timeout) → closing stray handle');
+          try { db.close(); } catch (e) {}
+          return;
+        }
         log('idb open OK (name=' + DB_NAME + ', version=' + db.version + ')');
         // A partial DB (missing one of the stores) is repaired by the normal
         // versioned upgrade above: DB_VERSION was bumped and ensureStores() is
@@ -285,22 +318,22 @@
         if (!hasAllStores(db)) {
           warnStoreUnavailable(new Error('missing-object-stores'));
           try { db.close(); } catch (e) {}
-          reject(new Error('idb-missing-object-stores'));
+          finish(reject, new Error('idb-missing-object-stores'));
           return;
         }
         wireDbHandlers(db);
-        resolve(db);
+        finish(resolve, db);
       };
       req.onerror = function () {
         var e = req.error || new Error('idb-open-failed');
         log('idb open FAILED: ' + (e && (e.name + ': ' + e.message)));
-        reject(e);
+        finish(reject, e);
       };
       // A blocked open (older connection still holding the DB) must not hang the
       // read/write path forever — surface it so callers fall back to the network.
       req.onblocked = function () {
         log('idb open BLOCKED (another tab holds an old connection)');
-        reject(new Error('idb-open-blocked'));
+        finish(reject, new Error('idb-open-blocked'));
       };
     }).catch(function (e) { _dbPromise = null; throw e; });
     return _dbPromise;

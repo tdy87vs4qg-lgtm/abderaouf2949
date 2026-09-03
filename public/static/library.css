@@ -382,35 +382,12 @@ html[data-theme="light"] .gd-body {
 .gd-skel-nav:nth-child(4) { width: 60%; }
 .gd-skel-nav:nth-child(5) { width: 70%; }
 
-/* storage/promo card at bottom of sidebar */
-.gd-storage {
-  margin: auto 12px 4px 12px;
-  padding: 16px;
-  border-radius: var(--gd-radius);
-  background: var(--gd-bg);
-  border: 1px solid var(--gd-line);
-}
-.gd-storage-title {
-  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
-  color: var(--gd-blue);
-}
-.gd-storage-title { margin: 0 0 4px; font-size: 0.8125rem; font-weight: 600; color: var(--gd-text); }
-.gd-storage-text { margin: 0 0 12px; font-size: 0.78rem; color: var(--gd-text-2); line-height: 1.45; }
-.gd-storage-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--gd-blue);
-  text-decoration: none;
-  padding: 8px 14px;
-  border: 1px solid var(--gd-line);
-  border-radius: 999px;
-  background: var(--gd-surface);
-  transition: background var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
-}
-.gd-storage-cta:hover { background: var(--gd-blue-soft); border-color: var(--gd-blue-tint); }
+/* The storage/promo card that used to sit at the bottom of the sidebar
+   (`.gd-storage*`) was removed from the markup in src/pages/library.ts, so
+   its rules are deleted here too rather than left as dead CSS. The sidebar's
+   nav now simply ends after the subject list.
+   NOTE: purely presentational cleanup — the subscription gate itself is
+   server-side and untouched. */
 
 .gd-scrim {
   position: fixed;
@@ -1061,6 +1038,17 @@ html[data-theme="light"] .gd-body {
 /* Opening/switching/closing files renders here without a full page reload,   */
 /* so navigation stays instant. Access is still gated server-side.            */
 /* ========================================================================== */
+/* CLOSED STATE = INERT. The overlay is a position:fixed, inset:0, z-index:450
+   layer. Fading it out with opacity alone left a full-screen, invisible but
+   HIT-TESTABLE sheet on top of the library: every tap and every scroll gesture
+   landed on the overlay instead of the listing. The `hidden` attribute that
+   really removes it is set inside a 200ms setTimeout that deliberately
+   early-returns when the viewer was reopened meanwhile — so in that window
+   (or whenever that callback is skipped) the page was frozen.
+   `pointer-events: none` in the closed state makes the closed overlay
+   permanently untouchable, independent of any timer; `.is-open` restores
+   `pointer-events: auto` so the viewer itself stays fully interactive. The
+   opacity transition is unchanged, so the fade still plays. */
 .gd-viewer-overlay {
   position: fixed;
   inset: 0;
@@ -1069,9 +1057,10 @@ html[data-theme="light"] .gd-body {
   flex-direction: column;
   background: var(--gd-surface-2, #f2ede3);
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--duration-base, 200ms) ease;
 }
-.gd-viewer-overlay.is-open { opacity: 1; }
+.gd-viewer-overlay.is-open { opacity: 1; pointer-events: auto; }
 .gd-viewer-overlay[hidden] { display: none; }
 .gd-viewer-bar {
   flex: 0 0 auto;
@@ -1266,4 +1255,77 @@ html[data-theme="light"] .gd-body {
   /* Hide the explicit fit button on the tightest screens; "0" key / zooming
      out to baseline still returns to fit-to-width. */
   .gd-zoom-fit { display: none; }
+}
+
+/* ============================================================== prev-file
+   "الملف السابق" — previous-file chain button (bottom of the viewer).
+   Shown by library.js only when a previous file exists in this tab's chain;
+   otherwise it stays hidden entirely. Pure navigation UI — access to the
+   file it re-opens is still decided server-side (gated /meta + /content).
+
+   VISIBILITY CONTRACT — the strip is HIDDEN BY DEFAULT and is only revealed
+   by the explicit `.is-visible` class that library.js/updatePrevFileBtn()
+   adds when a real previous file exists. The previous implementation did the
+   opposite: it defaulted to `display:flex` and relied on a relational
+   parent-selector rule to collapse itself. That selector is unsupported or
+   only partially supported in a number of browsers, and the fallback there
+   was a full-width empty coloured bar pinned to the bottom of the screen.
+   Default-hidden + an explicit class has no such fallback: a browser that
+   understands nothing beyond `display` still hides it. No relational
+   selector is used anywhere in this rule set. */
+.gd-viewer-prev {
+  display: none;
+  flex: 0 0 auto;
+  justify-content: center;
+  /* Safe-area padding preserved (iPhone home-indicator inset). */
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--gd-surface);
+  border-top: 1px solid var(--gd-line);
+}
+/* The one and only reveal condition — set from JS alongside btn.hidden=false. */
+.gd-viewer-prev.is-visible { display: flex; }
+/* Defence in depth: even if the class is somehow present while the button
+   itself is hidden, do not paint an empty bar. */
+.gd-viewer-prev[aria-hidden='true'] { display: none; }
+.gd-prev-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--gd-line);
+  border-radius: 999px;
+  background: var(--gd-blue-soft);
+  color: var(--gd-blue, #16324F);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--duration-base, 200ms) ease,
+              box-shadow var(--duration-base, 200ms) ease;
+}
+.gd-prev-file-btn:hover { background: var(--gd-blue-tint, rgba(110,231,220,.42)); box-shadow: var(--gd-shadow-1); }
+.gd-prev-file-btn:focus-visible { outline: 2px solid var(--gd-blue); outline-offset: 2px; }
+.gd-prev-file-btn[hidden] { display: none; }
+.gd-prev-file-btn svg { flex: 0 0 auto; }
+.gd-prev-file-label { flex: 0 0 auto; white-space: nowrap; }
+.gd-prev-file-name {
+  flex: 0 1 auto;
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+  font-weight: 400;
+  font-size: 0.82rem;
+}
+.gd-prev-file-name:empty { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .gd-prev-file-btn { transition: none; }
+}
+@media (max-width: 640px) {
+  .gd-viewer-prev { padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .gd-prev-file-btn { height: 38px; font-size: 0.86rem; }
+  .gd-prev-file-name { max-width: 38vw; }
 }

@@ -76,13 +76,16 @@ const sidebar = `
     </div>
   </nav>
 
-  <div class="gd-storage" id="gd-storage" aria-hidden="true">
-    <p class="gd-storage-title">تيسير</p>
-    <p class="gd-storage-text" id="gd-storage-text">The complete Baccalaureate study library.</p>
-    <a href="${TIKTOK_URL}" target="_blank" rel="noopener noreferrer" class="gd-storage-cta js-subscribe-cta">
-      ${icons.tiktok}<span>Get access</span>
-    </a>
-  </div>
+  <!-- The promotional "Get access" panel that used to sit at the bottom of
+       this rail (brand blurb + a TikTok call-to-action) has been REMOVED
+       entirely: the files page is now purely a file browser, with no banner
+       and no upsell prompt in the chrome.
+
+       This was PRESENTATION ONLY. Access is still enforced exactly as before
+       and entirely server-side (requireActiveSubscriber → gateContent → 402
+       in src/routes/library.ts), and the locked-file dialog below is
+       untouched — so a visitor who opens a gated file still gets the proper
+       subscription path. Nothing about auth, entitlement or the gate changed. -->
 </aside>
 <div class="gd-scrim" id="gd-scrim" hidden></div>`
 
@@ -140,7 +143,31 @@ export const libraryPage = `<!DOCTYPE html>
   <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- PERF: start the library listing request during HTML parse, long before
+       the deferred library.js executes. Head-level hint only — library.js
+       behaviour is unchanged; the browser simply reuses the warmed response.
+       crossorigin="anonymous" ⇒ request mode "cors" + credentials "same-origin",
+       which is EXACTLY what library.js's fetch(url, {credentials:'same-origin'})
+       produces — required for the preload cache to match (use-credentials would
+       set credentials "include", mismatch, and waste the preload). Cookies are
+       still sent because the request is same-origin. -->
+  <link rel="preload" as="fetch" crossorigin="anonymous" href="/api/library/list" />
+
+  <!-- PERF: preload the page's own CSS/JS so they download in parallel with
+       HTML parsing instead of being discovered late. -->
+  <link rel="preload" href="/static/tokens.css" as="style" />
+  <link rel="preload" href="/static/library.css" as="style" />
+  <link rel="preload" href="/static/library.js" as="script" />
+  <link rel="preload" href="/static/file-cache.js" as="script" />
+
+  <!-- PERF: Google Fonts stylesheet loads WITHOUT blocking first paint —
+       preloaded as a style, swapped to a live stylesheet onload. Text renders
+       immediately with fallback fonts (display=swap), then upgrades. The
+       <noscript> fallback keeps fonts working when JS is disabled. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/library.css" rel="stylesheet" />
 </head>
@@ -246,6 +273,21 @@ export const libraryPage = `<!DOCTYPE html>
     </header>
     <div class="gd-viewer-stage" id="gd-viewer-stage" aria-live="polite">
       <div class="gd-viewer-spinner" id="gd-viewer-spinner" aria-hidden="true"><span class="gd-spin"></span></div>
+    </div>
+
+    <!-- "الملف السابق" — previous-file chain navigation (Goal 2). Rendered at
+         the bottom of the viewer; library.js shows it ONLY when a previous
+         file actually exists in this tab's chain (hidden entirely otherwise —
+         no disabled/broken button). Pressing it re-opens the previous file
+         through the SAME gated showViewer path as any normal open, so the
+         server-side subscription gate (402 on /api/library/file/:id/*) is
+         fully enforced — this is navigation, never a bypass. -->
+    <div class="gd-viewer-prev" dir="rtl" style="display:none">
+      <button type="button" class="gd-prev-file-btn" id="gd-prev-file" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5A5.5 5.5 0 0 1 20 14.5v0A5.5 5.5 0 0 1 14.5 20H11"/></svg>
+        <span class="gd-prev-file-label">الملف السابق</span>
+        <span class="gd-prev-file-name" id="gd-prev-file-name"></span>
+      </button>
     </div>
   </div>
 

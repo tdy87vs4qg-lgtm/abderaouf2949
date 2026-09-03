@@ -1,705 +1,996 @@
 @import "tailwindcss";
 
-@theme {
-  --color-ink: #06101c;
-  --color-cyan: #6ee7dc;
-  --color-gold: #efc47a;
-  --font-sans: "Tajawal", sans-serif;
-  --font-display: "Noto Kufi Arabic", sans-serif;
-}
+/* ════════════════════════════════════════════════════════════════════
+   تيسير — DESIGN SYSTEM  ·  "Green & Cream"
+   ────────────────────────────────────────────────────────────────────
+   TWO colours carry the whole brand. They are not accents — they ARE
+   the theme:
 
+     #469C59  «الأخضر»  — the primary brand green. Headline emphasis,
+                          buttons, active links, the hand-drawn
+                          underline, chips, icon tiles, focus rings.
+     #FAF7ED  «الكريمي» — the primary background of the entire site:
+                          a warm, paper-like cream.
+
+   Black / gray survive ONLY as secondary text and subtle hairlines.
+
+   THREE RULES THIS FILE OBEYS
+   1. Type first. IBM Plex Sans Arabic everywhere; hierarchy comes from
+      size, weight and line-height — never from a second, louder face.
+   2. Two brand colours, warm neutrals underneath. Colour is identity
+      and information; never decoration for its own sake.
+   3. Depth is physical. Glass = blur + saturation + a 1px top highlight
+      + a hairline + one wide, low shadow. Exactly how iOS builds a sheet.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Brand constants ────────────────────────────────────────────────
+   The two literal hex values live here, once. Everything else in the
+   codebase should reference these (or the semantic tokens below) so the
+   identity can never drift. */
 :root {
-  color-scheme: dark;
-  font-family: "Tajawal", sans-serif;
-  background: #050d18;
-  font-synthesis: none;
-  /* ── DARK PALETTE — a deep, refined midnight-navy with a hint of teal.
-     Slightly darker & cooler than before so glass surfaces and the cyan/gold
-     accents feel more premium and cinematic, with crisper text contrast. */
-  --ink: #050d18;
-  --ink-soft: #0a1524;
-  --cyan: #7bece1;          /* brighter, gem-like teal for accents */
-  --gold: #f0ca86;          /* warmer, softer gold */
-  --white: #f8fbff;
+  --brand-green: #469c59;        /* PRIMARY — the brand colour */
+  --brand-green-deep: #35804a;   /* pressed / hover state */
+  --brand-green-dark: #275c36;   /* text on cream when extra contrast is needed */
+  --brand-green-light: #7cc98c;  /* the dark-theme-legible tint — a touch
+                                    brighter than before so it stays elegant
+                                    and AA-legible on the warm charcoal */
+  --brand-cream: #faf7ed;        /* PRIMARY — the page ground */
+  --brand-cream-2: #f4efe0;      /* one step down: grounds, ribbons */
+  --brand-cream-3: #ece5d2;      /* hairline-adjacent cream */
 
-  /* ── Semantic theme tokens (DARK is the native default) ──────────
-     Everything that must flip between light & dark reads from these
-     variables. The `data-theme="light"` block below re-points them; the
-     rest of the stylesheet stays untouched. */
-  --page-bg: #050d18;
-  --text-strong: #f8fbff;   /* headings / high-emphasis */
-  --text-base: rgba(240, 247, 255, .82);
-  --text-muted: rgba(226, 238, 252, .60);
-  --text-faint: rgba(216, 230, 248, .46);
-  --hairline: rgba(255, 255, 255, .09);
-  --hairline-strong: rgba(255, 255, 255, .16);
-  --surface: rgba(255, 255, 255, .055);
-  --surface-2: rgba(255, 255, 255, .038);
-  --gradient-strong: #fff;   /* start colour of the white→cyan→gold text gradients */
-  --gradient-mid: #9df8ee;
-  --gradient-end: #efc985;
-  --ambient-photo-opacity: .62;
-  --ambient-veil-strength: .88;
+  /* ── The dark ground — a WARM charcoal, not a green-black ──
+     Deep, calm, slightly brown-leaning so cream text feels at home on it.
+     Every dark surface below derives from these three steps. */
+  --charcoal: #171511;           /* the page ground */
+  --charcoal-2: #1e1b15;         /* one step up: ribbons, grounds */
+  --charcoal-3: #24211a;         /* elevated surfaces */
 }
 
-/* ── LIGHT MODE ─────────────────────────────────────────────────────
-   A warm, high-contrast daylight palette. Only the semantic tokens are
-   re-pointed here; each dark component picks up light values automatically.
-   Deep-charcoal text on soft off-white keeps Arabic script crisp & readable. */
-html[data-theme="light"] {
-  color-scheme: light;
-  /* A cool, airy porcelain-blue daylight. Slightly bluer & brighter than a
-     flat off-white so the teal/gold accents pop and the page reads as a
-     crafted product rather than default white. */
-  background: #eef4fc;
-  --page-bg: #eef4fc;
-  --ink: #eef4fc;
-  --white: #0a1826;
-  --cyan: #0b8377;   /* deep teal — AA contrast on the porcelain bg */
-  --gold: #a9741f;   /* rich bronze-gold — readable on light */
-
-  /* Near-black slate ink for maximum Arabic-script legibility. */
-  --text-strong: #081521;
-  --text-base: rgba(8, 21, 33, .88);
-  --text-muted: rgba(8, 21, 33, .66);
-  --text-faint: rgba(8, 21, 33, .50);
-  --hairline: rgba(8, 21, 33, .11);
-  --hairline-strong: rgba(8, 21, 33, .18);
-  --surface: rgba(8, 21, 33, .045);
-  --surface-2: rgba(8, 21, 33, .03);
-  --gradient-strong: #081521;
-  --gradient-mid: #0b8377;
-  --gradient-end: #a9741f;
-  --ambient-photo-opacity: .14;
-  --ambient-veil-strength: .3;
+/* ── Tailwind theme bridge ──────────────────────────────────────────
+   Utilities used inline by the components (bg-ink, text-cyan, font-sans)
+   resolve through these. The token NAMES are kept verbatim so no component
+   markup has to change; their VALUES now carry the green/cream identity. */
+@theme {
+  --color-ink: #171511;
+  --color-cyan: #469c59;   /* legacy name, PRIMARY green value */
+  --color-gold: #35804a;   /* legacy name, deep green value */
+  --color-cream: #faf7ed;
+  --color-green: #469c59;
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-ui);
 }
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--page-bg); }
-/* The base page background always transitions its colour so the swap feels
-   soft even outside the circular-reveal window (cheap paint-only prop). */
-body { margin: 0; min-width: 320px; min-height: 100vh; min-height: 100svh; background: var(--page-bg); color: var(--white); overflow-x: hidden; transition: background-color .42s cubic-bezier(0.22, 1, 0.36, 1), color .42s cubic-bezier(0.22, 1, 0.36, 1); }
-button { font: inherit; }
 
 /* ══════════════════════════════════════════════════════════════════
-   THEME TRANSITION — circular reveal (View Transitions API)
-   The new theme's paint is unveiled by a clip-path circle expanding from the
-   toggle button (driven in ThemeProvider.tsx). Only clip-path on ONE snapshot
-   layer animates → GPU-composited, no layout, mobile-friendly.
+   1 · TYPOGRAPHY  —  ONE family, self-hosted, no system fallback voice
+   IBM Plex Sans Arabic is now the ONLY typeface in the interface. It is a
+   modern, low-contrast humanist grotesque with a matching Latin, so the
+   headline, the body copy, the numerals and the brand word "تيسير" are
+   all rendered by the same face — which is precisely what makes a
+   monochrome minimalist page read as designed rather than default.
+
+   The previous stack deliberately led with `-apple-system` so iOS would
+   substitute San Francisco / SF Arabic. That is exactly what we no longer
+   want: the design must look identical on every device, and it must NOT
+   fall back to a system font. IBM Plex Sans Arabic therefore leads the
+   stack everywhere; the generics only exist as a last-resort safety net
+   in the milliseconds before the woff2 lands.
    ══════════════════════════════════════════════════════════════════ */
-/* Kill the browser's default cross-fade between the two snapshots; we drive
-   the reveal ourselves via the ::view-transition-new clip-path animation, and
-   the OLD snapshot must sit still underneath (no fade) for a clean wipe. */
-html.theme-vt::view-transition-old(root),
-html.theme-vt::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
+:root {
+  --font-ui: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  /* Display = the same family. The hierarchy is built from size, weight
+     and generous line-height — never from a second, louder typeface. */
+  --font-title: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Apple's real easing curves. */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);      /* iOS sheet / navigation */
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  /* One shared clock for the light/dark switch. Paint-only properties
+     (background-color, color, border-color) ride this everywhere, so the
+     whole page breathes as ONE surface when the theme flips. */
+  --theme-dur: 0.4s;
+  --theme-ease: cubic-bezier(0.45, 0.05, 0.25, 1);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   2 · PALETTE — DARK · "Warm Charcoal"
+   Redesigned: the ground is a deep, WARM neutral (a soft brown-leaning
+   charcoal — never pure black, never green-black), the text is a warm
+   off-white cream, and the brand green is lifted to `--brand-green-light`
+   so it stays legible and elegant. Calm, editorial, intentional.
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  color-scheme: dark;
+  font-family: var(--font-ui);
+  background: #171511;
+  font-synthesis: none;               /* never fake a weight */
+  -webkit-text-size-adjust: 100%;
+
+  --ink: var(--charcoal);
+  --ink-soft: var(--charcoal-2);
+  --white: #f2eee3;
+
+  /* THE PRIMARY colour — brand green (lifted for dark grounds).
+     `--cyan` / `--gold` are kept purely as back-compatible ALIASES so the
+     existing selectors and Tailwind utilities keep resolving. */
+  --accent: var(--brand-green-light);   /* primary green — dark-legible */
+  --accent-2: #5cb271;                  /* hover / pressed — one step deeper,
+                                           matches the home page's dark hover */
+  --cyan: var(--accent);                /* alias (legacy name, green value) */
+  --gold: var(--accent-2);              /* alias (legacy name, green value) */
+
+  --page-bg: var(--charcoal);
+  --text-strong: #f2eee3;              /* warm off-white cream */
+  --text-base: rgba(242, 238, 227, 0.84);
+  --text-muted: rgba(242, 238, 227, 0.6);
+  --text-faint: rgba(242, 238, 227, 0.4);
+
+  --hairline: rgba(242, 238, 227, 0.09);
+  --hairline-strong: rgba(242, 238, 227, 0.17);
+  --surface: rgba(242, 238, 227, 0.055);
+  --surface-2: rgba(242, 238, 227, 0.032);
+
+  /* ── Glass recipe (iOS material) ──
+     The alphas are deliberately HIGH: even if a browser drops the backdrop
+     blur (e.g. inside a View Transition snapshot) the panel still reads as
+     a solid, intentional sheet — never a transparent hole. */
+  --glass-bg: rgba(32, 29, 23, 0.74);
+  --glass-bg-strong: rgba(26, 23, 18, 0.86);
+  --glass-solid: #211e18;              /* the fully-opaque stand-in used
+                                          while a theme transition runs */
+  --glass-blur: saturate(180%) blur(20px);
+  --glass-border: rgba(242, 238, 227, 0.12);
+  --glass-highlight: rgba(242, 238, 227, 0.09);   /* the 1px top edge */
+  --glass-shadow: 0 20px 60px -20px rgba(10, 8, 5, 0.7);
+  --glass-shadow-lg: 0 40px 100px -32px rgba(10, 8, 5, 0.78);
+
+  /* Solid fill for the primary control — the brand green, flat (no gradient) */
+  --fill-primary: var(--brand-green);
+  --fill-primary-ink: #f7fbf6;
+
+  --ambient-photo-opacity: 0.3;
+  --ambient-veil-strength: 0.9;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   3 · PALETTE — LIGHT · "Cream & Green"  ← the design's home base
+   The warm cream #FAF7ED is the ground of the ENTIRE site, and the brand
+   green #469C59 is the primary. Text is a warm near-black; gray survives
+   only as secondary label and hairline.
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme="light"] {
+  color-scheme: light;
+  background: var(--brand-cream);
+
+  --page-bg: var(--brand-cream);
+  --ink: var(--brand-cream);
+  --ink-soft: #fffdf6;
+  --white: #1b1d18;
+
+  --accent: var(--brand-green);        /* PRIMARY — brand green on cream */
+  --accent-2: var(--brand-green-deep); /* pressed / secondary green */
+
+  --text-strong: #1b1d18;              /* warm near-black */
+  --text-base: rgba(27, 29, 24, 0.86);
+  --text-muted: #6b6f64;               /* warm gray — secondary only */
+  --text-faint: rgba(27, 29, 24, 0.44);
+
+  --hairline: rgba(27, 29, 24, 0.09);
+  --hairline-strong: rgba(27, 29, 24, 0.16);
+  --surface: rgba(255, 255, 255, 0.6);
+  --surface-2: var(--brand-cream-2);
+
+  --glass-bg: rgba(250, 247, 237, 0.78);
+  --glass-bg-strong: rgba(250, 247, 237, 0.9);
+  --glass-solid: #fbf8ef;
+  --glass-blur: saturate(180%) blur(20px);
+  --glass-border: rgba(27, 29, 24, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.92);
+  --glass-shadow: 0 18px 50px -18px rgba(40, 46, 32, 0.18);
+  --glass-shadow-lg: 0 36px 90px -30px rgba(40, 46, 32, 0.22);
+
+  --fill-primary: var(--brand-green);  /* buttons are GREEN, not black */
+  --fill-primary-ink: #fbfdf9;
+
+  --ambient-photo-opacity: 0.05;
+  --ambient-veil-strength: 0.3;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   4 · BASE
+   ══════════════════════════════════════════════════════════════════ */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--page-bg); }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--page-bg);
+  color: var(--text-strong);
+  font-family: var(--font-ui);
+  /* Optical polish: SF is designed to be rendered with these on. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  letter-spacing: 0;
+  overflow-x: hidden;
+  transition: background-color var(--theme-dur) var(--theme-ease),
+              color var(--theme-dur) var(--theme-ease);
+}
+
+button { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* iOS auto-zooms a focused control whose font-size is under 16px. Pin it. */
+input, textarea, select { font-family: inherit; font-size: 16px; }
+
+/* Selection carries the brand green — it is the primary, so it selects. */
+::selection { background: rgba(124, 201, 140, 0.32); color: #f2eee3; }
+html[data-theme="light"] ::selection { background: rgba(70, 156, 89, 0.22); color: #1b1d18; }
+
+/* Focus rings: one consistent, accessible ring everywhere. */
+:where(a, button, [role="switch"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* ── The one reusable glass primitive ─────────────────────────────
+   Everything that floats in this design is built from this, so every
+   sheet, card and bar shares one physical material. */
+.glass-surface,
+.mobile-menu,
+.auth-card,
+.offering-card,
+.value-item,
+.decision-card,
+.inapp-notice__panel {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+}
+
+/* ── Frosted panels DURING a theme switch ──────────────────────
+   View-Transition snapshots (and some engines mid-crossfade) drop
+   backdrop-filter entirely, which used to leave every glass sheet fully
+   transparent for the length of the animation — page content bled through
+   and the "frosted frame" broke. While either theme-switch class is on
+   <html>, glass panels stand on a near-solid theme-correct fill instead of
+   the blur, then hand back to the true frosted material the moment the
+   switch ends. Paint-only; the transition itself stays silky. */
+html.theme-vt .glass-surface,
+html.theme-vt .mobile-menu,
+html.theme-vt .auth-card,
+html.theme-vt .offering-card,
+html.theme-vt .value-item,
+html.theme-vt .decision-card,
+html.theme-vt .inapp-notice__panel,
+html.theme-vt .site-header--scrolled,
+html.theme-crossfade .glass-surface,
+html.theme-crossfade .mobile-menu,
+html.theme-crossfade .auth-card,
+html.theme-crossfade .offering-card,
+html.theme-crossfade .value-item,
+html.theme-crossfade .decision-card,
+html.theme-crossfade .inapp-notice__panel,
+html.theme-crossfade .site-header--scrolled {
+  background: var(--glass-solid);
+}
+
+/* ── AND the blur itself goes away for the length of the switch ──
+   A backdrop-filter layer must re-read and re-blur everything painted
+   behind it on EVERY frame of the animation. With ~8 such layers on
+   screen that is the dominant cost of the theme toggle on mobile.
+   Because the rule above already puts these panels on the fully OPAQUE
+   `--glass-solid` fill, dropping the filter leaves no transparent hole
+   and no visible seam — the panel simply reads as frosted-then-solid.
+   The real frosted material returns the instant the class comes off. */
+html.theme-vt .glass-surface,
+html.theme-vt .mobile-menu,
+html.theme-vt .auth-card,
+html.theme-vt .offering-card,
+html.theme-vt .value-item,
+html.theme-vt .decision-card,
+html.theme-vt .inapp-notice__panel,
+html.theme-vt .site-header--scrolled,
+html.theme-vt .button-secondary,
+html.theme-vt .mobile-menu__scrim,
+html.theme-vt .inapp-notice__backdrop,
+html.theme-vt .brand-loader--overlay,
+html.theme-crossfade .glass-surface,
+html.theme-crossfade .mobile-menu,
+html.theme-crossfade .auth-card,
+html.theme-crossfade .offering-card,
+html.theme-crossfade .value-item,
+html.theme-crossfade .decision-card,
+html.theme-crossfade .inapp-notice__panel,
+html.theme-crossfade .site-header--scrolled,
+html.theme-crossfade .button-secondary,
+html.theme-crossfade .mobile-menu__scrim,
+html.theme-crossfade .inapp-notice__backdrop,
+html.theme-crossfade .brand-loader--overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The scrims/backdrops are not covered by the `--glass-solid` rule above
+   (they are deliberately see-through), so they get their own solid-enough
+   fill for the duration of the switch — never a transparent hole. */
+html.theme-vt .mobile-menu__scrim,
+html.theme-crossfade .mobile-menu__scrim { background: rgba(10, 10, 10, 0.55); }
+html[data-theme="light"].theme-vt .mobile-menu__scrim,
+html[data-theme="light"].theme-crossfade .mobile-menu__scrim { background: rgba(60, 60, 60, 0.34); }
+html.theme-vt .inapp-notice__backdrop,
+html.theme-crossfade .inapp-notice__backdrop { background: rgba(10, 10, 10, 0.78); }
+html[data-theme="light"].theme-vt .inapp-notice__backdrop,
+html[data-theme="light"].theme-crossfade .inapp-notice__backdrop { background: rgba(60, 60, 60, 0.46); }
+html.theme-vt .button-secondary,
+html.theme-crossfade .button-secondary { background: var(--glass-solid); }
+
+/* ── MOBILE: permanently cheaper glass ────────────────────────────
+   `offering-card` and `value-item` are the high-frequency classes (many
+   instances, all on screen at once, all scrolled). A per-instance
+   backdrop-filter on a phone means a blur pass per card per frame while
+   scrolling. On small screens they trade the blur for the solid theme fill
+   (`--glass-solid`, the same token the theme-switch guard uses), so the
+   material still matches the design — it just stops costing a repaint. */
+@media (max-width: 820px) {
+  .offering-card,
+  .value-item {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--glass-solid);
+  }
+  /* Sheets keep a hint of frost, at a radius a phone GPU can afford. */
+  .glass-surface,
+  .mobile-menu,
+  .auth-card,
+  .decision-card,
+  .site-header--scrolled {
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
+    backdrop-filter: saturate(140%) blur(8px);
+  }
+  /* Buttons are small but numerous — no blur is worth a repaint here. */
+  .button-secondary {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.app-shell { isolation: isolate; }
+
+/* ══════════════════════════════════════════════════════════════════
+   5 · THEME TRANSITION — circular reveal (View Transitions API)
+   ══════════════════════════════════════════════════════════════════ */
+html.theme-vt::view-transition-old(root),
+html.theme-vt::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 html.theme-vt::view-transition-old(root) { z-index: 1; }
 html.theme-vt::view-transition-new(root) { z-index: 2; }
 
-/* Fallback cross-fade (no View Transitions support): momentarily transition
-   the colour-bearing surfaces so the palette dissolves instead of snapping. */
+/* Paint-only crossfade fallback: background-color, color and border-color
+   ride one shared clock — no layout properties, no filter, no transform —
+   so the whole page shifts as a single calm surface, alpha-dz style.
+
+   SCOPED, deliberately. This used to be `html.theme-crossfade *` with
+   `!important`, which attached a transition to EVERY node in the document
+   (thousands of them) and overrode each element's own transition. Every one
+   of those became an animating paint target for ~400ms, which is what made
+   the toggle stutter. Now only the major containers carry the crossfade —
+   children simply inherit the colour change from the surface behind them,
+   which looks identical while animating a couple of dozen nodes instead of
+   the whole tree. No `!important`, so per-component transitions still win. */
 html.theme-crossfade,
-html.theme-crossfade * {
-  transition: background-color .42s cubic-bezier(0.22, 1, 0.36, 1),
-              color .42s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color .42s cubic-bezier(0.22, 1, 0.36, 1),
-              fill .42s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow .42s cubic-bezier(0.22, 1, 0.36, 1) !important;
+html.theme-crossfade body,
+html.theme-crossfade .app-shell,
+html.theme-crossfade main,
+html.theme-crossfade section,
+html.theme-crossfade .site-header,
+html.theme-crossfade .site-footer,
+html.theme-crossfade .glass-surface,
+html.theme-crossfade .auth-card,
+html.theme-crossfade .mobile-menu,
+html.theme-crossfade .hq-shell,
+html.theme-crossfade .hq-menu {
+  transition: background-color var(--theme-dur) var(--theme-ease),
+              color var(--theme-dur) var(--theme-ease),
+              border-color var(--theme-dur) var(--theme-ease);
 }
 
-/* iOS Safari auto-zooms whenever a *focused* form control has a computed
-   font-size below 16px. To defeat that completely — on every device, in every
-   orientation, regardless of the root font-size — we pin all form controls to
-   a minimum of 16px unconditionally (not behind a media query, which could be
-   skipped on tablets/large phones). The meta viewport is left untouched so
-   intentional pinch-zoom / accessibility zoom still works. */
-input, textarea, select {
-  font-family: inherit;
-  font-size: 16px; /* 16px is the exact iOS no-zoom threshold */
-}
-a { color: inherit; text-decoration: none; }
-::selection { background: rgba(123, 236, 225, .28); color: #06121e; }
-html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); color: #081521; }
-
-.app-shell { isolation: isolate; }
-.app-shell::after {
-  content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  border: 1px solid rgba(255,255,255,.04);
-}
-
-/* Persistent cinematic environment */
+/* ══════════════════════════════════════════════════════════════════
+   6 · AMBIENT BACKDROP
+   The night photo is now a whisper — and fully DESATURATED (grayscale(1)),
+   so the only photograph on the page carries no hue either. The two "orbs"
+   are neutral gray blooms. No neon rings, no visible edges.
+   ══════════════════════════════════════════════════════════════════ */
 .ambient-photo {
   position: absolute; inset: -6%;
-  background-image: linear-gradient(180deg, rgba(4, 13, 24, .18), rgba(4, 13, 24, .84) 74%, #06101c 98%), url('/react/assets/study-night.webp');
-  background-size: cover; background-position: center 40%;
-  filter: saturate(.72) contrast(1.08) blur(2px);
+  background-image:
+    linear-gradient(180deg, rgba(23, 21, 17, 0.55), rgba(23, 21, 17, 0.92) 68%, #171511 96%),
+    url('/react/assets/study-night.webp');
+  background-size: cover;
+  background-position: center 40%;
+  filter: grayscale(1) contrast(1.02) blur(3px);
   transform: scale(1.08);
-  opacity: .62;
+  opacity: var(--ambient-photo-opacity);
 }
-.ambient-veil { position: absolute; inset: 0; background: radial-gradient(circle at 70% 27%, transparent 0, rgba(5,15,27,.12) 25%, rgba(5,15,27,.88) 70%), linear-gradient(90deg, rgba(5,15,27,.22), rgba(5,15,27,.55)); }
-.ambient-orb { position: absolute; border-radius: 999px; filter: blur(95px); opacity: .23; }
-.ambient-orb--cyan { width: 38rem; height: 38rem; background: #2dd4bf; top: 36%; right: -22rem; }
-.ambient-orb--gold { width: 25rem; height: 25rem; background: #d99b42; left: -12rem; top: 12%; opacity: .18; }
+.ambient-veil {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 72% 18%, transparent 0, rgba(23, 21, 17, 0.4) 46%, rgba(23, 21, 17, 0.94) 88%),
+    linear-gradient(180deg, rgba(23, 21, 17, 0.5), rgba(23, 21, 17, 0.86));
+}
+/* The two blooms are now the brand green, held at a whisper so they read
+   as ambient light rather than as colour. */
+.ambient-orb { position: absolute; border-radius: 999px; filter: blur(130px); }
+.ambient-orb--cyan { width: 44rem; height: 44rem; background: var(--brand-green); top: 30%; right: -24rem; opacity: 0.16; }
+.ambient-orb--gold { width: 30rem; height: 30rem; background: var(--brand-green-deep); left: -14rem; top: 8%; opacity: 0.12; }
 
-/* Navigation
-   The header is pinned to the very top. It is GPU-promoted (translateZ + will-change)
-   and only its *visual* props transition — never `top`/layout — so it can never
-   drift or slip down while scrolling on mobile. */
+html[data-theme="light"] .ambient-photo { filter: grayscale(1) contrast(1) blur(3px) brightness(1.6); }
+html[data-theme="light"] .ambient-veil {
+  background:
+    radial-gradient(120% 90% at 72% 18%, rgba(255, 253, 246, 0.6) 0, rgba(250, 247, 237, 0.86) 50%, #faf7ed 92%),
+    linear-gradient(180deg, rgba(250, 247, 237, 0.7), rgba(250, 247, 237, 0.95));
+}
+html[data-theme="light"] .ambient-orb--cyan { background: var(--brand-green-light); opacity: 0.2; }
+html[data-theme="light"] .ambient-orb--gold { background: var(--brand-green); opacity: 0.14; }
+
+/* ══════════════════════════════════════════════════════════════════
+   7 · HEADER / NAVIGATION
+   A translucent iOS navigation bar: transparent at rest, materialising
+   into glass on scroll. GPU-promoted, and only visual props transition —
+   never layout — so it cannot drift on mobile.
+   ══════════════════════════════════════════════════════════════════ */
 .site-header {
   position: fixed;
   top: 0; right: 0; left: 0;
   z-index: 50;
   border-bottom: 1px solid transparent;
   transform: translate3d(0, 0, 0);
-  will-change: background-color, backdrop-filter;
+  /* `will-change: backdrop-filter` kept a permanent blur-capable
+     compositing layer alive for the header on EVERY page, on every scroll
+     frame, whether or not the header was frosted. Only the paint-cheap
+     background-color is hinted now. */
+  will-change: background-color;
   backface-visibility: hidden;
-  transition: background-color .4s ease, backdrop-filter .4s ease, border-color .4s ease;
+  /* backdrop-filter is NOT transitionable cheaply: animating the blur radius
+     forces a full re-blur of everything behind the header on every frame.
+     The blur now snaps in with the .site-header--scrolled class while the
+     colours still ease, which is visually near-identical and free. */
+  transition: background-color 0.4s var(--ease-soft),
+              border-color 0.4s var(--ease-soft);
 }
-.site-header--scrolled { background: rgba(5, 14, 25, .82); backdrop-filter: blur(12px) saturate(120%); border-color: rgba(255,255,255,.07); }
-.brand-lockup { display: inline-flex; flex-direction: column; align-items: center; gap: .28rem; }
-.brand-word { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.5rem; letter-spacing: -.03em; line-height: 1; color: white; background: linear-gradient(115deg, #ffffff 20%, #9df8ee 62%, #efc985); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.brand-underscore { width: 100%; height: 2px; border-radius: 2px; background: linear-gradient(to left, var(--cyan), transparent); transform: scaleX(.55); transform-origin: right; transition: transform .35s ease; }
-.brand-lockup:hover .brand-underscore { transform: scaleX(1); }
-.footer-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.4rem; letter-spacing: -.03em; color: white; }
-.nav-link { position: relative; color: rgba(255,255,255,.58); font-weight: 600; font-size: .9rem; transition: color .25s ease; }
-.nav-link:hover, .nav-link--active { color: white; }
-/* Underline uses transform: scaleX (GPU) instead of animating `left`, which
-   would trigger layout on every hover frame. */
-.nav-link::after { content: ""; position: absolute; height: 1px; right: 0; left: 0; bottom: -.65rem; background: var(--cyan); transform: scaleX(0); transform-origin: right; transition: transform .3s ease; }
-.nav-link:hover::after, .nav-link--active::after { transform: scaleX(1); }
-.menu-button { position: relative; z-index: 10; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(255,255,255,.05); color: white; }
-/* Mobile menu — pinned to the ABSOLUTE top of the header, revealed with a
-   scale-fade/slide-down (see SiteHeader.tsx). transform-origin:top so the
-   scaleY grows the panel downward from beneath the nav bar. Only transform +
-   opacity animate → fully GPU-composited, no layout thrash. */
-.mobile-menu__scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(3, 9, 17, .55);
-  backdrop-filter: blur(2px);
-  will-change: opacity;
+.site-header--scrolled {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-color: var(--hairline);
 }
-.mobile-menu {
-  position: absolute;
-  top: calc(100% + .5rem);
-  right: 1rem;
-  left: 1rem;
-  z-index: 45;
-  transform-origin: top center;
-  will-change: transform, opacity;
-  padding: .75rem;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 22px;
-  background: rgba(6, 16, 28, .92);
-  backdrop-filter: blur(18px) saturate(130%);
-  box-shadow: 0 28px 80px rgba(0,0,0,.55), inset 0 1px rgba(255,255,255,.08);
-}
-.mobile-menu__link { display: block; padding: .95rem 1.1rem; border-radius: 14px; color: rgba(255,255,255,.78); font-weight: 700; transition: background-color .2s ease, color .2s ease; }
-.mobile-menu__link:hover, .mobile-menu__link:active { background: rgba(110,231,220,.1); color: white; }
 
-/* Shared atoms */
-.button-primary, .button-secondary, .button-ghost { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; border-radius: 999px; font-weight: 800; white-space: nowrap; transition: transform .28s ease, box-shadow .28s ease, background .28s ease, border-color .28s ease; }
-.button-primary { padding: .92rem 1.35rem; color: #07131d; background: linear-gradient(135deg, #d9fff9, #6ee7dc 58%, #59c5be); box-shadow: 0 10px 35px rgba(82, 211, 200, .19), inset 0 1px rgba(255,255,255,.8); }
-.button-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 45px rgba(82,211,200,.3); }
-.button-primary--small { padding: .7rem 1.05rem; font-size: .82rem; }
-.button-secondary { padding: .88rem 1.3rem; color: white; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); box-shadow: inset 0 1px rgba(255,255,255,.06); }
-.button-secondary:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.09); }
-.button-ghost { padding: .7rem .9rem; color: rgba(255,255,255,.68); font-size: .85rem; }
-.button-ghost:hover { color: white; }
-.eyebrow { display: inline-flex; align-items: center; gap: .5rem; color: var(--cyan); font-size: .8rem; font-weight: 800; letter-spacing: .02em; }
-.eyebrow::before { content: ""; width: 2rem; height: 1px; background: linear-gradient(to left, var(--cyan), transparent); }
-.section-shell { position: relative; z-index: 2; background: linear-gradient(180deg, rgba(6,16,28,.72), rgba(6,16,28,.92)); }
-.section-index { color: var(--gold); font-size: .78rem; font-weight: 800; letter-spacing: .06em; }
-.section-title { font-family: "Noto Kufi Arabic"; font-size: clamp(2rem, 4vw, 4rem); line-height: 1.55; letter-spacing: -.055em; font-weight: 900; }
-.section-copy { max-width: 42rem; color: rgba(255,255,255,.56); font-size: clamp(1rem, 1.5vw, 1.16rem); line-height: 2; }
-.text-gradient { color: transparent; background: linear-gradient(120deg, #fff, #91f4e9 55%, #efd29b); background-clip: text; -webkit-background-clip: text; }
-
-/* Home */
-.hero-section::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(6,16,28,.02) 0%, rgba(6,16,28,.15) 44%, rgba(6,16,28,.92) 100%); }
-.hero-vignette { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 12vw rgba(0,0,0,.55); }
-.scroll-cue { position: absolute; left: 0; bottom: -3.5rem; display: flex; align-items: center; gap: .65rem; color: rgba(255,255,255,.38); font-size: .75rem; writing-mode: vertical-rl; }
-
-/* ── Hero eyebrow — a quiet line above the slogan, not a boxed badge ── */
-.hero-eyebrow {
+/* ── THE WORDMARK — one brand, everywhere ──────────────────────
+   تيسير is rendered identically on the home page (`.hq-brand`) and in
+   the app header (`.brand-lockup`): the same face, the same 700 weight,
+   the same 1.125rem size, the same BRAND GREEN, no letter-spacing (Arabic
+   is joined — never track it), and the same corner: the START edge of the
+   bar, i.e. top-RIGHT in the RTL document. */
+.brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: .6rem;
-  color: var(--gold);
-  font-family: "Noto Kufi Arabic", sans-serif;
-  font-weight: 800;
-  font-size: .82rem;
-  letter-spacing: .04em;
-  opacity: .9;
+  transition: opacity 0.3s var(--ease-soft);
 }
-.hero-eyebrow__dot {
-  width: .42rem;
-  height: .42rem;
-  border-radius: 999px;
-  background: var(--gold);
-  box-shadow: 0 0 0 4px rgba(239, 196, 122, .14);
-  animation: hero-dot-pulse 3.2s ease-in-out infinite;
+.brand-lockup:hover { opacity: 0.85; }
+.brand-word {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  letter-spacing: 0;                       /* Arabic is joined — never track it */
+  color: var(--accent);                    /* the brand colour IS the brand */
+  -webkit-text-fill-color: currentColor;   /* undo any inherited clip-text */
+  background: none;
+  transition: color 0.3s var(--ease-soft);
 }
-@keyframes hero-dot-pulse {
-  0%, 100% { opacity: .55; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.25); }
-}
+.brand-lockup:hover .brand-word { color: var(--accent-2); }
+.brand-underscore { display: none; }       /* retired — the home mark has no rule */
 
-/* ── Hero actions — two premium entry buttons ─────────────────── */
-.hero-actions { display: flex; flex-wrap: wrap; gap: .85rem; }
-.hero-cta { font-family: "Noto Kufi Arabic", sans-serif; letter-spacing: -.01em; }
-.hero-cta.button-primary { padding: 1rem 1.7rem; }
-.hero-cta.button-secondary {
-  padding: 1rem 1.6rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+.footer-brand {
+  font-family: var(--font-title);
+  font-weight: 700; font-size: 1.3rem;
+  letter-spacing: -0.022em;
+  color: var(--text-strong);
 }
 
-/* ── Write-in / reveal text ──────────────────────────────────
-   Default (paragraphs): one cheap GPU opacity + translateY rise on the whole
-   block — a single composited layer, no per-char JS. */
-.write-in {
-  text-wrap: balance;
-  opacity: 0;
-  transform: translate3d(0, 14px, 0);
-  transition: opacity .55s ease, transform .55s ease;
-}
-.write-in.write-in--shown { opacity: 1; transform: translate3d(0, 0, 0); }
-.write-in__plain { color: #f4f9ff; }
-.write-in__brand { color: #9df8ee; }
-
-/* ── RTL typewriter wipe (single clip-path, GPU-only) ──────────
-   The whole title is ONE element clipped with an inset() whose LEFT value is
-   driven by the `--wipe` custom property (100% → 0%, animated by one rAF
-   loop). Shrinking the left inset uncovers the text from the right edge first
-   — the correct writing direction for Arabic. Nothing but `clip-path` changes,
-   so there is zero layout thrashing and the reveal composites in one pass. */
-.write-in--type { opacity: 1; transform: none; }
-.write-in__wipe {
-  display: inline-block;
-  --wipe: 100%;
-  clip-path: inset(-0.25em 0 -0.25em var(--wipe));
-  will-change: clip-path;
-  transform: translateZ(0);
-}
-/* Before the reveal is triggered the text is fully clipped (hidden). */
-.write-in--type:not(.write-in--shown) .write-in__wipe { clip-path: inset(-0.25em 0 -0.25em 100%); }
-
-.hero-slogan { font-family: "Noto Kufi Arabic"; font-weight: 900; letter-spacing: -.05em; line-height: 1.5; text-shadow: 0 14px 60px rgba(0,0,0,.36); font-size: clamp(1.8rem, 4vw, 3.6rem); }
-.hero-slogan .write-in__plain { font-size: clamp(1.6rem, 3.4vw, 3rem); font-weight: 800; color: rgba(255,255,255,.9); }
-.hero-slogan .write-in__brand { display: inline-block; font-size: clamp(4rem, 11vw, 9.5rem); line-height: 1; letter-spacing: -.06em; margin-bottom: .1em; text-shadow: 0 20px 70px rgba(110,231,220,.28); }
-
-.story-paragraph { font-family: "Noto Kufi Arabic"; font-weight: 700; line-height: 2.1; letter-spacing: -.02em; font-size: clamp(1.3rem, 2.6vw, 2.3rem); }
-.story-paragraph .write-in__plain { color: rgba(255,255,255,.72); }
-.story-paragraph .write-in__brand { font-size: 1.28em; font-weight: 900; letter-spacing: -.03em; }
-
-.platform-paragraph { font-family: "Tajawal", sans-serif; font-weight: 500; line-height: 2.15; color: rgba(255,255,255,.6); font-size: clamp(1.05rem, 1.7vw, 1.35rem); }
-.platform-brand { font-family: "Noto Kufi Arabic"; font-weight: 900; font-size: 1.35em; letter-spacing: -.03em; color: transparent; background: linear-gradient(110deg, #fff, #9df8ee 55%, #efc985); -webkit-background-clip: text; background-clip: text; }
-
-.full-bleed-story { z-index: 2; background: radial-gradient(circle at 12% 30%, rgba(211,158,75,.12), transparent 38%), linear-gradient(120deg, rgba(14,31,45,.96), rgba(5,15,26,.96)); border-block: 1px solid rgba(255,255,255,.07); }
-.story-line { position: absolute; width: 1px; top: 0; bottom: 0; right: 14%; background: linear-gradient(transparent, rgba(110,231,220,.4), transparent); box-shadow: 0 0 35px rgba(110,231,220,.5); }
-.display-quote { font-family: "Noto Kufi Arabic"; font-size: clamp(2.5rem, 5.5vw, 5.7rem); line-height: 1.48; letter-spacing: -.065em; font-weight: 900; }
-
-/* ── Draggable papers desk ──────────────────────────────────── */
-.papers-desk { position: relative; margin-top: 2rem; padding: 2.5rem 0 1rem; }
-.papers-desk__grain { position: absolute; inset: 0; opacity: .5; border-radius: 30px; background: radial-gradient(circle at 20% 20%, rgba(239,196,122,.06), transparent 45%), radial-gradient(circle at 80% 70%, rgba(110,231,220,.06), transparent 45%); pointer-events: none; }
-.papers-desk__hint { display: inline-flex; align-items: center; gap: .55rem; margin-bottom: 1.5rem; color: rgba(255,255,255,.5); font-size: .85rem; font-weight: 700; }
-.papers-desk__hint-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-.papers-board { position: relative; display: flex; flex-wrap: wrap; gap: 1.5rem 2.2rem; justify-content: center; align-items: center; min-height: 30rem; padding: 1.5rem; }
-.paper {
-  position: relative; flex: 0 0 auto; width: clamp(13rem, 22vw, 16rem); min-height: 12rem;
-  padding: 2.2rem 1.6rem 1.6rem; cursor: grab; user-select: none; touch-action: none;
-  border-radius: 3px 3px 4px 4px;
-  box-shadow: 0 1px 1px rgba(0,0,0,.18), 0 12px 26px rgba(0,0,0,.32), 0 22px 50px rgba(0,0,0,.22);
-  color: #2a2a24;
-}
-.paper::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(255,255,255,.5), transparent 18%), linear-gradient(0deg, rgba(0,0,0,.05), transparent 12%); pointer-events: none; }
-.paper--cream { background: linear-gradient(160deg, #fdf6e3, #f3e7c6); }
-.paper--mint  { background: linear-gradient(160deg, #e9f7f1, #cdeee2); }
-.paper--sky   { background: linear-gradient(160deg, #eaf1fb, #d3e2f5); }
-.paper--blush { background: linear-gradient(160deg, #fdeef0, #f6d8de); }
-.paper__pin { position: absolute; top: -.55rem; right: 50%; translate: 50% 0; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff8b8b, #c0362f 70%); box-shadow: 0 3px 6px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.5); }
-/* Removed per-paper backdrop-filter blur: with 7 draggable papers it created
-   7 recompositing layers that janked badly while dragging. The tape reads the
-   same as a plain translucent strip. */
-.paper__tape { position: absolute; top: -.7rem; left: 1.2rem; width: 3.4rem; height: 1.5rem; rotate: -8deg; background: rgba(255,255,255,.4); border-left: 1px dashed rgba(0,0,0,.08); border-right: 1px dashed rgba(0,0,0,.08); }
-.paper__clip { position: absolute; top: 1rem; left: 1.1rem; font: 800 .68rem/1 "Noto Kufi Arabic"; color: #b4472f; opacity: .65; letter-spacing: .02em; }
-.paper__text { font-family: "Noto Kufi Arabic"; font-weight: 800; font-size: clamp(.95rem, 1.4vw, 1.12rem); line-height: 1.85; margin-top: .6rem; }
-.paper__ruling { position: absolute; inset: 3.6rem .9rem .9rem; background-image: repeating-linear-gradient(transparent, transparent 1.78rem, rgba(60,90,130,.14) 1.78rem, rgba(60,90,130,.14) calc(1.78rem + 1px)); pointer-events: none; opacity: .7; }
-
-/* ── Laureates (top students) ───────────────────────────────── */
-.laureates { margin-top: 3.5rem; }
-.laureate { position: relative; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 1.5rem 2.5rem; padding: 2.8rem 0; opacity: 0; transform: translateY(20px); transition: opacity .5s ease, transform .5s ease; }
-.laureate.is-visible { opacity: 1; transform: none; }
-.laureate__ordinal { font: 900 clamp(2rem, 4vw, 3.4rem)/1 "Noto Kufi Arabic"; color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,.22); letter-spacing: -.05em; }
-.laureate__identity { min-width: 0; }
-.laureate__name { font: 900 clamp(1.35rem, 2.6vw, 2.3rem)/1.3 "Noto Kufi Arabic"; letter-spacing: -.04em; }
-.laureate__school { margin-top: .5rem; color: rgba(255,255,255,.45); font-size: clamp(.85rem, 1.2vw, 1rem); }
-.laureate__average-wrap { display: flex; flex-direction: column; align-items: center; }
-.laureate__average-label { color: var(--gold); font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
-.laureate__average { margin-top: .2rem; font: 900 clamp(2.4rem, 4.5vw, 4rem)/1 "Noto Kufi Arabic"; letter-spacing: -.06em; color: transparent; background: linear-gradient(120deg, #fff, #9df8ee 60%, #efc985); -webkit-background-clip: text; background-clip: text; }
-.laureate__grades { display: flex; gap: 1.6rem; }
-.laureate__grades li { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
-.laureate__grades span { color: rgba(255,255,255,.4); font-size: .72rem; font-weight: 700; }
-.laureate__grades strong { font: 800 1.3rem/1 "Noto Kufi Arabic"; color: var(--cyan); }
-.laureate__rule { position: absolute; right: 0; left: 0; bottom: 0; height: 1px; background: linear-gradient(to left, rgba(110,231,220,.35), rgba(255,255,255,.07) 60%, transparent); transform-origin: right; }
-
-.final-cta { position: relative; overflow: hidden; padding: clamp(3rem, 8vw, 7rem) 1.5rem; text-align: center; border: 1px solid rgba(255,255,255,.1); border-radius: 38px; background: radial-gradient(circle at 50% 100%, rgba(89,209,198,.18), transparent 45%), linear-gradient(135deg, rgba(17,38,53,.94), rgba(8,20,31,.9)); box-shadow: 0 40px 110px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.08); }
-.final-cta::before { content: ""; position: absolute; inset: 0; opacity: .13; background-image: radial-gradient(circle at center, white 1px, transparent 1px); background-size: 28px 28px; mask-image: radial-gradient(circle, black, transparent 68%); }
-.final-cta > * { position: relative; z-index: 2; }
-.final-cta h2 { margin-top: 1.5rem; font: 900 clamp(2.2rem, 5vw, 5rem)/1.5 "Noto Kufi Arabic"; letter-spacing: -.06em; }
-.final-cta h2 span { color: var(--cyan); }
-.final-cta p { margin-top: 1rem; color: rgba(255,255,255,.5); font-size: 1.05rem; }
-
-/* Auth */
-/* LAYOUT-SHIFT FIX (iOS keyboard + autofill bar):
-   Plain `100vh` on iOS Safari equals the LARGE viewport (browser chrome
-   hidden). When the keyboard/autofill bar opens, the *visual* viewport shrinks
-   and a `vh`-sized, vertically-centered layout jumps upward — pushing the fox
-   mascot (which sits ABOVE the card) off-screen or clipping it.
-
-   We size the auth screen with `svh` (small viewport height) which is the
-   keyboard-CLOSED minimum and, crucially, does NOT change when the keyboard
-   appears. So the card + mascot keep a rock-stable height and position.
-   We also switch vertical alignment from center → start (see .auth-page below)
-   so growth/shrink happens at the bottom, never around the mascot.
-   `dvh` is used where a live-but-smooth value is acceptable. Older browsers
-   fall back through the cascade (vh → svh). */
-.auth-page {
+.nav-link {
   position: relative;
-  z-index: 2;
-  min-height: 100vh;      /* legacy fallback */
-  min-height: 100svh;     /* stable: ignores keyboard/autofill resize */
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.925rem;
+  letter-spacing: -0.006em;
+  transition: color 0.25s var(--ease-soft);
 }
-.auth-page::before { content: ""; position: absolute; width: 42rem; height: 42rem; right: 50%; top: 50%; translate: 50% -50%; border-radius: 50%; border: 1px solid rgba(110,231,220,.06); box-shadow: 0 0 100px rgba(110,231,220,.06); }
-.auth-layout { position: relative; z-index: 2; }
-.quote-mark { display: flex; align-items: center; gap: 1rem; color: rgba(255,255,255,.5); }
-.quote-mark span { color: var(--gold); font: 800 3rem/1 serif; }
-.quote-mark p { font-style: italic; }
-/* NOTE: overflow is visible (not hidden) so the fox mascot, which sits above
-   the top edge of the card, is never clipped/hidden. The rounded corners are
-   preserved via border-radius; decorative glow is clipped by its own layer. */
-/* `margin-top` reserves vertical room for the mascot that overhangs the top
-   edge, so even when the viewport is short (keyboard open) the fox is never
-   clipped by the page top. `overflow: visible` keeps the overhanging
-   ears/paws from being cut off. */
-.auth-card { position: relative; overflow: visible; width: 100%; max-width: 38rem; margin-inline-start: auto; margin-top: 5rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid rgba(255,255,255,.14); border-radius: 32px; background: linear-gradient(145deg, rgba(18,36,50,.9), rgba(7,19,31,.86)); backdrop-filter: blur(14px) saturate(125%); box-shadow: 0 35px 100px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.12); }
-@media (min-width: 1024px) { .auth-card { margin-top: 0; } }
-.auth-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(115deg, rgba(255,255,255,.08), transparent 22%); pointer-events: none; }
-.auth-card__glow { position: absolute; left: 0; top: 0; width: 12rem; height: 12rem; border-radius: 50%; background: rgba(110,231,220,.14); filter: blur(60px); pointer-events: none; }
-.auth-card h2 { font-family: "Noto Kufi Arabic"; letter-spacing: -.045em; }
-/* GOOGLE-ONLY SIGN-IN (step 3): the card no longer contains a form, so it can
-   breathe a little more and centre its single action. The email/password field
-   styles (.auth-field*) were removed with the form itself. */
-.auth-card--google { padding-block: clamp(2rem, 5vw, 3.4rem); }
+.nav-link:hover, .nav-link--active { color: var(--text-strong); }
+.nav-link::after {
+  content: ""; position: absolute; height: 1.5px; right: 0; left: 0; bottom: -0.6rem;
+  border-radius: 2px; background: var(--accent);
+  transform: scaleX(0); transform-origin: right;
+  transition: transform 0.32s var(--ease);
+}
+.nav-link:hover::after, .nav-link--active::after { transform: scaleX(1); }
 
-/* ── "سجّل الدخول بحساب Google" button ───────────────────────
-   A plain <a href="/api/auth/google">, so the click is a real top-level
-   navigation (required for the 302 to Google and for the SameSite=Lax
-   `bac_oauth_state` cookie). Styled to match the site's pill buttons while
-   keeping Google's own white-surface + four-colour "G" identity. */
-.google-signin-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: .85rem;
-  width: 100%;
-  min-height: 3.7rem;
-  padding: .95rem 1.4rem;
-  border: 1px solid rgba(255,255,255,.16);
-  border-radius: 999px;
-  background: linear-gradient(160deg, #ffffff, #eef3f8);
-  color: #10202f;
-  font-size: 1rem;
-  font-weight: 800;
-  text-decoration: none;
-  box-shadow: 0 14px 40px rgba(0,0,0,.32), inset 0 1px rgba(255,255,255,.9);
-  transition: transform .28s ease, box-shadow .28s ease, filter .28s ease;
+/* Icon button — iOS toolbar glyph target (44px-ish, soft square) */
+.menu-button {
+  position: relative; z-index: 10;
+  display: grid; place-items: center;
+  width: 42px; height: 42px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-strong);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.25s var(--ease-soft), border-color 0.25s var(--ease-soft);
 }
-.google-signin-button:hover { transform: translateY(-3px); box-shadow: 0 20px 52px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.9); }
-.google-signin-button:active { transform: translateY(-1px); }
-.google-signin-button:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(110,231,220,.35), 0 14px 40px rgba(0,0,0,.32); }
-.google-signin-button[aria-disabled="true"] { pointer-events: none; filter: saturate(.55) opacity(.72); }
-/* The glyph keeps its own LTR box so the RTL page never mirrors the mark. */
+.menu-button:hover { background: var(--surface-2); border-color: var(--hairline-strong); }
+
+/* Mobile sheet */
+.mobile-menu__scrim {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(10, 10, 10, 0.42);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  will-change: opacity;
+}
+html[data-theme="light"] .mobile-menu__scrim { background: rgba(60, 60, 60, 0.24); }
+
+/* Fully constrained inside the viewport at every phone width (320–430px):
+   anchored with safe-area-aware insets on BOTH edges so it can never spill
+   off-screen in RTL or LTR, and capped in height so long menus scroll
+   inside the sheet instead of running past the fold. */
+.mobile-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  z-index: 45;
+  max-width: calc(100vw - max(1rem, env(safe-area-inset-right, 0px)) - max(1rem, env(safe-area-inset-left, 0px)));
+  max-height: calc(100svh - 6rem - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  transform-origin: top center;
+  will-change: transform, opacity;
+  padding: 0.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
+}
+.mobile-menu__link {
+  display: block;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-base);
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: -0.008em;
+  transition: background-color 0.2s var(--ease-soft), color 0.2s var(--ease-soft);
+}
+.mobile-menu__link:hover, .mobile-menu__link:active { background: var(--surface); color: var(--text-strong); }
+
+/* ══════════════════════════════════════════════════════════════════
+   8 · CONTROLS
+   iOS buttons: a flat tint fill, a generous pill radius, and a *press*
+   (scale down) rather than a hover lift. No glow, no gradient, no bevel.
+   ══════════════════════════════════════════════════════════════════ */
+.button-primary, .button-secondary, .button-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s var(--ease), background-color 0.25s var(--ease-soft),
+              border-color 0.25s var(--ease-soft), box-shadow 0.25s var(--ease-soft),
+              opacity 0.2s var(--ease-soft);
+}
+
+/* Primary = the highest-contrast neutral fill. It is the only element on
+   the page allowed to be fully opaque, which is what makes it the CTA. */
+.button-primary {
+  padding: 0.85rem 1.5rem;
+  color: var(--fill-primary-ink);
+  background: var(--fill-primary);
+  border: 1px solid transparent;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.5);
+}
+.button-primary:hover { opacity: 0.9; }
+.button-primary:active { transform: scale(0.97); }
+.button-primary--small { padding: 0.62rem 1.1rem; font-size: 0.86rem; }
+
+/* Secondary = glass. Same material as the sheets, so it belongs. */
+.button-secondary {
+  padding: 0.85rem 1.45rem;
+  color: var(--text-strong);
+  border: 1px solid var(--glass-border);
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.button-secondary:hover { border-color: var(--hairline-strong); background: var(--surface-2); }
+.button-secondary:active { transform: scale(0.97); }
+
+/* Ghost = plain text action, iOS "tinted label" style. */
+.button-ghost {
+  padding: 0.62rem 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.button-ghost:hover { color: var(--text-strong); }
+.button-ghost:active { transform: scale(0.97); }
+
+/* ══════════════════════════════════════════════════════════════════
+   9 · TYPOGRAPHY SCALE
+   Apple's rule: the larger the type, the tighter the tracking. Weights
+   stay at 600/700 — heavy 900 black is what makes a page look generic.
+   ══════════════════════════════════════════════════════════════════ */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  color: var(--accent);
+  font-size: 0.8rem; font-weight: 600;
+  letter-spacing: 0.005em;
+}
+.eyebrow::before { content: ""; width: 1.75rem; height: 1px; background: currentColor; opacity: 0.45; }
+
+.section-index {
+  color: var(--text-faint);
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.section-title {
+  font-family: var(--font-title);
+  font-size: clamp(1.9rem, 3.6vw, 3.25rem);
+  line-height: 1.28;
+  letter-spacing: -0.026em;
+  font-weight: 700;
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+.section-copy {
+  max-width: 40rem;
+  color: var(--text-muted);
+  font-size: clamp(1rem, 1.35vw, 1.12rem);
+  line-height: 1.85;
+  letter-spacing: -0.004em;
+}
+
+/* `.text-gradient` is kept as a hook (components reference it) but is now
+   simply the accent colour — the gradient-text look is gone by design. */
+.text-gradient {
+  color: var(--accent);
+  -webkit-text-fill-color: currentColor;
+  background: none;
+}
+
+.section-shell { position: relative; z-index: 2; background: transparent; }
+
+/* ══════════════════════════════════════════════════════════════════
+   10 · HOME
+   The home page is a fully self-contained composition and ships its own
+   stylesheet: `src/pages/home.css`, scoped under `.home-quiet`.
+
+   Everything that used to live here — the hero, the write-in slogan, the
+   story / platform paragraphs, the draggable "papers" desk and the
+   laureates table — belonged to the previous multi-act home page and was
+   deleted along with it (components included), so this file no longer
+   carries a single dead rule for it.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════
+   13 · CTA PANEL — one big glass sheet (subscription page)
+   `.final-cta` lived only on the old home page and went with it.
+   ══════════════════════════════════════════════════════════════════ */
+.decision-card {
+  position: relative; overflow: hidden;
+  text-align: center;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   14 · AUTH
+   Sized with svh so the iOS keyboard/autofill bar cannot shift the
+   layout (and therefore cannot clip the fox mascot above the card).
+   ══════════════════════════════════════════════════════════════════ */
+.auth-page {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+.auth-page::before { content: none; }         /* decorative ring removed */
+.auth-layout { position: relative; z-index: 2; }
+
+.quote-mark { display: flex; align-items: center; gap: 0.9rem; color: var(--text-muted); }
+.quote-mark span { color: var(--text-faint); font: 600 2.5rem/1 var(--font-title); }
+.quote-mark p { font-style: normal; font-size: 1rem; line-height: 1.75; }
+
+/* overflow stays visible so the mascot's ears are never clipped. */
+.auth-card {
+  position: relative; overflow: visible;
+  width: 100%; max-width: 37rem;
+  margin-inline-start: auto;
+  margin-top: 5rem;
+  padding: clamp(1.5rem, 4vw, 2.85rem);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
+}
+@media (min-width: 1024px) { .auth-card { margin-top: 0; } }
+.auth-card::before { content: none; }
+.auth-card__glow { display: none; }           /* depth now comes from the material */
+.auth-card h2 {
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  color: var(--text-strong);
+}
+.auth-card--google { padding-block: clamp(2rem, 5vw, 3.2rem); }
+
+/* Google button — keeps Google's required white surface + colour mark. */
+.google-signin-button {
+  display: flex; align-items: center; justify-content: center; gap: 0.8rem;
+  width: 100%; min-height: 3.5rem;
+  padding: 0.9rem 1.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f1f1f;
+  font-family: var(--font-ui);
+  font-size: 1rem; font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s var(--ease), box-shadow 0.25s var(--ease-soft), opacity 0.2s var(--ease-soft);
+}
+.google-signin-button:hover { opacity: 0.94; box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.45); }
+.google-signin-button:active { transform: scale(0.98); }
+.google-signin-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.google-signin-button[aria-disabled="true"] { pointer-events: none; opacity: 0.6; }
 .google-signin-button__glyph { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .google-signin-button__label { line-height: 1.4; }
 @media (prefers-reduced-motion: reduce) {
   .google-signin-button, .google-signin-button:hover, .google-signin-button:active { transform: none; transition: none; }
 }
 
-/* ── Eye-tracking mascot (code-drawn SVG fox) ───────────────── */
-/* Promoted to its own compositor layer so it stays crisp and never re-lays-out
-   while the iOS keyboard/autofill bar animates in and out. */
+/* Mascot — own compositor layer so it stays crisp while the keyboard animates. */
 .auth-card__mascot { position: absolute; top: -6.2rem; left: 2.2rem; z-index: 60; pointer-events: none; transform: translateZ(0); backface-visibility: hidden; }
-/* The fox mascot renders a square SVG that fills this box (with overflow-visible
-   ears/paws). Sizing lives here so the character sits nicely over the card. */
-.mascot-fox { width: 8.5rem; height: 8.5rem; filter: drop-shadow(0 10px 14px rgba(0,0,0,.35)); }
-
-/* Subscription */
-.subscription-hero { z-index: 2; }
-.subscription-title { margin-top: 2rem; font: 900 clamp(3rem, 7vw, 7rem)/1.35 "Noto Kufi Arabic"; letter-spacing: -.075em; }
-.subscription-title span { color: transparent; background: linear-gradient(110deg, #fff, #86eee4 50%, #edc985); background-clip: text; -webkit-background-clip: text; }
-.stats-ribbon { display: grid; grid-template-columns: .85fr auto 1.15fr; align-items: center; gap: 4rem; padding: clamp(2rem, 5vw, 4rem); border-block: 1px solid rgba(255,255,255,.11); background: linear-gradient(90deg, transparent, rgba(255,255,255,.035), transparent); }
-.stat-hero { display: grid; grid-template-columns: auto 1fr; align-items: start; justify-content: center; text-align: center; }
-.stat-hero__plus { padding-top: .5rem; color: var(--cyan); font-size: 2rem; }
-.stat-hero strong { font: 900 clamp(4.5rem, 9vw, 8rem)/1 "Noto Kufi Arabic"; letter-spacing: -.1em; }
-.stat-hero small { grid-column: 1/-1; color: rgba(255,255,255,.42); }
-.stat-divider { width: 1px; height: 8rem; background: linear-gradient(transparent, rgba(255,255,255,.25), transparent); }
-.stat-message p { color: var(--gold); font-size: .8rem; font-weight: 800; }
-.stat-message h2 { margin-top: .8rem; font: 800 clamp(1.6rem, 3.2vw, 3rem)/1.6 "Noto Kufi Arabic"; }
-.offering-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.offering-card { position: relative; height: 100%; min-height: 22rem; overflow: hidden; padding: 1.6rem; border: 1px solid rgba(255,255,255,.09); border-radius: 26px; background: linear-gradient(145deg, rgba(19,40,55,.73), rgba(8,21,34,.72)); box-shadow: inset 0 1px rgba(255,255,255,.06); }
-.offering-card__number { position: absolute; left: 1.5rem; top: 1.2rem; color: rgba(255,255,255,.12); font: 800 1.5rem/1 "Noto Kufi Arabic"; }
-.offering-card__icon { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; margin-top: 4.2rem; border-radius: 17px; background: linear-gradient(145deg, rgba(110,231,220,.14), rgba(255,255,255,.03)); color: var(--cyan); border: 1px solid rgba(110,231,220,.17); }
-.offering-card h3 { margin-top: 2rem; font: 800 1.1rem/1.7 "Noto Kufi Arabic"; }
-.offering-card p { margin-top: .8rem; color: rgba(255,255,255,.45); line-height: 1.9; }
-/* scaleX (GPU) instead of animating `left` (layout). */
-.offering-card__line { position: absolute; right: 1.5rem; left: 1.5rem; bottom: 1.4rem; height: 1px; background: linear-gradient(to left, var(--cyan), transparent); transform: scaleX(.35); transform-origin: right; transition: transform .4s ease; }
-.offering-card:hover .offering-card__line { transform: scaleX(1); }
-.value-section { position: relative; z-index: 2; background: linear-gradient(135deg, rgba(8,21,34,.98), rgba(15,36,49,.95)); border-block: 1px solid rgba(255,255,255,.07); }
-.value-list { display: grid; gap: .9rem; }
-.value-item { display: flex; gap: 1.2rem; padding: 1.35rem; border: 1px solid rgba(255,255,255,.08); border-radius: 20px; background: rgba(255,255,255,.035); }
-.value-item > span { flex: 0 0 auto; display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 14px; background: rgba(239,196,122,.09); color: var(--gold); }
-.value-item h3 { font: 800 1rem/1.7 "Noto Kufi Arabic"; }
-.value-item p { margin-top: .3rem; color: rgba(255,255,255,.42); line-height: 1.7; }
-.decision-card { position: relative; overflow: hidden; padding: clamp(2rem, 7vw, 6rem); text-align: center; border: 1px solid rgba(110,231,220,.2); border-radius: 40px; background: radial-gradient(circle at 50% 120%, rgba(110,231,220,.2), transparent 50%), linear-gradient(145deg, rgba(20,43,57,.95), rgba(7,20,32,.96)); box-shadow: 0 40px 120px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.1); }
-.decision-card::after { content: ""; position: absolute; inset: 0; opacity: .2; background: linear-gradient(90deg, transparent 49.8%, rgba(255,255,255,.08) 50%, transparent 50.2%), linear-gradient(transparent 49.8%, rgba(255,255,255,.08) 50%, transparent 50.2%); background-size: 80px 80px; mask-image: radial-gradient(circle, black, transparent 72%); }
-.decision-card__shine { position: absolute; width: 25rem; height: 25rem; right: 50%; top: -20rem; translate: 50%; border-radius: 50%; background: white; opacity: .15; filter: blur(80px); }
-.decision-card h2 { margin-top: 1.8rem; font: 900 clamp(2.2rem, 5vw, 4.7rem)/1.5 "Noto Kufi Arabic"; letter-spacing: -.06em; }
-.decision-card p { max-width: 46rem; margin: 1.2rem auto 0; color: rgba(255,255,255,.53); line-height: 2; }
-.decision-card ul { display: flex; justify-content: center; flex-wrap: wrap; gap: .7rem 1.5rem; margin-top: 2rem; color: rgba(255,255,255,.65); font-size: .85rem; }
-.decision-card li { display: flex; align-items: center; gap: .4rem; }
-.decision-card li svg { color: var(--cyan); }
-.decision-cta { margin-top: 2.3rem; padding: 1.05rem 1.6rem; }
-.decision-card small { display: block; margin-top: 1rem; color: rgba(255,255,255,.3); }
+.mascot-fox { width: 8.5rem; height: 8.5rem; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.28)); }
 
 /* ══════════════════════════════════════════════════════════════════
-   THEME TOGGLE SWITCH
-   A pill track with a sliding knob. Only transform/opacity animate on the
-   moving parts (handled in ThemeToggle.tsx); the track's colours crossfade.
+   15 · SUBSCRIPTION
+   ══════════════════════════════════════════════════════════════════ */
+.subscription-hero { z-index: 2; }
+.subscription-title {
+  margin-top: 1.75rem;
+  font: 700 clamp(2.4rem, 5.6vw, 5rem)/1.16 var(--font-title);
+  letter-spacing: -0.038em;
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+.subscription-title span {
+  color: var(--accent);
+  -webkit-text-fill-color: currentColor;
+  background: none;
+}
+
+.stats-ribbon {
+  display: grid; grid-template-columns: 0.85fr auto 1.15fr;
+  align-items: center; gap: 3.5rem;
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border-block: 1px solid var(--hairline);
+  background: var(--surface-2);
+}
+.stat-hero { display: grid; grid-template-columns: auto 1fr; align-items: start; justify-content: center; text-align: center; }
+.stat-hero__plus { padding-top: 0.9rem; color: var(--text-faint); font-size: 1.6rem; font-weight: 600; }
+.stat-hero strong {
+  font: 700 clamp(3.75rem, 7.5vw, 6.5rem)/1 var(--font-title);
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+.stat-hero small { grid-column: 1/-1; margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+.stat-divider { width: 1px; height: 7rem; background: var(--hairline-strong); }
+.stat-message p { color: var(--accent); font-size: 0.82rem; font-weight: 600; }
+.stat-message h2 {
+  margin-top: 0.7rem;
+  font: 600 clamp(1.5rem, 2.9vw, 2.5rem)/1.42 var(--font-title);
+  letter-spacing: -0.026em;
+  color: var(--text-strong);
+}
+
+.offering-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.offering-card {
+  position: relative; height: 100%; min-height: 21rem; overflow: hidden;
+  padding: 1.65rem;
+  border-radius: var(--radius-lg);
+  transition: transform 0.35s var(--ease), border-color 0.3s var(--ease-soft), box-shadow 0.3s var(--ease-soft);
+}
+.offering-card:hover { border-color: var(--hairline-strong); transform: translateY(-3px); box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight); }
+.offering-card__number {
+  position: absolute; left: 1.5rem; top: 1.25rem;
+  color: var(--text-faint); opacity: 0.55;
+  font: 600 1.3rem/1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+}
+/* Icon tile — the iOS "rounded-square app glyph" shape. */
+.offering-card__icon {
+  display: grid; place-items: center;
+  width: 3.25rem; height: 3.25rem;
+  margin-top: 4rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+.offering-card h3 {
+  margin-top: 1.75rem;
+  font: 600 1.08rem/1.55 var(--font-title);
+  letter-spacing: -0.018em;
+  color: var(--text-strong);
+}
+.offering-card p { margin-top: 0.65rem; color: var(--text-muted); line-height: 1.8; font-size: 0.95rem; }
+.offering-card__line {
+  position: absolute; right: 1.5rem; left: 1.5rem; bottom: 1.4rem; height: 1px;
+  background: var(--accent); opacity: 0.5;
+  transform: scaleX(0.3); transform-origin: right;
+  transition: transform 0.45s var(--ease), opacity 0.35s var(--ease-soft);
+}
+.offering-card:hover .offering-card__line { transform: scaleX(1); opacity: 0.85; }
+
+.value-section { position: relative; z-index: 2; background: var(--surface-2); border-block: 1px solid var(--hairline); }
+.value-list { display: grid; gap: 0.75rem; }
+.value-item { display: flex; gap: 1.1rem; padding: 1.3rem; border-radius: var(--radius); }
+.value-item > span {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 2.85rem; height: 2.85rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+  color: var(--accent);
+}
+.value-item h3 { font: 600 1rem/1.55 var(--font-title); letter-spacing: -0.016em; color: var(--text-strong); }
+.value-item p { margin-top: 0.3rem; color: var(--text-muted); line-height: 1.7; font-size: 0.94rem; }
+
+.decision-card { padding: clamp(2rem, 6.5vw, 5rem); }
+.decision-card::after { content: none; }      /* grid pattern removed */
+.decision-card__shine { display: none; }      /* glow removed */
+.decision-card h2 {
+  margin-top: 1.5rem;
+  font: 700 clamp(1.9rem, 4.2vw, 3.4rem)/1.26 var(--font-title);
+  letter-spacing: -0.032em;
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+.decision-card p { max-width: 44rem; margin: 1.1rem auto 0; color: var(--text-muted); line-height: 1.85; }
+.decision-card ul { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.6rem 1.4rem; margin-top: 1.85rem; color: var(--text-base); font-size: 0.88rem; }
+.decision-card li { display: flex; align-items: center; gap: 0.4rem; }
+.decision-card li svg { color: var(--accent); }
+.decision-cta { margin-top: 2.1rem; padding: 1rem 1.6rem; }
+.decision-card small { display: block; margin-top: 1rem; color: var(--text-faint); font-size: 0.82rem; }
+
+/* ══════════════════════════════════════════════════════════════════
+   16 · THEME TOGGLE
+   Modelled on the iOS switch: a neutral track, a white knob, one soft
+   shadow. Only transform/opacity animate on the moving parts.
    ══════════════════════════════════════════════════════════════════ */
 .theme-toggle {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 62px;
-  height: 32px;
+  display: inline-flex; align-items: center;
+  width: 62px; height: 32px;
   padding: 0;
   border-radius: 999px;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, .18);
-  background: linear-gradient(145deg, rgba(7, 17, 30, .92), rgba(17, 34, 50, .84));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
-  transition: background .4s ease, border-color .4s ease, box-shadow .4s ease;
+  transition: background-color 0.4s var(--ease-soft), border-color 0.4s var(--ease-soft);
 }
-.theme-toggle:hover { border-color: rgba(123, 236, 225, .45); }
-.theme-toggle:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.theme-toggle:hover { border-color: var(--hairline-strong); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .theme-toggle--light {
-  border-color: rgba(8, 21, 33, .12);
-  background: linear-gradient(145deg, #ffe9b0, #ffd27a 60%, #ffbf57);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, .5), inset 0 0 0 1px rgba(255, 255, 255, .35);
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
-.theme-toggle__glow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at 78% 50%, rgba(123, 236, 225, .24), transparent 60%);
-  opacity: 1;
-  transition: opacity .4s ease, background .4s ease;
-}
-.theme-toggle--light .theme-toggle__glow {
-  background: radial-gradient(circle at 22% 50%, rgba(255, 255, 255, .8), transparent 62%);
-}
+.theme-toggle__glow { display: none; }
 .theme-toggle__knob {
-  position: absolute;
-  top: 50%;
-  right: 3px;
-  translate: 0 -50%;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
+  position: absolute; top: 50%; right: 3px; translate: 0 -50%;
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
   border-radius: 999px;
-  background: linear-gradient(145deg, #0f2233, #08151f);
-  color: var(--cyan);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .45), inset 0 1px rgba(255, 255, 255, .12);
+  background: #f5f5f5;
+  color: #484848;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   will-change: transform;
 }
 .theme-toggle--light .theme-toggle__knob {
-  background: linear-gradient(145deg, #fffdf6, #fff3d6);
-  color: #e08a12;
-  box-shadow: 0 3px 8px rgba(180, 120, 20, .35), inset 0 1px rgba(255, 255, 255, .9);
-  /* Fallback resting position for light mode BEFORE the (lazily-loaded)
-     Framer Motion animation applies its own inline transform. Framer Motion
-     writes an inline `transform` on mount, which overrides this — so there is
-     no glitch either before or after motion loads. */
+  background: #ffffff;
+  color: #6e6e6e;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  /* Resting position before lazy Framer Motion writes its inline transform. */
   transform: translateX(-30px);
 }
 .theme-toggle__icon { display: grid; place-items: center; }
 
 /* ══════════════════════════════════════════════════════════════════
-   LIGHT-MODE COMPONENT OVERRIDES
-   Re-skins the key surfaces & text for daylight while keeping the exact
-   same layout/motion. Scoped under [data-theme="light"] so dark stays
-   byte-identical. Colour-bearing elements get a short crossfade.
+   17 · THEME CROSSFADE targets
    ══════════════════════════════════════════════════════════════════ */
-html[data-theme="light"] body { color: var(--text-strong); }
-
-/* Smooth, cheap theme crossfade on the elements whose colours flip. */
-.site-header, .section-shell, .full-bleed-story, .value-section,
-.offering-card, .value-item, .paper, .auth-card, .final-cta, .decision-card,
+/* Paint-only: background-color, color and border-color ride one shared
+   clock — no box-shadow, no filter, no layout — so the switch stays silky. */
+.site-header, .section-shell, .value-section,
+.offering-card, .value-item, .auth-card, .decision-card,
 .button-primary, .button-secondary, .button-ghost, .nav-link, .brand-word,
-.section-copy, .section-title, .story-paragraph, .platform-paragraph {
-  transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: .4s;
-  transition-timing-function: ease;
+.mobile-menu, .mobile-menu__link, .menu-button,
+.section-copy, .section-title {
+  transition-property: background-color, color, border-color;
+  transition-duration: var(--theme-dur);
+  transition-timing-function: var(--theme-ease);
 }
 
-/* Backdrop — fade the night photo way down and warm the veil for daylight */
-html[data-theme="light"] .ambient-photo {
-  opacity: var(--ambient-photo-opacity);
-  filter: saturate(.55) contrast(1) blur(2px) brightness(1.5);
+/* Cards also lift on hover, so they keep transform in the list.
+   box-shadow was removed: it is a non-compositable property, so every frame
+   re-rasterised the card's shadow — for every card at once during a theme
+   switch. transform still carries the lift, which is GPU-only. */
+.offering-card, .value-item {
+  transition-property: background-color, color, border-color, transform;
 }
-html[data-theme="light"] .ambient-veil {
-  background: radial-gradient(circle at 70% 27%, transparent 0, rgba(238, 244, 252, .2) 25%, rgba(238, 244, 252, .9) 70%), linear-gradient(90deg, rgba(238, 244, 252, .5), rgba(238, 244, 252, .75));
+
+/* Buttons press (scale) and soften (opacity) — keep those silky too. */
+.button-primary, .button-secondary, .button-ghost {
+  transition-property: background-color, color, border-color, transform, opacity;
 }
-html[data-theme="light"] .ambient-orb--cyan { background: #5eead4; opacity: .14; }
-html[data-theme="light"] .ambient-orb--gold { background: #f0b95c; opacity: .16; }
-html[data-theme="light"] .app-shell::after { border-color: rgba(8, 21, 33, .05); }
 
-/* Header + nav */
-html[data-theme="light"] .site-header--scrolled { background: rgba(245, 249, 254, .86); border-color: rgba(8, 21, 33, .09); box-shadow: 0 8px 30px rgba(30, 60, 100, .06); }
-html[data-theme="light"] .brand-word { background: linear-gradient(115deg, #081521 18%, #0b8377 60%, #a9741f); -webkit-background-clip: text; background-clip: text; }
-html[data-theme="light"] .nav-link { color: rgba(8, 21, 33, .55); }
-html[data-theme="light"] .nav-link:hover, html[data-theme="light"] .nav-link--active { color: #081521; }
-html[data-theme="light"] .menu-button { border-color: rgba(8, 21, 33, .14); background: rgba(8, 21, 33, .04); color: #081521; }
-html[data-theme="light"] .mobile-menu { background: rgba(248, 251, 255, .95); border-color: rgba(8, 21, 33, .1); box-shadow: 0 28px 80px rgba(20, 40, 70, .18), inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .mobile-menu__link { color: rgba(8, 21, 33, .78); }
-html[data-theme="light"] .mobile-menu__link:hover, html[data-theme="light"] .mobile-menu__link:active { background: rgba(11, 131, 119, .1); color: #081521; }
-html[data-theme="light"] .mobile-menu__scrim { background: rgba(90, 110, 140, .3); }
-
-/* Buttons */
-html[data-theme="light"] .button-secondary { color: #081521; border-color: rgba(8, 21, 33, .16); background: rgba(255, 255, 255, .7); box-shadow: inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .button-secondary:hover { border-color: rgba(8, 21, 33, .3); background: rgba(255, 255, 255, .9); }
-html[data-theme="light"] .button-ghost { color: rgba(8, 21, 33, .68); }
-html[data-theme="light"] .button-ghost:hover { color: #081521; }
-
-/* Sections + typography */
-html[data-theme="light"] .section-shell { background: linear-gradient(180deg, rgba(245, 249, 254, .72), rgba(238, 244, 252, .92)); }
-html[data-theme="light"] .section-copy { color: var(--text-muted); }
-html[data-theme="light"] .eyebrow { color: var(--cyan); }
-html[data-theme="light"] .eyebrow::before { background: linear-gradient(to left, var(--cyan), transparent); }
-html[data-theme="light"] .text-gradient,
-html[data-theme="light"] .platform-brand,
-html[data-theme="light"] .subscription-title span,
-html[data-theme="light"] .laureate__average {
-  background: linear-gradient(120deg, #081521, #0b8377 52%, #a9741f);
-  -webkit-background-clip: text; background-clip: text;
-}
-html[data-theme="light"] .write-in__plain { color: #081521; }
-html[data-theme="light"] .write-in__brand { color: #0b8377; }
-html[data-theme="light"] .hero-slogan { text-shadow: 0 10px 40px rgba(120, 150, 190, .22); }
-html[data-theme="light"] .hero-slogan .write-in__plain { color: rgba(8, 21, 33, .88); }
-html[data-theme="light"] .hero-slogan .write-in__brand { text-shadow: 0 12px 45px rgba(11, 131, 119, .22); }
-html[data-theme="light"] .story-paragraph .write-in__plain { color: rgba(8, 21, 33, .82); }
-html[data-theme="light"] .platform-paragraph { color: var(--text-muted); }
-html[data-theme="light"] .scroll-cue { color: rgba(8, 21, 33, .4); }
-html[data-theme="light"] .section-index { color: var(--gold); }
-
-/* Home story band */
-html[data-theme="light"] .full-bleed-story { background: radial-gradient(circle at 12% 30%, rgba(181, 126, 40, .1), transparent 38%), linear-gradient(120deg, rgba(226, 236, 248, .96), rgba(238, 244, 252, .96)); border-block-color: rgba(8, 21, 33, .08); }
-html[data-theme="light"] .story-line { background: linear-gradient(transparent, rgba(11, 131, 119, .35), transparent); box-shadow: 0 0 35px rgba(11, 131, 119, .3); }
-
-/* Draggable papers desk — text is already dark on light paper; just soften bg */
-html[data-theme="light"] .papers-desk__hint { color: rgba(8, 21, 33, .5); }
-
-/* Laureates */
-html[data-theme="light"] .laureate__ordinal { -webkit-text-stroke-color: rgba(8, 21, 33, .22); }
-html[data-theme="light"] .laureate__school { color: var(--text-faint); }
-html[data-theme="light"] .laureate__average-label { color: var(--gold); }
-html[data-theme="light"] .laureate__grades span { color: rgba(8, 21, 33, .45); }
-html[data-theme="light"] .laureate__grades strong { color: var(--cyan); }
-html[data-theme="light"] .laureate__rule { background: linear-gradient(to left, rgba(11, 131, 119, .35), rgba(8, 21, 33, .08) 60%, transparent); }
-
-/* Final CTA / decision cards → light glass */
-html[data-theme="light"] .final-cta { border-color: rgba(8, 21, 33, .1); background: radial-gradient(circle at 50% 100%, rgba(11, 131, 119, .14), transparent 45%), linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(230, 240, 250, .9)); box-shadow: 0 40px 110px rgba(30, 60, 100, .14), inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .final-cta::before { opacity: .06; }
-html[data-theme="light"] .final-cta h2 span { color: var(--cyan); }
-html[data-theme="light"] .final-cta p { color: var(--text-muted); }
-
-/* Subscription page */
-html[data-theme="light"] .stats-ribbon { border-block-color: rgba(8, 21, 33, .1); background: linear-gradient(90deg, transparent, rgba(8, 21, 33, .03), transparent); }
-html[data-theme="light"] .stat-hero__plus { color: var(--cyan); }
-html[data-theme="light"] .stat-hero small { color: var(--text-faint); }
-html[data-theme="light"] .stat-divider { background: linear-gradient(transparent, rgba(8, 21, 33, .25), transparent); }
-html[data-theme="light"] .stat-message p { color: var(--gold); }
-html[data-theme="light"] .offering-card { border-color: rgba(8, 21, 33, .09); background: linear-gradient(145deg, rgba(255, 255, 255, .85), rgba(236, 244, 252, .8)); box-shadow: 0 18px 50px rgba(30, 60, 100, .08), inset 0 1px rgba(255, 255, 255, .7); }
-html[data-theme="light"] .offering-card__number { color: rgba(8, 21, 33, .14); }
-html[data-theme="light"] .offering-card__icon { background: linear-gradient(145deg, rgba(11, 131, 119, .14), rgba(8, 21, 33, .02)); color: var(--cyan); border-color: rgba(11, 131, 119, .2); }
-html[data-theme="light"] .offering-card p { color: var(--text-muted); }
-html[data-theme="light"] .value-section { background: linear-gradient(135deg, rgba(236, 244, 252, .98), rgba(226, 236, 248, .95)); border-block-color: rgba(8, 21, 33, .08); }
-html[data-theme="light"] .value-item { border-color: rgba(8, 21, 33, .09); background: rgba(255, 255, 255, .6); }
-html[data-theme="light"] .value-item > span { background: rgba(181, 126, 40, .12); color: var(--gold); }
-html[data-theme="light"] .value-item p { color: var(--text-muted); }
-html[data-theme="light"] .decision-card { border-color: rgba(11, 131, 119, .25); background: radial-gradient(circle at 50% 120%, rgba(11, 131, 119, .16), transparent 50%), linear-gradient(145deg, rgba(255, 255, 255, .95), rgba(230, 240, 250, .92)); box-shadow: 0 40px 120px rgba(30, 60, 100, .16), inset 0 1px rgba(255, 255, 255, .8); }
-html[data-theme="light"] .decision-card::after { opacity: .1; }
-html[data-theme="light"] .decision-card p { color: var(--text-muted); }
-html[data-theme="light"] .decision-card ul { color: rgba(8, 21, 33, .65); }
-html[data-theme="light"] .decision-card small { color: rgba(8, 21, 33, .4); }
-html[data-theme="light"] .decision-card__shine { opacity: .35; background: #fff7e6; }
-
-/* Footer */
-html[data-theme="light"] footer { border-top-color: rgba(8, 21, 33, .1) !important; }
-html[data-theme="light"] .footer-brand { color: #081521; }
-
-/* Auth cards keep their dark-glass identity (unchanged per spec), but nudge
-   the surrounding page glow to suit daylight. */
-html[data-theme="light"] .auth-page::before { border-color: rgba(11, 131, 119, .08); box-shadow: 0 0 100px rgba(11, 131, 119, .06); }
-
-/* Tailwind utility text colours used inline on light surfaces → keep readable.
-   These are the few spots that hard-code white via utilities. Scoped to the
-   marketing pages (NOT the auth cards, which stay dark-glass by design). */
+/* ── Light-mode fixes for the few hard-coded utility colours ────────
+   The components use inline `text-white/xx` utilities in a handful of
+   spots; on porcelain those must become ink. */
+html[data-theme="light"] body { color: var(--text-strong); }
+html[data-theme="light"] footer { border-top-color: var(--hairline) !important; }
 html[data-theme="light"] .footer-brand + p,
-html[data-theme="light"] .text-white\/45 { color: rgba(8, 21, 33, .55) !important; }
-html[data-theme="light"] .text-white\/55 { color: rgba(8, 21, 33, .62) !important; }
-html[data-theme="light"] .text-white\/60 { color: rgba(8, 21, 33, .64) !important; }
-html[data-theme="light"] .text-white\/70 { color: rgba(8, 21, 33, .72) !important; }
+html[data-theme="light"] .text-white\/40,
+html[data-theme="light"] .text-white\/45 { color: var(--text-muted) !important; }
+html[data-theme="light"] .text-white\/55,
+html[data-theme="light"] .text-white\/60 { color: var(--text-muted) !important; }
+html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
 
-/* Auth cards keep their own dark palette regardless of theme — never let the
-   marketing light-mode utility overrides bleed into them. */
-html[data-theme="light"] .auth-card .text-white\/45,
-html[data-theme="light"] .auth-card .text-white\/55,
-html[data-theme="light"] .auth-card .text-white\/60,
-html[data-theme="light"] .auth-card .text-white\/70 { color: inherit !important; }
+/* Dark mode: the same utilities should read from the token scale so the
+   auth card and footer never drift from the system. */
+.text-white\/40, .text-white\/45 { color: var(--text-faint); }
+.text-white\/55, .text-white\/60 { color: var(--text-muted); }
+.text-white\/70 { color: var(--text-base); }
 
+/* ══════════════════════════════════════════════════════════════════
+   18 · RESPONSIVE
+   ══════════════════════════════════════════════════════════════════ */
 @media (max-width: 1023px) {
   .offering-grid { grid-template-columns: repeat(2, 1fr); }
-  .scroll-cue { display: none; }
-  .laureate { grid-template-columns: auto 1fr auto; gap: 1.2rem 1.5rem; }
-  .laureate__grades { grid-column: 1 / -1; justify-content: flex-start; padding-right: 3.5rem; }
 }
 
 @media (max-width: 767px) {
-  .ambient-photo { inset: -3%; background-position: 60% center; filter: saturate(.68) contrast(1.08) blur(2px); }
-  .hero-section { align-items: center; }
-  .hero-actions { flex-direction: column; align-items: stretch; }
-  .hero-cta { width: 100%; }
-  .section-title { line-height: 1.6; }
-  .story-paragraph { line-height: 1.95; }
-  .platform-paragraph { line-height: 1.95; }
-  /* Papers stack vertically on phones; drag still works */
-  .papers-board { min-height: auto; gap: 1.2rem; }
-  .paper { width: min(88vw, 20rem); }
-  /* Laureates go single-column and left-aligned */
-  .laureate { grid-template-columns: auto 1fr; gap: 1rem 1.2rem; padding: 2rem 0; }
-  .laureate__average-wrap { grid-column: 2; align-items: flex-start; }
-  .laureate__grades { grid-column: 1 / -1; padding-right: 0; gap: 1.3rem; }
-  .stats-ribbon { grid-template-columns: 1fr; gap: 2.5rem; text-align: center; }
-  .stat-divider { width: 8rem; height: 1px; margin: auto; background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent); }
+  .ambient-photo { inset: -3%; background-position: 60% center; }
+  .section-title { line-height: 1.34; }
+  .stats-ribbon { grid-template-columns: 1fr; gap: 2.25rem; text-align: center; }
+  .stat-divider { width: 7rem; height: 1px; margin: auto; }
   .stat-message { text-align: center; }
   .decision-card ul { flex-direction: column; align-items: center; }
   .auth-card__mascot { left: 50%; translate: -50% 0; top: -5.4rem; }
@@ -708,218 +999,283 @@ html[data-theme="light"] .auth-card .text-white\/70 { color: inherit !important;
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .ambient-photo { transform: scale(1.04) !important; }
-  .write-in__wipe { clip-path: none !important; }
-  /* Theme swap is instant for reduced-motion users: no circular reveal, no
-     cross-fade. (ThemeProvider already skips the View Transition, but guard
-     the snapshot layers too in case a swap is mid-flight.) */
   html.theme-vt::view-transition-old(root),
   html.theme-vt::view-transition-new(root) { animation: none !important; }
-  html.theme-crossfade, html.theme-crossfade * { transition-duration: .01ms !important; }
-}
-
-/* Minimal suspense fallback while a lazy route chunk loads. Keeps the
-   viewport height stable (no layout jump) and stays invisible so the
-   deferred page swaps in seamlessly. */
-.route-loading {
-  min-height: 100svh;
+  html.theme-crossfade, html.theme-crossfade * { transition-duration: 0.01ms !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   IN-APP BROWSER NOTICE (InAppBrowserNotice.tsx)
-   Only ever rendered inside an embedded web view (TikTok / Instagram /
-   Facebook / Telegram …), where Google's OAuth consent screen refuses to
-   load. Styled with the same glass + cyan/gold brand language as the auth
-   card, fully RTL, and readable in both the dark and light palettes.
+   18b · THE LOADING INDICATOR  (BrandLoader / InlineSpinner)
+   ────────────────────────────────────────────────────────────────────
+   Replaces the old blank `.route-loading` box. Two jobs:
+
+     .brand-loader--route    the Suspense fallback. Holds the full
+                             viewport height so the lazy route swaps in
+                             without a layout jump — but now shows the
+                             brand instead of nothing.
+     .brand-loader--overlay  fixed + frosted, shown the instant a FULL
+                             page navigation to /library begins, while
+                             the old document is still painted. This is
+                             what removes the "frozen white screen".
+
+   Deliberately identical in voice to the static `#app-boot` shell in
+   index.html: same cream/near-black ground, same 700-weight green
+   wordmark, same thin green ring. Boot → route → library entry all read
+   as one continuous handoff.
    ══════════════════════════════════════════════════════════════════ */
-.inapp-notice {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
+.brand-loader {
   display: grid;
   place-items: center;
+  padding: 2rem;
+  font-family: var(--font-ui);
+}
+
+/* Kept as an alias so anything still referencing the old class name gets
+   the height reservation rather than a collapsed box. */
+.route-loading,
+.brand-loader--route { min-height: 100svh; }
+
+.brand-loader--route { background: transparent; }
+
+.brand-loader--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;                       /* above the header + the menu sheet */
+  /* NEVER a touch shield. This layer is raised in the same frame as the tap
+     that starts a navigation; if it swallowed pointer events, every follow-up
+     tap would hit a dead sheet and the page would read as frozen (which is
+     exactly what happened on phones when the navigation stalled). Taps pass
+     through to the page underneath, where the entry handlers hold a re-entry
+     lock, so a repeat tap is a harmless no-op rather than a blocked one. */
+  pointer-events: none;
+  background: var(--page-bg);
+  /* A touch of frost so the page underneath dissolves rather than cuts. */
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
+  animation: brand-loader-in 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* ── MOBILE: no full-screen blur when opening a file ──────────────
+   This overlay is raised on CLICK, at which point the browser must blur the
+   ENTIRE viewport in the same frame as the tap — the exact stall that made
+   opening a file feel frozen on a phone. On small screens the frost is
+   dropped and replaced by a semi-opaque page-coloured wash, which reads the
+   same (the page dissolves rather than cuts) at zero repaint cost. Desktop
+   keeps the real frost. */
+@media (max-width: 820px) {
+  .brand-loader--overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    /* colour-mix keeps this tied to the live theme token, so it is correct
+       in both palettes and never a transparent hole. */
+    background: color-mix(in srgb, var(--page-bg) 92%, transparent);
+  }
+}
+
+.brand-loader__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.05rem;
+}
+
+.brand-loader__brand {
+  color: var(--accent);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0;                   /* Arabic is joined — never track it */
+  animation: brand-loader-pulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* A thin, quiet indeterminate ring — the same weight as the boot shell's. */
+.brand-loader__ring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  /* Plain rgba first as the universal fallback, then the token-derived
+     color-mix for browsers that support it — so the ring is never invisible
+     on an engine without color-mix(). */
+  border: 1.5px solid rgba(124, 201, 140, 0.18);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-top-color: var(--accent);
+  animation: brand-loader-spin 0.8s linear infinite;
+}
+
+.brand-loader__label {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.9;
+}
+
+/* ── the small in-place spinner (used inside the files card chip) ── */
+.inline-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.inline-spinner__ring {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid rgba(124, 201, 140, 0.22);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: brand-loader-spin 0.8s linear infinite;
+}
+.inline-spinner__label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.8;
+}
+
+@keyframes brand-loader-spin { to { transform: rotate(360deg); } }
+@keyframes brand-loader-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes brand-loader-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader--overlay,
+  .brand-loader__brand,
+  .brand-loader__ring,
+  .inline-spinner__ring { animation: none !important; }
+  /* Without spin, keep the ring readable as a static ring rather than a
+     lopsided arc. */
+  .brand-loader__ring,
+  .inline-spinner__ring { border-top-color: var(--accent); opacity: 0.6; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   19 · IN-APP BROWSER NOTICE
+   Rendered only inside an embedded web view (TikTok / Instagram / …),
+   where Google's OAuth screen refuses to load. Same glass material.
+   ══════════════════════════════════════════════════════════════════ */
+.inapp-notice {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; place-items: center;
   padding: clamp(1rem, 4vw, 2rem);
   overflow-y: auto;
 }
 .inapp-notice__backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(3, 9, 17, .78);
-  backdrop-filter: blur(10px) saturate(115%);
+  position: fixed; inset: 0;
+  background: rgba(10, 10, 10, 0.62);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
 }
-html[data-theme="light"] .inapp-notice__backdrop { background: rgba(8, 21, 33, .55); }
+html[data-theme="light"] .inapp-notice__backdrop { background: rgba(60, 60, 60, 0.32); }
 
 .inapp-notice__panel {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 34rem;
-  padding: clamp(1.5rem, 5vw, 2.5rem);
-  border: 1px solid rgba(110, 231, 220, .22);
-  border-radius: 28px;
-  background: linear-gradient(145deg, rgba(18, 36, 50, .97), rgba(7, 19, 31, .97));
-  box-shadow: 0 35px 100px rgba(0, 0, 0, .5), inset 0 1px rgba(255, 255, 255, .1);
+  position: relative; z-index: 1;
+  width: 100%; max-width: 33rem;
+  padding: clamp(1.5rem, 5vw, 2.4rem);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
   text-align: right;
-  animation: inapp-notice-in .45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: inapp-notice-in 0.5s var(--ease) both;
 }
 .inapp-notice__panel:focus { outline: none; }
-html[data-theme="light"] .inapp-notice__panel {
-  border-color: rgba(11, 131, 119, .28);
-  background: linear-gradient(145deg, #ffffff, #eef4fc);
-  box-shadow: 0 30px 80px rgba(8, 21, 33, .22), inset 0 1px rgba(255, 255, 255, .9);
-}
-
-.inapp-notice__glow {
-  position: absolute;
-  right: 1.5rem;
-  top: -2rem;
-  width: 12rem;
-  height: 12rem;
-  border-radius: 50%;
-  background: rgba(110, 231, 220, .18);
-  filter: blur(60px);
-  pointer-events: none;
-}
-html[data-theme="light"] .inapp-notice__glow { background: rgba(11, 131, 119, .14); }
+.inapp-notice__glow { display: none; }
 
 .inapp-notice__icon {
-  display: grid;
-  place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 18px;
-  border: 1px solid rgba(110, 231, 220, .24);
-  background: linear-gradient(145deg, rgba(110, 231, 220, .16), rgba(255, 255, 255, .03));
-  color: var(--cyan);
-}
-html[data-theme="light"] .inapp-notice__icon {
-  border-color: rgba(11, 131, 119, .22);
-  background: rgba(11, 131, 119, .09);
+  display: grid; place-items: center;
+  width: 3.25rem; height: 3.25rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
 }
 
 .inapp-notice__title {
-  margin: 1.4rem 0 0;
-  font: 800 clamp(1.35rem, 4.4vw, 1.75rem)/1.55 "Noto Kufi Arabic", "Tajawal", sans-serif;
-  letter-spacing: -.03em;
+  margin: 1.35rem 0 0;
+  font: 700 clamp(1.3rem, 4.2vw, 1.65rem)/1.4 var(--font-title);
+  letter-spacing: -0.026em;
   color: var(--text-strong);
 }
-.inapp-notice__body {
-  margin: .9rem 0 0;
-  font-size: 1rem;
-  line-height: 2;
-  color: var(--text-base);
-}
-.inapp-notice__reason {
-  margin: .7rem 0 0;
-  font-size: .9rem;
-  line-height: 1.9;
-  color: var(--text-muted);
-}
+.inapp-notice__body { margin: 0.85rem 0 0; font-size: 1rem; line-height: 1.85; color: var(--text-base); }
+.inapp-notice__reason { margin: 0.65rem 0 0; font-size: 0.9rem; line-height: 1.8; color: var(--text-muted); }
 
 .inapp-notice__steps {
-  margin: 1.3rem 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: inapp-step;
-  display: grid;
-  gap: .6rem;
+  margin: 1.25rem 0 0; padding: 0;
+  list-style: none; counter-reset: inapp-step;
+  display: grid; gap: 0.5rem;
 }
 .inapp-notice__steps li {
   counter-increment: inapp-step;
-  display: flex;
-  align-items: flex-start;
-  gap: .75rem;
-  padding: .75rem .9rem;
+  display: flex; align-items: flex-start; gap: 0.7rem;
+  padding: 0.75rem 0.9rem;
   border: 1px solid var(--hairline);
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  font-size: .92rem;
-  line-height: 1.75;
+  font-size: 0.92rem; line-height: 1.7;
   color: var(--text-base);
 }
 .inapp-notice__steps li::before {
   content: counter(inapp-step);
   flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  display: grid; place-items: center;
+  width: 1.55rem; height: 1.55rem;
   border-radius: 50%;
-  background: rgba(239, 196, 122, .16);
-  color: var(--gold);
-  font: 800 .8rem/1 "Noto Kufi Arabic", "Tajawal", sans-serif;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font: 600 0.78rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
 }
 
 .inapp-notice__url {
-  margin: 1.2rem 0 0;
-  padding: .8rem .9rem;
+  margin: 1.15rem 0 0;
+  padding: 0.8rem 0.9rem;
   border: 1px dashed var(--hairline-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: .78rem;
-  line-height: 1.6;
+  font-family: var(--font-mono);
+  font-size: 0.78rem; line-height: 1.6;
   word-break: break-all;
-  user-select: all;
-  -webkit-user-select: all;
+  user-select: all; -webkit-user-select: all;
 }
 
-.inapp-notice__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .7rem;
-  margin-top: 1.3rem;
-}
-.inapp-notice__copy,
-.inapp-notice__dismiss {
+.inapp-notice__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }
+.inapp-notice__copy, .inapp-notice__dismiss {
   flex: 1 1 auto;
   min-height: 3rem;
-  padding: .85rem 1.2rem;
+  padding: 0.85rem 1.2rem;
   border-radius: 999px;
-  font: 700 .95rem/1.4 "Tajawal", sans-serif;
+  font: 600 0.95rem/1.4 var(--font-ui);
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: transform .25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow .25s ease, background-color .25s ease;
+  transition: transform 0.2s var(--ease), background-color 0.25s var(--ease-soft), opacity 0.2s var(--ease-soft);
 }
 .inapp-notice__copy {
   border: 1px solid transparent;
-  background: linear-gradient(135deg, var(--cyan), #9df8ee);
-  color: #06121d;
-  box-shadow: 0 14px 34px rgba(110, 231, 220, .22);
+  background: var(--fill-primary);
+  color: var(--fill-primary-ink);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.45);
 }
-.inapp-notice__copy:hover { transform: translateY(-2px); }
-.inapp-notice__copy:active { transform: translateY(0); }
+.inapp-notice__copy:hover { opacity: 0.9; }
+.inapp-notice__copy:active { transform: scale(0.98); }
 .inapp-notice__dismiss {
   border: 1px solid var(--hairline-strong);
   background: transparent;
   color: var(--text-muted);
 }
 .inapp-notice__dismiss:hover { background: var(--surface); color: var(--text-base); }
-.inapp-notice__copy:focus-visible,
-.inapp-notice__dismiss:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 2px;
-}
+.inapp-notice__copy:focus-visible, .inapp-notice__dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 @keyframes inapp-notice-in {
-  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
   to   { opacity: 1; transform: none; }
 }
 
-/* Respect the OS "reduce motion" setting: the notice appears instantly and
-   the buttons stop lifting on hover. Content and behaviour are unchanged. */
 @media (prefers-reduced-motion: reduce) {
   .inapp-notice__panel { animation: none; }
-  .inapp-notice__copy,
-  .inapp-notice__copy:hover,
-  .inapp-notice__copy:active,
-  .inapp-notice__dismiss,
-  .inapp-notice__dismiss:hover { transform: none; transition: none; }
+  .inapp-notice__copy, .inapp-notice__copy:hover, .inapp-notice__copy:active,
+  .inapp-notice__dismiss, .inapp-notice__dismiss:hover { transform: none; transition: none; }
 }
 
 @media (max-width: 420px) {
   .inapp-notice__actions { flex-direction: column; }
-  .inapp-notice__copy,
-  .inapp-notice__dismiss { width: 100%; }
+  .inapp-notice__copy, .inapp-notice__dismiss { width: 100%; }
 }

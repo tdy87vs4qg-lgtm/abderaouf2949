@@ -46,15 +46,35 @@ libraryApi.use('/*', async (c, next) => {
  */
 libraryApi.get('/list', async (c) => {
   const folder = c.req.query('folder') || undefined
-  // "subscriber" here means "entitled to open files" = an approved subscriber
-  // or an admin. A signed-in but not-yet-approved account gets locked files.
-  const subscriber = await isApproved(c)
 
   try {
-    const listing = await listFolder(c.env, folder, {
-      isSubscriber: subscriber,
-      ctx: c.executionCtx as unknown as ExecutionContext,
-    })
+    // PERF: the approval lookup (session validation) and the Drive folder
+    // fetch are independent — run them CONCURRENTLY instead of back-to-back.
+    // The folder is fetched in its default fully-LOCKED form
+    // (isSubscriber:false — inside listFolder that flag only drives the
+    // per-file `locked` annotation via applyLock, applied after its cache, so
+    // the underlying Drive fetch is identical for every caller). Once the
+    // approval check resolves, the per-request lock flags are re-applied from
+    // that trusted server-side result below.
+    //
+    // AUTH SEMANTICS UNCHANGED: "subscriber" still means "entitled to open
+    // files" = an approved subscriber or an admin, decided exclusively by
+    // isApproved(c); a guest or not-yet-approved account still receives every
+    // file with locked:true, and file CONTENT remains hard-gated separately
+    // by requireActiveSubscriber on the /file/:id/* routes.
+    const [subscriber, rawListing] = await Promise.all([
+      isApproved(c),
+      listFolder(c.env, folder, {
+        isSubscriber: false,
+        ctx: c.executionCtx as unknown as ExecutionContext,
+      }),
+    ])
+
+    // Apply the real entitlement to the lock flags (folders never carry a
+    // lock; only files do). Non-subscribers keep the locked listing as-is.
+    const listing = subscriber
+      ? { ...rawListing, files: rawListing.files.map((f) => ({ ...f, locked: false })) }
+      : rawListing
 
     // Short client cache + SWR to keep navigation instant without staleness risk.
     c.header('Cache-Control', 'private, max-age=30, stale-while-revalidate=300')

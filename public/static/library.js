@@ -52,6 +52,8 @@
     zoomOut:        document.getElementById('gd-zoom-out'),
     zoomFit:        document.getElementById('gd-zoom-fit'),
     zoomLevel:      document.getElementById('gd-zoom-level'),
+    prevFileBtn:    document.getElementById('gd-prev-file'),
+    prevFileName:   document.getElementById('gd-prev-file-name'),
   };
 
   /* ---------------------------------------------------------------- state */
@@ -69,6 +71,236 @@
   var inflight = {};
   var searchCache = {};
   var searchSeq = 0;
+
+  /* ================================================================
+     POSITION MEMORY (Goal 1) + PREVIOUS-FILE CHAIN (Goal 2)
+     ----------------------------------------------------------------
+     Storage choice, split by lifetime:
+       • Folder scroll positions → localStorage. Reading a long subject
+         folder spans several sittings, so "where I was" MUST survive
+         closing the tab / quitting the browser and coming back. On
+         sessionStorage every reopen dumped the user back at page 1.
+         Growth is bounded by the POS_MAX LRU trim below.
+       • Previous-file chain / last-viewed file → sessionStorage. That is
+         deliberately per-tab and short-lived: two tabs must not fight
+         over one back-chain, and a days-old "previous file" step is
+         noise, not memory.
+     Everything is wrapped in try/catch so a browser with storage
+     disabled (or a full quota) simply degrades to in-memory behaviour —
+     never an error, never a crash.
+
+     SECURITY: this block stores ONLY navigation state (folder ids,
+     scroll offsets, file ids + display names the listing already shows
+     to every visitor). It grants nothing: opening any file — including
+     via the "previous file" button — still goes through the gated
+     /api/library/file/:id/meta|content routes, which re-decide access
+     server-side on every request (402 for non-subscribers).
+     ================================================================ */
+  var POS_KEY = 'taysir:lib:pos:v1';
+  var CHAIN_KEY = 'taysir:lib:chain:v1';
+  var CHAIN_MAX = 20;   // step back through up to 20 recently-opened files
+  var POS_MAX = 60;     // remember scroll for up to 60 folders (LRU-trimmed)
+
+  // Per-folder scroll positions: { <folderId>: { t: scrollTop, at: ts } }
+  // Persisted in localStorage (same key + :v1 versioning as before) so the
+  // reading position survives a tab close / browser restart, not just a
+  // refresh. Reads also fall back to any value left behind by the previous
+  // sessionStorage implementation, so an in-flight session isn't reset once.
+  var _posMap = {};
+  try {
+    var _rawPos = null;
+    try { _rawPos = localStorage.getItem(POS_KEY); } catch (e) { _rawPos = null; }
+    if (!_rawPos) {
+      // One-time migration from the old per-tab store.
+      try { _rawPos = sessionStorage.getItem(POS_KEY); } catch (e) { _rawPos = null; }
+    }
+    if (_rawPos) {
+      var _parsedPos = JSON.parse(_rawPos);
+      if (_parsedPos && typeof _parsedPos === 'object') _posMap = _parsedPos;
+    }
+  } catch (e) { _posMap = {}; }
+
+  function persistPos() {
+    try { localStorage.setItem(POS_KEY, JSON.stringify(_posMap)); } catch (e) {}
+  }
+  function saveScroll(folderId, top) {
+    if (!folderId) return;
+    try {
+      _posMap[folderId] = { t: Math.max(0, Math.round(top || 0)), at: Date.now() };
+      var keys = Object.keys(_posMap);
+      if (keys.length > POS_MAX) {
+        keys.sort(function (a, b) { return (_posMap[a].at || 0) - (_posMap[b].at || 0); });
+        for (var i = 0; i < keys.length - POS_MAX; i++) delete _posMap[keys[i]];
+      }
+      persistPos();
+    } catch (e) { /* storage unavailable → in-memory only */ }
+  }
+  function savedScroll(folderId) {
+    var v = _posMap[folderId];
+    return (v && typeof v.t === 'number') ? v.t : null;
+  }
+
+  // Chain of recently-opened files (Goal 2). Each entry:
+  //   { id, name, folder, folderScroll, vscroll }
+  // where vscroll is the scroll position INSIDE the file's viewer, so
+  // stepping back re-opens the file at the exact page/position it was left.
+  var _chain = [];
+  try {
+    var _rawChain = sessionStorage.getItem(CHAIN_KEY);
+    if (_rawChain) {
+      var _parsedChain = JSON.parse(_rawChain);
+      if (Array.isArray(_parsedChain)) {
+        _chain = _parsedChain.filter(function (e) { return e && typeof e.id === 'string' && e.id; });
+      }
+    }
+  } catch (e) { _chain = []; }
+
+  function persistChain() {
+    try { sessionStorage.setItem(CHAIN_KEY, JSON.stringify(_chain)); } catch (e) {}
+  }
+  function pushChain(entry) {
+    if (!entry || !entry.id) return;
+    // Collapse consecutive duplicates (re-opening the same file repeatedly
+    // must not build a chain of identical steps).
+    if (_chain.length && _chain[_chain.length - 1].id === entry.id) {
+      _chain[_chain.length - 1] = entry;
+    } else {
+      _chain.push(entry);
+      if (_chain.length > CHAIN_MAX) _chain.shift();
+    }
+    persistChain();
+    updatePrevFileBtn();
+  }
+  function popChain() {
+    var entry = _chain.pop() || null;
+    persistChain();
+    updatePrevFileBtn();
+    return entry;
+  }
+
+  // The last file the user viewed and then EXITED (viewer closed). When the
+  // next file opens, this becomes a chain step (B is open → button leads to A).
+  // Persisted so a refresh between "close A" and "open B" doesn't lose the step.
+  var LASTFILE_KEY = 'taysir:lib:lastfile:v1';
+  var _lastViewedFile = null;
+  try {
+    var _rawLast = sessionStorage.getItem(LASTFILE_KEY);
+    if (_rawLast) {
+      var _parsedLast = JSON.parse(_rawLast);
+      if (_parsedLast && typeof _parsedLast.id === 'string' && _parsedLast.id) _lastViewedFile = _parsedLast;
+    }
+  } catch (e) { _lastViewedFile = null; }
+  function setLastViewedFile(entry) {
+    _lastViewedFile = entry || null;
+    try {
+      if (entry) sessionStorage.setItem(LASTFILE_KEY, JSON.stringify(entry));
+      else sessionStorage.removeItem(LASTFILE_KEY);
+    } catch (e) {}
+  }
+  // Viewer-internal scroll offset to restore after a chain step re-opens a file.
+  var _pendingViewerScroll = null;
+
+  function getViewerScroll() {
+    var c = document.getElementById('gd-pdf-scroll') || document.getElementById('gd-media-scroll');
+    return c ? (c.scrollTop || 0) : 0;
+  }
+  function applyPendingViewerScroll() {
+    if (_pendingViewerScroll == null) return;
+    var top = _pendingViewerScroll;
+    _pendingViewerScroll = null;
+    if (!(top > 0)) return;
+    var c = document.getElementById('gd-pdf-scroll') || document.getElementById('gd-media-scroll');
+    // Instant jump (no smooth scrolling) — inherently prefers-reduced-motion safe.
+    if (c) c.scrollTop = top;
+  }
+
+  // Snapshot of the file currently on screen in the viewer + where the user
+  // was browsing when they opened it (folder + listing scroll + viewer scroll).
+  function currentViewerSnapshot() {
+    if (!_viewerId) return null;
+    return {
+      id: _viewerId,
+      name: (els.viewerTitle && els.viewerTitle.textContent) || '',
+      folder: state.folder,
+      folderScroll: els.scroller ? (els.scroller.scrollTop || 0) : 0,
+      vscroll: getViewerScroll(),
+    };
+  }
+
+  // Show the "الملف السابق" button only when a REAL previous file exists.
+  // No previous file → the button is hidden entirely (never disabled/broken).
+  function updatePrevFileBtn() {
+    var btn = els.prevFileBtn;
+    if (!btn) return;
+    // The wrapper strip carries the surface colour + top border, so it must be
+    // driven EXPLICITLY from here. The old code relied on a CSS :has() rule
+    // plus `style.display = ''`, which fell back to `display:flex` in every
+    // browser without :has() support and painted an empty coloured bar across
+    // the bottom of the screen. Now the strip is hidden by default in CSS and
+    // only the `is-visible` class (plus clearing the inline display) reveals
+    // it — no :has(), no implicit fallback.
+    var strip = btn.parentElement;
+    var top = _chain.length ? _chain[_chain.length - 1] : null;
+    // A stale top equal to the file already on screen (possible after a
+    // refresh on a ?view= deep link) is not a usable "previous" step.
+    if (top && top.id === _viewerId) {
+      top = _chain.length > 1 ? _chain[_chain.length - 2] : null;
+    }
+    if (!viewerOpen || !top) {
+      btn.hidden = true;
+      if (strip) {
+        strip.classList.remove('is-visible');
+        strip.setAttribute('aria-hidden', 'true');
+        // Inline `none` wins over any stylesheet, so the bar can never be
+        // resurrected by a cascade change.
+        strip.style.display = 'none';
+      }
+      return;
+    }
+    if (els.prevFileName) els.prevFileName.textContent = top.name || '';
+    btn.hidden = false;
+    if (strip) {
+      // Drop the inline override so the stylesheet (.is-visible → flex) rules.
+      strip.style.removeProperty('display');
+      strip.removeAttribute('aria-hidden');
+      strip.classList.add('is-visible');
+    }
+  }
+
+  // Step back one file in the chain (B → A → …). Navigation only: the file is
+  // re-opened through the same gated showViewer path as any other open, so a
+  // locked / no-longer-entitled file still hits the server-side 402 gate and
+  // pops the subscribe modal — never a bypass.
+  function goPrevFile() {
+    var entry = popChain();
+    // Skip degenerate entries that equal the file already on screen.
+    while (entry && _viewerId && entry.id === _viewerId) entry = popChain();
+    if (!entry) { updatePrevFileBtn(); return; }
+
+    // Goal 1 respected: land the UNDERLYING listing back on the folder the
+    // previous file was opened from, at the exact scroll it had — so exiting
+    // that file afterwards returns to the right place instantly.
+    if (typeof entry.folderScroll === 'number' && entry.folder) {
+      saveScroll(entry.folder, entry.folderScroll);
+    }
+    if (entry.folder && entry.folder !== state.folder) {
+      navigate(entry.folder, { replace: true, restoreScroll: true });
+    } else if (els.scroller && typeof entry.folderScroll === 'number') {
+      // Same folder → just put the hidden listing back where it was.
+      els.scroller.scrollTop = entry.folderScroll;
+    }
+
+    // Keep the URL truthful (refresh/back keep working) WITHOUT growing the
+    // history stack — the chain is its own, explicit back mechanism.
+    try {
+      var url = '/library?' + (entry.folder && entry.folder !== 'root'
+        ? 'folder=' + encodeURIComponent(entry.folder) + '&' : '') +
+        'view=' + encodeURIComponent(entry.id);
+      history.replaceState({ folder: entry.folder || state.folder, view: entry.id }, '', url);
+    } catch (e) { /* history unavailable → viewer still switches correctly */ }
+
+    showViewer(entry.id, entry.name || null, { fromChain: true, vscroll: entry.vscroll });
+  }
 
   // Client-side file-metadata cache + in-flight dedup. Lets us open a file
   // instantly on a warm cache and prefetch meta on hover, so the SPA viewer
@@ -804,16 +1036,104 @@
       highlightSubject(findTopSubject(data.breadcrumb));
     }
 
-    if (!alreadyPainted) renderContent();
-    else showSkeletons(false);
+    if (!alreadyPainted) {
+      // A background revalidation repaint must not visibly jump the listing:
+      // keep the current scroll offset across the re-render.
+      var keepScroll = (!opts.scrollTop && !opts.restoreScroll && els.scroller)
+        ? els.scroller.scrollTop : 0;
+      renderContent();
+      if (keepScroll && els.scroller) els.scroller.scrollTop = keepScroll;
+    } else {
+      showSkeletons(false);
+    }
     prefetchChildren(data.folders);
     prefetchFileMetas(data.files);
-    if (opts.scrollTop) els.scroller.scrollTop = 0;
+    if (opts.scrollTop) {
+      els.scroller.scrollTop = 0;
+    } else if (opts.restoreScroll && els.scroller) {
+      // Goal 1: restore the exact saved listing position (breadcrumb back,
+      // sidebar / parent-card return, browser back/forward, previous-file
+      // chain, page refresh). Instant assignment — no animated scrolling
+      // (prefers-reduced-motion safe).
+      //
+      // WHY DEFERRED: writing scrollTop in the same task as renderContent()
+      // happens while the scroller is still short — the freshly inserted rows
+      // have not been laid out yet — so the browser CLAMPS the value to
+      // (scrollHeight - clientHeight) and a deep position in a large folder
+      // collapses back to the first page. Two chained requestAnimationFrame
+      // callbacks push the write past layout of the new content (no arbitrary
+      // timeout, no guessing): rAF #1 runs before the paint that lays the
+      // rows out, rAF #2 runs after it, when scrollHeight is final.
+      restoreScrollDeferred(folderId);
+    }
+  }
+
+  // Apply a remembered scroll offset after the new listing has been laid out.
+  // Guarded by folder identity so a fast folder switch never lands the previous
+  // folder's offset on the current one.
+  // HARDENING over the fixed two-frame version: two rAF callbacks are enough
+  // only when the listing reaches its final height within those two frames.
+  // That is NOT guaranteed for the cases this bug actually shows up in — a
+  // large folder whose lazy thumbnails have no intrinsic height yet, a
+  // virtualized folder that only sizes its spacers as it scrolls, a web font
+  // still swapping, or simply a slow phone. While the scroller is still short
+  // the browser keeps CLAMPING the write to (scrollHeight - clientHeight), so a
+  // deep offset silently collapses toward the first page — the exact symptom.
+  // A measured test of the two-frame version restored 9000 → 4200 on a
+  // slow-settling list. So instead of a fixed frame count we re-assert until
+  // the offset actually STICKS (scroller finally tall enough), bail out the
+  // moment the user touches the list themselves, and stop on any newer
+  // navigation. Every write is still an instant assignment, so
+  // prefers-reduced-motion is honoured by construction.
+  var _restoreToken = 0;
+  function restoreScrollDeferred(folderId) {
+    var saved = savedScroll(folderId);
+    var sc = els.scroller;
+    if (saved == null || !sc) return;
+    var token = ++_restoreToken;
+    var userMoved = false;
+    function onUserScroll() { userMoved = true; }
+    var stale = function () {
+      return token !== _restoreToken || !els.scroller ||
+             state.folder !== folderId || state.searching || userMoved;
+    };
+    var apply = function () {
+      if (stale()) return;
+      els.scroller.scrollTop = saved;
+    };
+    // Immediate best-effort write (keeps cached/short listings jump-free).
+    apply();
+    if (typeof requestAnimationFrame !== 'function') return;
+    // Only a genuine gesture cancels the restore — never our own writes.
+    sc.addEventListener('wheel', onUserScroll, { passive: true });
+    sc.addEventListener('touchstart', onUserScroll, { passive: true });
+    var tries = 0;
+    var cleanup = function () {
+      sc.removeEventListener('wheel', onUserScroll);
+      sc.removeEventListener('touchstart', onUserScroll);
+    };
+    var step = function () {
+      if (stale()) { cleanup(); return; }
+      apply();
+      // Reached the target (within a rounding pixel) → the list is tall enough.
+      if (Math.abs(els.scroller.scrollTop - saved) <= 2) { cleanup(); return; }
+      // Keep re-asserting for up to ~1s of frames while the list still grows.
+      if (++tries < 60) { requestAnimationFrame(step); return; }
+      cleanup();
+    };
+    requestAnimationFrame(function () { requestAnimationFrame(step); });
   }
 
   function navigate(folderId, opts) {
     opts = opts || {};
     folderId = folderId || 'root';
+    // Goal 1: remember the exact scroll position of the folder being left, so
+    // any return to it (breadcrumb back, browser back, previous-file chain,
+    // page refresh) restores the user to the same spot. Only saved when a
+    // listing is actually painted — never clobbers a stored value on boot.
+    if (state.listing && !state.searching && els.scroller && state.folder !== folderId) {
+      saveScroll(state.folder, els.scroller.scrollTop);
+    }
     state.folder = folderId;
     state.query = '';
     if (els.search) els.search.value = '';
@@ -939,6 +1259,9 @@
      remains a working no-JS fallback. */
   function openFile(id, name, locked) {
     if (locked || !state.subscriber) { openSubscribeModal(name); return; }
+    // Goal 1: snapshot the listing position right before the file opens, so
+    // even a full reload while the viewer is open restores the folder state.
+    if (els.scroller) saveScroll(state.folder, els.scroller.scrollTop);
     if (!els.viewer) { window.location.href = '/library/view/' + encodeURIComponent(id); return; }
     // Push a history entry so Back closes the viewer (not the whole page).
     _deepLinkViewer = false;
@@ -949,7 +1272,22 @@
   }
 
   var viewerSeq = 0;
-  function showViewer(id, name) {
+  function showViewer(id, name, opts) {
+    opts = opts || {};
+    // ---- Goal 2 chain bookkeeping (BEFORE _viewerId is reassigned) --------
+    // The file we are navigating away from becomes a chain step: either the
+    // one still on screen (direct switch, e.g. browser back/forward between
+    // two ?view= entries) or the last one viewed-and-closed (_lastViewedFile).
+    // A chain-initiated open never pushes — stepping back must consume steps,
+    // not mint new ones (otherwise B→A→B ping-pongs forever).
+    var prev = (viewerOpen && _viewerId && _viewerId !== id)
+      ? currentViewerSnapshot()
+      : _lastViewedFile;
+    if (!opts.fromChain && prev && prev.id !== id) pushChain(prev);
+    setLastViewedFile(null);
+    _pendingViewerScroll = (opts.fromChain && typeof opts.vscroll === 'number' && opts.vscroll > 0)
+      ? opts.vscroll : null;
+    // -----------------------------------------------------------------------
     var seq = ++viewerSeq;
     viewerOpen = true;
     _viewerId = id;
@@ -967,6 +1305,7 @@
     });
     document.body.style.overflow = 'hidden';
     if (els.viewerClose) els.viewerClose.focus();
+    updatePrevFileBtn();
 
     fetchMeta(id).then(function (meta) {
       if (seq !== viewerSeq) return;
@@ -1047,6 +1386,8 @@
       } else if (kind === 'video' && els.viewerStage) {
         wireMediaFallback(els.viewerStage.querySelector('.gd-viewer-video'), contentUrl, directUrl, meta);
       }
+      // Chain step re-open → jump back to where the user was inside the file.
+      applyPendingViewerScroll();
     });
   }
 
@@ -1201,6 +1542,10 @@
           requestAnimationFrame(function () {
             if (typeof seq === 'number' && seq !== viewerSeq) return;
             layoutPdfPages(seq);
+            // Chain step re-open → restore the exact in-document position. The
+            // page slots are pre-sized during layout, so the scroll container
+            // already has its full height and the jump lands correctly.
+            applyPendingViewerScroll();
           });
         });
       });
@@ -1540,6 +1885,11 @@
 
   function closeViewer(skipHistory) {
     if (!els.viewer) return;
+    // Goal 2: remember the file being exited (with its in-file scroll and its
+    // folder context) — if another file opens next, this becomes the chain
+    // step its "الملف السابق" button leads back to. Captured BEFORE teardown
+    // so the viewer scroll offset is still readable.
+    if (viewerOpen && _viewerId) setLastViewedFile(currentViewerSnapshot());
     viewerOpen = false;
     viewerSeq++;
     var closeSeq = viewerSeq;
@@ -1557,6 +1907,7 @@
       // Free the in-memory Blob URLs once the viewer is fully closed.
       revokeViewerBlobUrls();
     }, 200);
+    updatePrevFileBtn();
     _deepLinkViewer = false;
     // Drop the ?view= history entry unless the caller is already reacting to a
     // popstate (Back button), in which case history moved for us.
@@ -1607,7 +1958,15 @@
     var folderEl = e.target.closest('[data-folder]');
     if (folderEl && (els.content.contains(folderEl) || els.breadcrumb.contains(folderEl) || els.subjects.contains(folderEl) || inResults)) {
       e.preventDefault();
-      navigate(folderEl.getAttribute('data-folder'), { scrollTop: true });
+      // Goal 1 — RETURN-AWARE, not direction-aware. Any folder we have a
+      // remembered position for is a folder the user has already read, so
+      // coming back to it restores that exact spot regardless of HOW the
+      // user got there: breadcrumb, sidebar subject link, a parent folder
+      // card, or a search result. Only a folder with no stored position
+      // (a genuinely new destination) starts at the top.
+      var targetFolder = folderEl.getAttribute('data-folder');
+      var hasSavedPos = savedScroll(targetFolder || 'root') != null;
+      navigate(targetFolder, hasSavedPos ? { restoreScroll: true } : { scrollTop: true });
       return;
     }
     var fileEl = e.target.closest('[data-file]');
@@ -1796,6 +2155,29 @@
     // In-app viewer close button
     if (els.viewerClose) els.viewerClose.addEventListener('click', dismissViewer);
 
+    // Goal 2 — "الملف السابق": step back to the previously-opened file.
+    if (els.prevFileBtn) els.prevFileBtn.addEventListener('click', goPrevFile);
+
+    // Reconcile the previous-file button/strip with the REAL chain state once
+    // at boot. _chain is rehydrated from storage before this point, but nothing
+    // used to call updatePrevFileBtn() until a file was opened or closed — so
+    // the strip kept whatever the markup shipped with, which is how an empty
+    // coloured bar could sit at the bottom of a freshly loaded page. The viewer
+    // is closed here, so this call collapses the strip; showViewer() will call
+    // it again with real chain data when a file is opened.
+    updatePrevFileBtn();
+
+    // Goal 1 — persist the current listing position when the page is being
+    // hidden/unloaded, so a refresh (or returning from an external page)
+    // restores the user to the exact same spot.
+    window.addEventListener('pagehide', function () {
+      try {
+        if (state.listing && !state.searching && els.scroller) {
+          saveScroll(state.folder, els.scroller.scrollTop);
+        }
+      } catch (e) {}
+    });
+
     // Zoom controls
     if (els.zoomIn)  els.zoomIn.addEventListener('click', zoomIn);
     if (els.zoomOut) els.zoomOut.addEventListener('click', zoomOut);
@@ -1841,19 +2223,68 @@
       if (els.sidebar && els.sidebar.classList.contains('is-open')) closeSidebar();
     });
 
+    // ── bfcache / tab-restore reconciliation ─────────────────────────────
+    // iOS Safari and Android Chrome snapshot the whole page into the
+    // back/forward cache; restoring it resumes JS mid-flight with NO reload
+    // and NO popstate. Nothing used to run on that path, so a viewer frozen
+    // mid-transition came back inconsistent: the bar chrome (close / title /
+    // zoom) could be missing its is-open styling, the fixed overlay could be
+    // laid out against the pre-restore viewport, and the previous-file strip
+    // could keep a stale visible state — the "chrome vanished + dead bottom
+    // bar" report. On pageshow with event.persisted we re-derive the whole
+    // viewer state from the URL (the single source of truth) and re-assert
+    // every piece of chrome + layout. Pure presentation: file access is still
+    // decided server-side by the gated /meta + /content routes on any re-open.
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted || !els.viewer) return;
+      var viewId = viewFromUrl();
+      if (viewId) {
+        if (viewerOpen && _viewerId === viewId) {
+          // Same file, still open → re-assert the chrome the restore may have
+          // dropped, then re-fit the zoom layout to the restored viewport
+          // (fixed-position overlays are notorious for coming back misplaced).
+          els.viewer.hidden = false;
+          els.viewer.classList.add('is-open');
+          document.body.style.overflow = 'hidden';
+          updatePrevFileBtn();
+          if (_zoomKind) {
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () { applyZoom(); });
+            });
+          }
+        } else {
+          // URL says a file should be open but the viewer isn't (or shows the
+          // wrong one) → open it through the normal gated path.
+          showViewer(viewId, null);
+        }
+      } else if (viewerOpen) {
+        // URL says closed but the snapshot restored an open viewer → close.
+        closeViewer(true);
+      } else {
+        // Closed on both sides → clear any half-finished close animation the
+        // freeze may have stranded (is-open gone but hidden never set), and
+        // collapse the previous-file strip so no empty bar can sit on screen.
+        els.viewer.classList.remove('is-open');
+        els.viewer.hidden = true;
+        document.body.style.overflow = '';
+        updatePrevFileBtn();
+      }
+    });
+
     window.addEventListener('popstate', function (e) {
       var viewId = (e.state && e.state.view) || viewFromUrl();
       var f = (e.state && e.state.folder) || folderFromUrl() || 'root';
       if (viewId) {
         // History moved to a viewer entry → make sure the folder is right and
         // show the file (no full reload).
-        if (state.folder !== f) navigate(f, { replace: true });
+        if (state.folder !== f) navigate(f, { replace: true, restoreScroll: true });
         if (!viewerOpen || viewerCurrentId() !== viewId) showViewer(viewId, null);
         return;
       }
       // No view in the target entry → close the viewer if open, else navigate.
-      if (viewerOpen) { closeViewer(true); if (state.folder !== f) navigate(f, { replace: true }); return; }
-      navigate(f, { replace: true });
+      // Goal 1: browser back/forward restores the saved listing position.
+      if (viewerOpen) { closeViewer(true); if (state.folder !== f) navigate(f, { replace: true, restoreScroll: true }); return; }
+      navigate(f, { replace: true, restoreScroll: true });
     });
 
     var start = folderFromUrl() || 'root';
@@ -1867,7 +2298,10 @@
     // stored files are preserved and become available again as soon as the same
     // user signs back in.
     function startApp() {
-      navigate(start, { replace: true });
+      // Goal 1: a page refresh (or a reopen after the tab was closed) restores
+      // the saved listing position for this folder — see the localStorage-backed
+      // position map above — instead of resetting to top.
+      navigate(start, { replace: true, restoreScroll: true });
       // Deep link with ?view=<id> → open the SPA viewer over the folder. Mark it
       // so the close button removes the ?view= param instead of leaving the app.
       if (deepView) { _deepLinkViewer = true; showViewer(deepView, null); }
@@ -1883,9 +2317,53 @@
       //    flaky first request nuked the "instant reopen" experience on iOS.
       var preBind = (FC.bindStoredSession ? FC.bindStoredSession() : Promise.resolve(null))
         .catch(function () { return null; });
-      preBind.then(function (storedKey) {
-        if (storedKey) requestPersistentStorage();
+
+      // THE BOOT GATE IS NOW BOUNDED. startApp() used to be chained strictly
+      // behind preBind, i.e. behind indexedDB.open(). That open has no
+      // intrinsic time limit: on real phones (app back from background,
+      // storage pressure, another tab holding an old connection) it can sit
+      // for many seconds without firing ANY event — and for that whole time
+      // the library painted nothing but skeletons while the server had long
+      // since answered. The first paint is now raced against a short
+      // deadline: whichever settles first starts the app, exactly once.
+      //   • pre-bind wins (the normal, ~ms case) → identical to before: the
+      //     persistent listing paints with the right session key.
+      //   • deadline wins → the app starts on the network path (the
+      //     /api/library/list preload in <head> has usually already landed),
+      //     and the moment the pre-bind DOES finish it still adopts the
+      //     stored key, so every later cache read works as normal.
+      // file-cache.js additionally bounds openDb() itself (see there), so a
+      // truly stuck IndexedDB now degrades to "network-only for this page"
+      // instead of "blank library forever".
+      var PREBIND_PAINT_DEADLINE_MS = 600;
+      var _appStarted = false;
+      function startAppOnce(reason) {
+        if (_appStarted) return;
+        _appStarted = true;
+        try { console.log('[boot] startApp (' + reason + ')'); } catch (e) {}
         startApp();
+      }
+      var paintDeadline = setTimeout(function () {
+        startAppOnce('pre-bind deadline ' + PREBIND_PAINT_DEADLINE_MS + 'ms');
+      }, PREBIND_PAINT_DEADLINE_MS);
+
+      // Kick the server probe off IMMEDIATELY, in parallel with the IndexedDB
+      // open, instead of only after it. Its RESULT is still applied strictly
+      // after the pre-bind settles (below) so the two binds can never race
+      // each other for _sessionKey.
+      var meProbe = fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('me HTTP ' + r.status);
+          return r.json();
+        });
+      // A failure that lands before preBind settles must not surface as an
+      // "unhandled rejection" — the real handler is attached below.
+      meProbe.catch(function () {});
+
+      preBind.then(function (storedKey) {
+        clearTimeout(paintDeadline);
+        if (storedKey) requestPersistentStorage();
+        startAppOnce(storedKey ? 'pre-bound' : 'no stored key');
         // 2. BACKGROUND RECONCILIATION with the server. Outcomes:
         //    • authenticated as same user  → no-op (cache kept).
         //    • authenticated as DIFFERENT user → bindSession wipes (security).
@@ -1893,11 +2371,7 @@
         //    • network error / 5xx / malformed → IGNORED: the optimistic bind
         //      stands, because a transient failure must never disable or wipe
         //      the cache (and must never look like a logout).
-        fetch('/api/auth/me', { credentials: 'same-origin' })
-          .then(function (r) {
-            if (!r.ok) throw new Error('me HTTP ' + r.status);
-            return r.json();
-          })
+        meProbe
           .then(function (data) {
             if (!data || data.ok !== true) {
               try { console.log('[auth] /me malformed → keeping optimistic cache bind'); } catch (e) {}

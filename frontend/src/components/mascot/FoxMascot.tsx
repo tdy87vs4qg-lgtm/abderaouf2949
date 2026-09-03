@@ -34,16 +34,19 @@ import type { Gaze } from './useCursorGaze'
  * ear-twitch, cover and peek animations all compose cleanly and never fight.
  * ---------------------------------------------------------------------- */
 
-/* ---- palette (kept in the platform's warm/mint spirit) ---------------- */
-const FUR = '#f0873e' // warm fox orange
-const FUR_DARK = '#e0722a' // shadow orange
-const FUR_LIGHT = '#ffb066' // highlight orange
-const CREAM = '#fff6ec' // muzzle / cheeks / chest
-const CREAM_SH = '#ffe9d3' // cream shadow
-const INK = '#20211f' // pupils / nose outline
-const NOSE = '#3a2b28' // nose
-const EAR_IN = '#3a2b28' // inner ear
-const BROW = '#c85f22' // eyebrow
+/* ---- palette (strictly achromatic: white / black / gray only) ---------
+ * Every value below has R = G = B, so the character carries ZERO hue and
+ * belongs to the same monochrome system as the rest of the site. Only the
+ * colours changed here — the geometry and animation are untouched. */
+const FUR = '#8e8e8e' // mid gray fur
+const FUR_DARK = '#6e6e6e' // shadow gray
+const FUR_LIGHT = '#b4b4b4' // highlight gray
+const CREAM = '#f5f5f5' // muzzle / cheeks / chest
+const CREAM_SH = '#e4e4e4' // light-gray shadow
+const INK = '#202020' // pupils / nose outline
+const NOSE = '#3a3a3a' // nose
+const EAR_IN = '#3a3a3a' // inner ear
+const BROW = '#5a5a5a' // eyebrow
 
 export interface FoxMascotProps {
   state: MascotState
@@ -84,8 +87,8 @@ export default function FoxMascot({
           <stop offset="100%" stopColor={CREAM_SH} />
         </linearGradient>
         <radialGradient id="fox-cheek" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ff9d6b" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#ff9d6b" stopOpacity="0" />
+          <stop offset="0%" stopColor="#c4c4c4" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#c4c4c4" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="fox-paw" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={FUR_LIGHT} />
@@ -97,7 +100,7 @@ export default function FoxMascot({
       </defs>
 
       {/* soft ground shadow — static, grounds the floating character */}
-      <ellipse cx={100} cy={190} rx={46} ry={7} fill="#0f2e2a" opacity={0.12} />
+      <ellipse cx={100} cy={190} rx={46} ry={7} fill="#1a1a1a" opacity={0.12} />
 
       <Ears earTwitch={earTwitch} reduce={reduce} />
       <Head />
@@ -314,7 +317,7 @@ function Eye({
         rx={eye.rx}
         ry={eye.ry}
         fill="#ffffff"
-        stroke="#e7d9c6"
+        stroke="#dcdcdc"
         strokeWidth={0.8}
       />
 

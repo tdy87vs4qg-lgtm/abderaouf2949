@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07111f" />
+    <meta name="theme-color" content="#171511" />
     <meta name="description" content="تيسير — منصّتك التعليمية المتكاملة للتفوق في البكالوريا." />
     <link rel="icon" type="image/svg+xml" href="/react/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <title>تيسير | لأننا نؤمن أن خلف كل تفوقٍ حلمٌ يستحق الدعم</title>
+    <title>تيسير | طريقك نحو النجاح و التفوق — عام الباكالوريا</title>
     <script>
       /* Apply the saved (or OS-preferred) theme before paint to avoid a flash
          of the wrong palette. Mirrors ThemeProvider's resolution logic. */
@@ -22,18 +22,18 @@
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var m = document.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', t === 'light' ? '#eef3fb' : '#07111f');
+          if (m) m.setAttribute('content', t === 'light' ? '#faf7ed' : '#171511');
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
       })();
     </script>
-    <script type="module" crossorigin src="/react/assets/index-Dla06M37.js"></script>
+    <script type="module" crossorigin src="/react/assets/index-D06ymxc-.js"></script>
     <link rel="modulepreload" crossorigin href="/react/assets/rolldown-runtime-CNC7AqOf.js">
-    <link rel="modulepreload" crossorigin href="/react/assets/react-vendor-C5_X-1Nf.js">
-    <link rel="modulepreload" crossorigin href="/react/assets/icons-DFv0dkUs.js">
-    <link rel="stylesheet" crossorigin href="/react/assets/index-ow5UO3Sz.css">
-    <link rel="stylesheet" crossorigin href="/react/assets/vendor-0prxbah9.css">
+    <link rel="modulepreload" crossorigin href="/react/assets/react-vendor-CyA734zk.js">
+    <link rel="modulepreload" crossorigin href="/react/assets/icons-DFwQVwPe.js">
+    <link rel="stylesheet" crossorigin href="/react/assets/index-Cw5iYkuv.css">
+    <link rel="stylesheet" crossorigin href="/react/assets/vendor-C0vUvEoS.css">
   </head>
   <body>
     <div id="root">
@@ -48,22 +48,28 @@
         <div class="app-boot__spinner"></div>
       </div>
       <style>
+        /* Matches the redesigned "Cream & Green" home exactly, so the handoff
+           from this static shell to React is invisible: the same warm cream
+           #FAF7ED ground, the same green 700-weight brand mark, the same
+           green spinner. Cream is the design's home base. */
         #app-boot{position:fixed;inset:0;display:flex;flex-direction:column;
-          align-items:center;justify-content:center;gap:22px;
-          background:var(--color-ink,#06101c);z-index:1;
-          font-family:'Noto Kufi Arabic','Tajawal',system-ui,sans-serif}
-        html[data-theme="light"] #app-boot{background:#eef3fb}
-        .app-boot__brand{font-size:2rem;font-weight:800;letter-spacing:.04em;
-          color:#6ee7dc;text-shadow:0 0 24px rgba(110,231,220,.35);
-          animation:app-boot-pulse 1.6s ease-in-out infinite}
-        html[data-theme="light"] .app-boot__brand{color:#0d7d72;text-shadow:none}
-        .app-boot__spinner{width:34px;height:34px;border-radius:50%;
-          border:3px solid rgba(110,231,220,.22);border-top-color:#6ee7dc;
+          align-items:center;justify-content:center;gap:20px;
+          background:#171511;z-index:1;
+          font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;
+          -webkit-font-smoothing:antialiased}
+        html[data-theme="light"] #app-boot{background:#faf7ed}
+        .app-boot__brand{font-size:1.125rem;font-weight:700;letter-spacing:0;
+          color:#7cc98c;
+          animation:app-boot-pulse 1.8s cubic-bezier(.4,0,.2,1) infinite}
+        html[data-theme="light"] .app-boot__brand{color:#469c59}
+        /* A thin, quiet indeterminate ring — tinted with the brand green. */
+        .app-boot__spinner{width:22px;height:22px;border-radius:50%;
+          border:1.5px solid rgba(124,201,140,.18);border-top-color:#7cc98c;
           animation:app-boot-spin .8s linear infinite}
         html[data-theme="light"] .app-boot__spinner{
-          border-color:rgba(13,125,114,.2);border-top-color:#0d7d72}
+          border-color:rgba(70,156,89,.16);border-top-color:#469c59}
         @keyframes app-boot-spin{to{transform:rotate(360deg)}}
-        @keyframes app-boot-pulse{0%,100%{opacity:.7}50%{opacity:1}}
+        @keyframes app-boot-pulse{0%,100%{opacity:.55}50%{opacity:1}}
         @media (prefers-reduced-motion:reduce){
           .app-boot__brand,.app-boot__spinner{animation:none}}
       </style>
