@@ -1043,6 +1043,13 @@ html[data-theme="light"] .text-white\/70 { color: var(--text-base) !important; }
   position: fixed;
   inset: 0;
   z-index: 1200;                       /* above the header + the menu sheet */
+  /* NEVER a touch shield. This layer is raised in the same frame as the tap
+     that starts a navigation; if it swallowed pointer events, every follow-up
+     tap would hit a dead sheet and the page would read as frozen (which is
+     exactly what happened on phones when the navigation stalled). Taps pass
+     through to the page underneath, where the entry handlers hold a re-entry
+     lock, so a repeat tap is a harmless no-op rather than a blocked one. */
+  pointer-events: none;
   background: var(--page-bg);
   /* A touch of frost so the page underneath dissolves rather than cuts. */
   -webkit-backdrop-filter: blur(10px) saturate(150%);

@@ -2317,9 +2317,53 @@
       //    flaky first request nuked the "instant reopen" experience on iOS.
       var preBind = (FC.bindStoredSession ? FC.bindStoredSession() : Promise.resolve(null))
         .catch(function () { return null; });
-      preBind.then(function (storedKey) {
-        if (storedKey) requestPersistentStorage();
+
+      // THE BOOT GATE IS NOW BOUNDED. startApp() used to be chained strictly
+      // behind preBind, i.e. behind indexedDB.open(). That open has no
+      // intrinsic time limit: on real phones (app back from background,
+      // storage pressure, another tab holding an old connection) it can sit
+      // for many seconds without firing ANY event — and for that whole time
+      // the library painted nothing but skeletons while the server had long
+      // since answered. The first paint is now raced against a short
+      // deadline: whichever settles first starts the app, exactly once.
+      //   • pre-bind wins (the normal, ~ms case) → identical to before: the
+      //     persistent listing paints with the right session key.
+      //   • deadline wins → the app starts on the network path (the
+      //     /api/library/list preload in <head> has usually already landed),
+      //     and the moment the pre-bind DOES finish it still adopts the
+      //     stored key, so every later cache read works as normal.
+      // file-cache.js additionally bounds openDb() itself (see there), so a
+      // truly stuck IndexedDB now degrades to "network-only for this page"
+      // instead of "blank library forever".
+      var PREBIND_PAINT_DEADLINE_MS = 600;
+      var _appStarted = false;
+      function startAppOnce(reason) {
+        if (_appStarted) return;
+        _appStarted = true;
+        try { console.log('[boot] startApp (' + reason + ')'); } catch (e) {}
         startApp();
+      }
+      var paintDeadline = setTimeout(function () {
+        startAppOnce('pre-bind deadline ' + PREBIND_PAINT_DEADLINE_MS + 'ms');
+      }, PREBIND_PAINT_DEADLINE_MS);
+
+      // Kick the server probe off IMMEDIATELY, in parallel with the IndexedDB
+      // open, instead of only after it. Its RESULT is still applied strictly
+      // after the pre-bind settles (below) so the two binds can never race
+      // each other for _sessionKey.
+      var meProbe = fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('me HTTP ' + r.status);
+          return r.json();
+        });
+      // A failure that lands before preBind settles must not surface as an
+      // "unhandled rejection" — the real handler is attached below.
+      meProbe.catch(function () {});
+
+      preBind.then(function (storedKey) {
+        clearTimeout(paintDeadline);
+        if (storedKey) requestPersistentStorage();
+        startAppOnce(storedKey ? 'pre-bound' : 'no stored key');
         // 2. BACKGROUND RECONCILIATION with the server. Outcomes:
         //    • authenticated as same user  → no-op (cache kept).
         //    • authenticated as DIFFERENT user → bindSession wipes (security).
@@ -2327,11 +2371,7 @@
         //    • network error / 5xx / malformed → IGNORED: the optimistic bind
         //      stands, because a transient failure must never disable or wipe
         //      the cache (and must never look like a logout).
-        fetch('/api/auth/me', { credentials: 'same-origin' })
-          .then(function (r) {
-            if (!r.ok) throw new Error('me HTTP ' + r.status);
-            return r.json();
-          })
+        meProbe
           .then(function (data) {
             if (!data || data.ok !== true) {
               try { console.log('[auth] /me malformed → keeping optimistic cache bind'); } catch (e) {}

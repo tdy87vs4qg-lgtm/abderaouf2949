@@ -63,7 +63,13 @@
 // (stale-while-revalidate), phones holding the v5 cache kept running the
 // PRE-FIX files indefinitely — which is exactly why both "fixed" bugs kept
 // reappearing on real devices. This bump wipes v5 and ships the fixed shell.
-const CACHE_NAME = 'taysir-shell-v6';
+//
+// v7: ships the bounded library boot. library.js no longer chains its first
+// paint strictly behind indexedDB.open() (600ms paint deadline, /me probe in
+// parallel), and file-cache.js gives openDb() a hard 3s timeout with stray
+// late-handle cleanup. Both are SHELL_ASSETS served cache-first, so without
+// this bump returning phones would keep the unbounded v6 boot indefinitely.
+const CACHE_NAME = 'taysir-shell-v7';
 
 // Exactly the 6 stable shell assets + the web app manifest. Nothing else.
 const SHELL_ASSETS = [

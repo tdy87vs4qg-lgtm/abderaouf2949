@@ -67,6 +67,11 @@ import './home.css'
 /* Reveal timings — short, soft, GPU-only. Shared so the whole screen
    settles as one gesture rather than a sequence of separate animations. */
 const EASE_OUT = [0.32, 0.72, 0, 1] as const
+
+/* Entry timing budget (ms). See the ENTRY DEADLINE / OVERLAY WATCHDOG notes
+   inside HomePage for what each one guards against. */
+const ENTRY_DEADLINE_MS = 2000 // parked tap → hard-navigate even if /me is silent
+const ENTRY_WATCHDOG_MS = 8000 // overlay up but document still here → release
 const rise = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
@@ -121,24 +126,66 @@ export default function HomePage() {
      hand-off is a branded loader rather than a blank white screen. */
   const [entering, setEntering] = useState(false)
 
+  /* ── THE ENTRY LOCK ───────────────────────────────────────────────
+     A ref (not state) so it is updated synchronously inside the click
+     handler and can never lag a render. While it is held, a repeat tap on
+     any entry point is a harmless no-op: no second overlay, no second
+     navigation, no timer restart. Released whenever the overlay is dropped
+     (pageshow / popstate / watchdog / confirmed-anonymous). */
+  const entryLockRef = useRef(false)
+  // Wall-clock moment of the FIRST tap. The deadline below is anchored to
+  // this, never to "the latest tap", so tapping repeatedly can only ever
+  // make the entry happen SOONER, never later.
+  const entryStartedAtRef = useRef(0)
+
+  const releaseEntry = useCallback(() => {
+    entryLockRef.current = false
+    entryStartedAtRef.current = 0
+    setEntering(false)
+    setPendingEntry(false)
+  }, [])
+
   // If the navigation never completes (back / bfcache restore, a cancelled
   // load, or the tab being re-shown), drop the overlay AND any parked entry
   // intent so the page can never be left stuck behind it.
   useEffect(() => {
     if (!entering) return
-    const clear = () => {
-      setEntering(false)
-      setPendingEntry(false)
-    }
-    window.addEventListener('pageshow', clear)
-    window.addEventListener('popstate', clear)
+    window.addEventListener('pageshow', releaseEntry)
+    window.addEventListener('popstate', releaseEntry)
     return () => {
-      window.removeEventListener('pageshow', clear)
-      window.removeEventListener('popstate', clear)
+      window.removeEventListener('pageshow', releaseEntry)
+      window.removeEventListener('popstate', releaseEntry)
     }
-  }, [entering])
+  }, [entering, releaseEntry])
 
-  const beginEntering = useCallback(() => setEntering(true), [])
+  /* ── THE OVERLAY WATCHDOG ─────────────────────────────────────────
+     The overlay is now pointer-transparent (see .brand-loader--overlay in
+     styles.css), so it can no longer block taps — but it must also never
+     stay painted forever. If the document is still here ENTRY_WATCHDOG_MS
+     after the overlay went up (the navigation stalled, was cancelled by the
+     browser, or the phone dropped the connection), the overlay comes down
+     and the lock is released so the visitor can simply tap again. A
+     navigation that DID commit tears this document down anyway, so the
+     watchdog never fires in the normal, fast path. */
+  useEffect(() => {
+    if (!entering) return
+    const watchdog = window.setTimeout(releaseEntry, ENTRY_WATCHDOG_MS)
+    return () => window.clearTimeout(watchdog)
+  }, [entering, releaseEntry])
+
+  // Resolved-state entry (real <a href>): raise the overlay once and let the
+  // browser perform its own navigation. Repeat taps are ignored — the
+  // browser is already navigating and a second overlay would add nothing.
+  const beginEntering = useCallback((event?: { preventDefault: () => void }) => {
+    if (entryLockRef.current) {
+      if (event) event.preventDefault()
+      return
+    }
+    entryLockRef.current = true
+    entryStartedAtRef.current = Date.now()
+    setMenuOpen(false)
+    setEntering(true)
+  }, [])
 
   /* ── DEFERRED ENTRY (the tap that used to be swallowed) ───────────
      Set when the visitor taps the files entry point BEFORE the /me probe
@@ -148,11 +195,17 @@ export default function HomePage() {
   const navigate = useNavigate()
   const [pendingEntry, setPendingEntry] = useState(false)
 
-  // Capture a tap made during the probe window: never let it do nothing.
+  // Capture a tap made during the probe window: never let it do nothing —
+  // and never let it do anything TWICE. The first tap takes the lock, raises
+  // the overlay and parks the intent; every later tap while the lock is held
+  // is swallowed (preventDefault only) so the browser does not start a
+  // competing native navigation and React state is left untouched.
   const requestEntry = useCallback(
     (event: { preventDefault: () => void }) => {
-      // The probe is still running — take over the click and remember it.
       event.preventDefault()
+      if (entryLockRef.current) return
+      entryLockRef.current = true
+      entryStartedAtRef.current = Date.now()
       setMenuOpen(false)
       setPendingEntry(true)
       setEntering(true)
@@ -167,11 +220,12 @@ export default function HomePage() {
     setPendingEntry(false)
     if (session.authenticated) {
       // Real page outside the SPA → full document navigation (overlay stays
-      // up until the browser paints the library).
+      // up until the browser paints the library; the watchdog above releases
+      // it if the navigation never commits).
       window.location.assign(session.destination || '/library')
     } else {
       // Confirmed anonymous → the SPA login route, in-app, no reload.
-      setEntering(false)
+      releaseEntry()
       navigate('/login')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,10 +246,15 @@ export default function HomePage() {
           exactly what a direct URL visit already shows them. */
   useEffect(() => {
     if (!pendingEntry || !sessionPending) return
+    // Anchor to the FIRST tap: if this effect is ever re-run for any reason
+    // (a re-render, a repeat tap that slipped through), the remaining wait
+    // shrinks instead of restarting from zero.
+    const startedAt = entryStartedAtRef.current || Date.now()
+    const remaining = Math.max(0, ENTRY_DEADLINE_MS - (Date.now() - startedAt))
     const deadline = window.setTimeout(() => {
       setPendingEntry(false)
       window.location.assign(PENDING_HREF)
-    }, 2500)
+    }, remaining)
     return () => window.clearTimeout(deadline)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEntry, sessionPending])

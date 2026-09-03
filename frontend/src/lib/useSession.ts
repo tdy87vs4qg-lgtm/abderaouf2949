@@ -42,76 +42,116 @@ const INITIAL: SessionState = {
   destination: null,
 }
 
+const SIGNED_OUT: SessionState = {
+  loading: false,
+  authenticated: false,
+  user: null,
+  destination: null,
+}
+
+// HARD DEADLINE on the probe. On iOS/Android the first fetch after the app
+// returns from background can reuse a dead pooled connection and hang for
+// ~30s until the OS gives up on the socket. Nothing in the UI may wait that
+// long: after PROBE_TIMEOUT_MS the request is aborted and the hook resolves to
+// the neutral signed-out state (the same state a failed probe already
+// produces). The server stays the only authority — this never asserts a
+// logout server-side, it only stops the UI from hanging on a dead socket.
+const PROBE_TIMEOUT_MS = 6000
+
+// ---------------------------------------------------------------------------
+// ONE probe per page load, shared by every hook instance.
+//
+// Several components mount useSession() at once (HomePage + SiteHeader on the
+// exterior, AuthShell on /login). Each instance used to own its own fetch, so
+// a single page load fired 2–3 identical /api/auth/me requests, each with its
+// own 6s abort timer, each resolving at a slightly different moment. The
+// instances now subscribe to a single module-level promise: the first mount
+// starts the probe, later mounts just attach to it, and the resolved answer is
+// memoised so any instance mounted afterwards (e.g. a route change) resolves
+// synchronously with no network at all.
+//
+// This is a read-only in-memory memo for the lifetime of the document. A full
+// navigation (which is how login / logout hand off to the server pages)
+// naturally discards it, so it can never mask a real session change.
+// ---------------------------------------------------------------------------
+let probePromise: Promise<SessionState> | null = null
+let resolvedState: SessionState | null = null
+
+function probeSession(): Promise<SessionState> {
+  if (resolvedState) return Promise.resolve(resolvedState)
+  if (probePromise) return probePromise
+
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const probeTimer = controller
+    ? window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
+    : null
+
+  probePromise = (async (): Promise<SessionState> => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+        signal: controller ? controller.signal : undefined,
+      })
+      let data: any = null
+      try {
+        data = await res.json()
+      } catch {
+        data = null
+      }
+
+      if (res.ok && data && data.ok && data.authenticated && data.user) {
+        const user: SessionUser = {
+          id: data.user.id,
+          email: data.user.email,
+          role: data.user.role,
+          approved: !!data.user.approved,
+        }
+        return {
+          loading: false,
+          authenticated: true,
+          user,
+          destination: user.role === 'admin' ? '/admin' : '/library',
+        }
+      }
+
+      // Explicitly unauthenticated (or a malformed/empty response). Reflect
+      // the logged-out state — but only AFTER we actually asked the server,
+      // never as the default assumption.
+      return SIGNED_OUT
+    } catch {
+      // Network/transient failure (or our own abort): don't claim "logged
+      // out". Resolve to the neutral (not-authenticated, not-loading) state
+      // without asserting a logout, so a blip never flips a signed-in user to
+      // the guest UI server-side.
+      return SIGNED_OUT
+    } finally {
+      if (probeTimer != null) window.clearTimeout(probeTimer)
+    }
+  })()
+
+  probePromise.then((state) => {
+    resolvedState = state
+  })
+  return probePromise
+}
+
 export function useSession(): SessionState {
-  const [state, setState] = useState<SessionState>(INITIAL)
+  // Late mounts pick up the memoised answer synchronously — no loading flash.
+  const [state, setState] = useState<SessionState>(() => resolvedState || INITIAL)
 
   useEffect(() => {
-    let cancelled = false
-
-    // HARD DEADLINE on the probe. On iOS/Android the first fetch after the
-    // app returns from background can reuse a dead pooled connection and hang
-    // for ~30s until the OS gives up on the socket. Nothing in the UI may
-    // wait that long: after 6s the request is aborted and the hook resolves
-    // to the neutral signed-out state (the same state a failed probe already
-    // produces). The server stays the only authority — this never asserts a
-    // logout server-side, it only stops the UI from hanging on a dead socket.
-    const PROBE_TIMEOUT_MS = 6000
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
-    const probeTimer = controller
-      ? window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
-      : null
-
-    async function load() {
-      try {
-        const res = await fetch('/api/auth/me', {
-          method: 'GET',
-          credentials: 'same-origin',
-          headers: { Accept: 'application/json' },
-          signal: controller ? controller.signal : undefined,
-        })
-        let data: any = null
-        try {
-          data = await res.json()
-        } catch {
-          data = null
-        }
-        if (cancelled) return
-
-        if (res.ok && data && data.ok && data.authenticated && data.user) {
-          const user: SessionUser = {
-            id: data.user.id,
-            email: data.user.email,
-            role: data.user.role,
-            approved: !!data.user.approved,
-          }
-          setState({
-            loading: false,
-            authenticated: true,
-            user,
-            destination: user.role === 'admin' ? '/admin' : '/library',
-          })
-          return
-        }
-
-        // Explicitly unauthenticated (or a malformed/empty response). Reflect
-        // the logged-out state — but only AFTER we actually asked the server,
-        // never as the default assumption.
-        setState({ loading: false, authenticated: false, user: null, destination: null })
-      } catch {
-        if (cancelled) return
-        // Network/transient failure: don't claim "logged out". Leave the UI in
-        // its neutral (not-authenticated, not-loading) state without asserting a
-        // logout, so a blip never flips a signed-in user to the guest UI.
-        setState({ loading: false, authenticated: false, user: null, destination: null })
-      }
+    if (resolvedState) {
+      setState(resolvedState)
+      return
     }
-
-    load().finally(() => {
-      if (probeTimer != null) window.clearTimeout(probeTimer)
+    let cancelled = false
+    probeSession().then((next) => {
+      if (!cancelled) setState(next)
     })
     return () => {
       cancelled = true
-      if (probeTimer != null) window.clearTimeout(probeTimer)
     }
   }, [])
 
