@@ -29,17 +29,14 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
  * finally to the site's native dark mode. Runs only in the browser.
  */
 function readInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark'
+  if (typeof window === 'undefined') return 'light'
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     if (stored === 'light' || stored === 'dark') return stored
   } catch {
     /* ignore storage errors (private mode etc.) */
   }
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    return 'light'
-  }
-  return 'dark'
+  return 'light'
 }
 
 function prefersReducedMotion(): boolean {

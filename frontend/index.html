@@ -15,16 +15,14 @@
         try {
           var t = localStorage.getItem('taysir-theme');
           if (t !== 'light' && t !== 'dark') {
-            t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-              ? 'light'
-              : 'dark';
+            t = 'light';
           }
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var m = document.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', t === 'light' ? '#eef3fb' : '#07111f');
+          if (m) m.setAttribute('content', t === 'light' ? '#fdfbf7' : '#07111f');
         } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
     </script>
