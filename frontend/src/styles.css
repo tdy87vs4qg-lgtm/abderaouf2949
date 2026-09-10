@@ -254,6 +254,8 @@ html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); colo
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+.hero-cta__stack { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
+.hero-cta__subtitle { font-size: .72rem; font-weight: 600; opacity: .72; }
 
 /* ── Write-in / reveal text ──────────────────────────────────
    Default (paragraphs): one cheap GPU opacity + translateY rise on the whole

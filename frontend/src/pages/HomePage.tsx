@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowLeft, UserPlus, LogIn } from 'lucide-react'
+import { ArrowDown, ArrowLeft, UserPlus, LogIn, FolderOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageTransition from '../components/PageTransition'
 import Reveal from '../components/Reveal'
@@ -60,6 +60,16 @@ export default function HomePage() {
               <LogIn size={18} strokeWidth={2.2} />
               تسجيل الدخول
             </Link>
+            {/* Files section — a plain full navigation to the Hono-rendered
+                /library area. No onClick / preventDefault / session-wait
+                logic, so the very first click always lands. */}
+            <a href="/library" className="button-secondary hero-cta">
+              <FolderOpen size={18} strokeWidth={2.2} />
+              <span className="hero-cta__stack">
+                <span className="hero-cta__title">جزء الملفات</span>
+                <span className="hero-cta__subtitle">ادخل إلى المكتبة</span>
+              </span>
+            </a>
           </motion.div>
 
           <div className="scroll-cue">
