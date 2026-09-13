@@ -44,3 +44,8 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# Raw design source for the re-skin (staged illustrations from Svg.zip).
+# scripts/build-illustrations.mjs normalises these into
+# public/static/illustrations/, which IS committed.
+design-src/

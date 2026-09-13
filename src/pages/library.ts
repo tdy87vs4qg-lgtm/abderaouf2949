@@ -18,6 +18,8 @@
 // Behaviour lives in library.js; styling in library.css (+ design tokens).
 // ============================================================================
 
+import { bgDecor, themeToggle, themeBoot, themeHead } from './_decor'
+
 const TIKTOK_URL = 'https://www.tiktok.com/@abderahmane.lovenature'
 
 /* ---------------------------------------------------------------- icons
@@ -55,6 +57,10 @@ const topbar = `
   </div>
 
   <div class="gd-topbar-right">
+    <!-- Prototype sun/moon switch. Purely visual: it flips <html data-theme>
+         through the shared delegated handler in /static/illustrations.js and
+         persists to the SAME 'taysir-theme' key the site already used. -->
+    ${themeToggle}
     <a href="/" class="gd-icon-btn gd-hide-mobile" data-tooltip="Home" aria-label="Home">${icons.home}</a>
     <button type="button" class="gd-account js-subscribe" id="subscribe-header" data-tooltip="Account" aria-label="Account">${icons.account}</button>
     <button type="button" class="gd-icon-btn gd-logout" id="lib-logout" data-tooltip="Log out" aria-label="Log out">${icons.logout}</button>
@@ -129,22 +135,31 @@ const subscribeModal = `
 
 /* ------------------------------------------------------------- full page */
 export const libraryPage = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<!-- NOTE ON lang/dir: deliberately left as lang="en" with NO dir attribute,
+     exactly as before this redesign. library.css positions several elements
+     with physical left/right offsets, so introducing dir="rtl" here would
+     re-flow the tested Drive-style layout — a layout change, not a re-skin.
+     Only data-theme changed (dark to light, the prototype's default). -->
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark light" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#FFFFFF" />
   <title>Library — تيسير</title>
   <meta name="description" content="Browse the complete تيسير library: lessons, summaries, corrected exams, exercise series, mock papers and premium books — organised like Google Drive." />
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  ${themeBoot}
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/library.css" rel="stylesheet" />
+  <!-- The prototype theme loads LAST so its tokens win over the older
+       palettes in tokens.css / library.css. Appearance only. -->
+  ${themeHead}
 </head>
 <body class="gd-body">
+  <!-- Prototype backdrop: inert, aria-hidden, pointer-events:none. -->
+  ${bgDecor}
   ${topbar}
 
   <div class="gd-shell">
@@ -251,5 +266,9 @@ export const libraryPage = `<!DOCTYPE html>
 
   <script src="/static/file-cache.js" defer></script>
   <script src="/static/library.js" defer></script>
+  <!-- Loaded AFTER the application scripts. Cosmetic only: it drives the
+       theme toggle and inlines illustrations for recolouring. It does not
+       wrap, patch or call any function in library.js / file-cache.js. -->
+  <script src="/static/illustrations.js" defer></script>
 </body>
 </html>`

@@ -14,6 +14,10 @@ import { isSubscriber } from './lib/auth'
 import { getSessionUser } from './lib/auth'
 import { getSubscriberStats } from './lib/users'
 import { requireActiveSubscriber, type AuthVars } from './lib/guards'
+// Presentation-only shared markup for the redesign (faint background doodles,
+// the animated sun/moon toggle, the pre-paint theme resolver and the theme
+// stylesheet links). Pure string constants — no logic, no routes.
+import { bgDecor, themeToggle, themeBoot, themeHead } from './pages/_decor'
 
 const app = new Hono<{ Bindings: Env; Variables: AuthVars }>()
 
@@ -25,55 +29,43 @@ function esc(s: string): string {
 }
 
 /**
- * Brand-matched dark/light palette for the standalone in-app file viewer
- * pages (`/library/view/:id` and its not-found fallback). These pages reuse
- * tokens.css + components.css, so we re-point the base `--color-*` tokens to
- * the exterior "تيسير" brand palette (deep ink-navy canvas, luminous cyan +
- * warm gold accents) — but SCOPED under `html[data-theme="…"]` only, so the
- * admin page (which has no data-theme) keeps its original academic palette.
- * Only colours/backgrounds change; layout is untouched.
+ * Palette for the standalone in-app file viewer pages
+ * (`/library/view/:id` and its not-found fallback).
+ *
+ * REDESIGN NOTE — APPEARANCE ONLY: these pages reuse tokens.css +
+ * components.css, so the base `--color-*` tokens are re-pointed at the
+ * finished prototype's palette (white canvas + #6C3EF4 purple in light; deep
+ * slate #0E1016 in dark) instead of the previous ink-navy/cyan scheme. The
+ * mapping itself now lives in /static/taysir-theme.css §17.4, which these
+ * pages load; the few rules kept here only re-assert the canvas and the
+ * frosted bar, scoped under `html[data-theme="…"]` so the admin page (which
+ * has no data-theme) is unaffected.
+ *
+ * Nothing about the viewer's behaviour is touched: the gated content URL, the
+ * PDF.js pipeline, the zoom controls and the media elements are unchanged.
  */
 const viewerBrandTheme = `
-  :root { color-scheme: dark; }
-  html[data-theme="dark"] {
-    --color-bg:            #06101c;
-    --color-surface:       #0b1725;
-    --color-surface-2:     #0e1c2c;
-    --color-surface-sunken:#0e1c2c;
-    --color-border:        rgba(255,255,255,.12);
-    --color-border-strong: rgba(255,255,255,.22);
-    --color-primary:       #6ee7dc;
-    --color-primary-hover: #8ff3e9;
-    --color-primary-soft:  rgba(110,231,220,.14);
-    --color-primary-border:rgba(110,231,220,.42);
-    --color-accent:        #efc47a;
-    --color-accent-hover:  #f2d39a;
-    --color-accent-soft:   rgba(239,196,122,.16);
-    --color-ink:           #f7fbff;
-    --color-ink-secondary: rgba(247,251,255,.72);
-    --color-ink-muted:     rgba(247,251,255,.5);
-    --color-text-muted:    rgba(247,251,255,.5);
-    --color-success:       #6ee7dc;
-    --color-warning:       #efc47a;
-    --color-danger:        #f0a58f;
-    --color-on-primary:    #07131d;
-    --color-on-accent:     #07131d;
-    --shadow-focus:        0 0 0 3px rgba(110,231,220,.25);
+  html[data-theme="light"] body,
+  html:not([data-theme="dark"]) body { background-color: var(--bg); color: var(--text); }
+  html[data-theme="dark"] body { background-color: var(--bg); color: var(--text); }
+  html[data-theme="light"] .viewer-shell,
+  html:not([data-theme="dark"]) .viewer-shell { background: var(--bg); }
+  html[data-theme="dark"] .viewer-shell { background: var(--bg); }
+  .viewer-frame { border-color: var(--border-strong); background: var(--bg-elevated); }
+  .viewer-zoombar { background: var(--bg-tabs); }
+  .viewer-zoombar button { color: var(--text); }
+  .viewer-zoombar button:hover { background: var(--purple-soft); color: var(--purple); }
+  .viewer-back { border-radius: var(--radius-btn); font-weight: 800; }
+  .badge-primary {
+    background: var(--purple-soft);
+    color: var(--purple);
+    border-radius: 999px;
+    font-weight: 700;
   }
-  html[data-theme="dark"] body { background-color: var(--color-bg); color: var(--color-ink); }
-  html[data-theme="dark"] .viewer-shell { background: var(--color-surface-2); }
-  html[data-theme="dark"] .viewer-bar { background: var(--color-surface); border-bottom-color: var(--color-border); }
-  html[data-theme="dark"] .viewer-frame { border-color: var(--color-border); }
-  html[data-theme="light"] {
-    --color-bg:            #eef3fb;
-    --color-surface:       #ffffff;
-    --color-surface-2:     #e6edf7;
-    --color-primary:       #0d7d72;
-    --color-primary-hover: #0a5f57;
-    --color-accent:        #b57e28;
-    --color-ink:           #0b1a27;
-    --color-on-primary:    #ffffff;
-    --color-on-accent:     #ffffff;
+  .viewer-pdf .pdf-page {
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    background: var(--illu-paperPure);
   }
 `.trim()
 
@@ -227,19 +219,30 @@ app.get('/library/view/:id', async (c) => {
 
   if (!meta) {
     return c.html(
-      `<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8" />
+      `<!DOCTYPE html><html lang="ar" dir="rtl" data-theme="light"><head><meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="color-scheme" content="dark light" />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#FFFFFF" />
 <title>Not found — تيسير</title>
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+${themeBoot}
 <link href="/static/tokens.css" rel="stylesheet" />
 <link href="/static/components.css" rel="stylesheet" />
+${themeHead}
 <style>${viewerBrandTheme}</style></head>
-<body dir="rtl"><main class="container" style="padding-block: var(--space-9); max-width: var(--container-text); text-align: center;">
+<body class="viewer-shell" dir="rtl">
+${bgDecor}
+<main class="container" style="padding-block: var(--space-9); max-width: var(--container-text); text-align: center; position: relative; z-index: 1;">
+<!-- The "connection lost" illustration: inlined by illustrations.js so its
+     fills follow the --illu-* tokens and re-tint on a theme switch. -->
+<img src="/static/illustrations/connection-lost.svg" alt="" class="taysir-illu float-illu"
+     style="width:min(70vw,320px);margin:0 auto 28px;" />
 <p class="overline">In-app viewer</p><h1>الملف غير متاح</h1>
 <p class="text-lede">هذا الملف غير متاح حاليًا، يرجى التواصل مع المشرف.</p>
 <p><a href="/library" class="btn btn-primary">العودة إلى المكتبة</a></p>
-</main></body></html>`,
+</main>
+<script src="/static/illustrations.js" defer></script>
+</body></html>`,
       404
     )
   }
@@ -277,18 +280,18 @@ app.get('/library/view/:id', async (c) => {
     : ''
 
   return c.html(`<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="ar" dir="rtl" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark light" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#FFFFFF" />
   <title>${title} — تيسير</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  ${themeBoot}
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/components.css" rel="stylesheet" />
+  ${themeHead}
   <style>
     ${viewerBrandTheme}
     .viewer-shell { min-height: 100vh; display: flex; flex-direction: column; background: var(--color-surface-2, #f2ede3); }
@@ -321,10 +324,12 @@ app.get('/library/view/:id', async (c) => {
 </head>
 <body>
   <div class="viewer-shell">
+    ${bgDecor}
     <header class="viewer-bar">
       <a href="/library" class="btn btn-ghost btn-sm viewer-back">&larr; Library</a>
       <span class="viewer-title" title="${title}">${title}</span>
       <span class="viewer-meta">
+        ${themeToggle}
         ${
           kind === 'pdf'
             ? `<span class="viewer-zoombar" role="group" aria-label="التحكم في التكبير">
@@ -417,6 +422,9 @@ app.get('/library/view/:id', async (c) => {
   </script>`
       : ''
   }
+  <!-- Cosmetic only: drives the theme toggle and recolours illustrations.
+       Loaded last; it does not touch the PDF.js pipeline above. -->
+  <script src="/static/illustrations.js" defer></script>
 </body>
 </html>`)
 })

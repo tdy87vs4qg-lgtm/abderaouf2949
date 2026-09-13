@@ -1,77 +1,92 @@
 @import "tailwindcss";
 
+/* REDESIGN (appearance only): re-pointed to the finished prototype's palette
+   and to Almarai. Every Tailwind colour utility already used in the components
+   (bg-ink, text-cyan, text-white/NN, ...) resolves through these, so the whole
+   exterior adopts the prototype look without touching component logic. */
 @theme {
-  --color-ink: #06101c;
-  --color-cyan: #6ee7dc;
-  --color-gold: #efc47a;
-  --font-sans: "Tajawal", sans-serif;
-  --font-display: "Noto Kufi Arabic", sans-serif;
+  --color-ink: #FFFFFF;          /* prototype canvas: white */
+  --color-cyan: #6C3EF4;         /* prototype accent: purple */
+  --color-gold: #6C3EF4;
+  --color-white: #111111;        /* "on-canvas" ink (canvas is now white) */
+  --font-sans: "Almarai", sans-serif;
+  --font-display: "Almarai", sans-serif;
 }
 
 :root {
-  color-scheme: dark;
-  font-family: "Tajawal", sans-serif;
-  background: #050d18;
+  /* The prototype's default theme is LIGHT (white canvas, #111 ink,
+     #6C3EF4 accent). These were the site's dark defaults before the
+     redesign; they now carry the prototype's light values, and the
+     html[data-theme="dark"] block further down carries its dark values. */
+  color-scheme: light;
+  font-family: "Almarai", sans-serif;
+  background: #FFFFFF;
   font-synthesis: none;
   /* ── DARK PALETTE — a deep, refined midnight-navy with a hint of teal.
      Slightly darker & cooler than before so glass surfaces and the cyan/gold
      accents feel more premium and cinematic, with crisper text contrast. */
-  --ink: #050d18;
-  --ink-soft: #0a1524;
-  --cyan: #7bece1;          /* brighter, gem-like teal for accents */
-  --gold: #f0ca86;          /* warmer, softer gold */
-  --white: #f8fbff;
+  --ink: #FFFFFF;
+  --ink-soft: #FAFAFC;
+  --cyan: #6C3EF4;          /* prototype accent */
+  --gold: #6C3EF4;
+  --white: #111111;         /* prototype ink */
 
   /* ── Semantic theme tokens (DARK is the native default) ──────────
      Everything that must flip between light & dark reads from these
      variables. The `data-theme="light"` block below re-points them; the
      rest of the stylesheet stays untouched. */
-  --page-bg: #050d18;
-  --text-strong: #f8fbff;   /* headings / high-emphasis */
-  --text-base: rgba(240, 247, 255, .82);
-  --text-muted: rgba(226, 238, 252, .60);
-  --text-faint: rgba(216, 230, 248, .46);
-  --hairline: rgba(255, 255, 255, .09);
-  --hairline-strong: rgba(255, 255, 255, .16);
-  --surface: rgba(255, 255, 255, .055);
-  --surface-2: rgba(255, 255, 255, .038);
-  --gradient-strong: #fff;   /* start colour of the white→cyan→gold text gradients */
-  --gradient-mid: #9df8ee;
-  --gradient-end: #efc985;
-  --ambient-photo-opacity: .62;
-  --ambient-veil-strength: .88;
+  --page-bg: #FFFFFF;
+  --text-strong: #111111;   /* headings / high-emphasis */
+  --text-base: rgba(17, 17, 17, .88);
+  --text-muted: rgba(17, 17, 17, .70);
+  --text-faint: rgba(17, 17, 17, .40);
+  --hairline: rgba(17, 17, 17, .06);
+  --hairline-strong: rgba(17, 17, 17, .08);
+  --surface: #FFFFFF;
+  --surface-2: #F5F4FA;
+  --gradient-strong: #111111;
+  --gradient-mid: #6C3EF4;
+  --gradient-end: #5828E0;
+  /* The old cinematic night photo + glow orbs are removed from the
+     prototype look: the canvas is plain white with faint doodles. */
+  --ambient-photo-opacity: 0;
+  --ambient-veil-strength: 0;
 }
 
 /* ── LIGHT MODE ─────────────────────────────────────────────────────
    A warm, high-contrast daylight palette. Only the semantic tokens are
    re-pointed here; each dark component picks up light values automatically.
    Deep-charcoal text on soft off-white keeps Arabic script crisp & readable. */
-html[data-theme="light"] {
-  color-scheme: light;
+/* REDESIGN: this block used to hold the light palette. Light is now the
+   base (:root) above, matching the prototype, so this selector is retargeted
+   to data-theme="dark" and carries the prototype's DARK values verbatim
+   (deep slate #0E1016 canvas, #8F6BFF purple, soft off-white text). */
+html[data-theme="dark"] {
+  color-scheme: dark;
   /* A cool, airy porcelain-blue daylight. Slightly bluer & brighter than a
      flat off-white so the teal/gold accents pop and the page reads as a
      crafted product rather than default white. */
-  background: #eef4fc;
-  --page-bg: #eef4fc;
-  --ink: #eef4fc;
-  --white: #0a1826;
-  --cyan: #0b8377;   /* deep teal — AA contrast on the porcelain bg */
-  --gold: #a9741f;   /* rich bronze-gold — readable on light */
+  background: #0E1016;
+  --page-bg: #0E1016;
+  --ink: #0E1016;
+  --white: #F2F2F5;
+  --cyan: #8F6BFF;
+  --gold: #8F6BFF;
 
   /* Near-black slate ink for maximum Arabic-script legibility. */
-  --text-strong: #081521;
-  --text-base: rgba(8, 21, 33, .88);
-  --text-muted: rgba(8, 21, 33, .66);
-  --text-faint: rgba(8, 21, 33, .50);
-  --hairline: rgba(8, 21, 33, .11);
-  --hairline-strong: rgba(8, 21, 33, .18);
-  --surface: rgba(8, 21, 33, .045);
-  --surface-2: rgba(8, 21, 33, .03);
-  --gradient-strong: #081521;
-  --gradient-mid: #0b8377;
-  --gradient-end: #a9741f;
-  --ambient-photo-opacity: .14;
-  --ambient-veil-strength: .3;
+  --text-strong: #F2F2F5;
+  --text-base: rgba(242, 242, 245, .88);
+  --text-muted: rgba(242, 242, 245, .72);
+  --text-faint: rgba(242, 242, 245, .38);
+  --hairline: rgba(255, 255, 255, .07);
+  --hairline-strong: rgba(255, 255, 255, .10);
+  --surface: #171923;
+  --surface-2: #191C25;
+  --gradient-strong: #F2F2F5;
+  --gradient-mid: #A78BFF;
+  --gradient-end: #8F6BFF;
+  --ambient-photo-opacity: 0;
+  --ambient-veil-strength: 0;
 }
 
 * { box-sizing: border-box; }
@@ -121,7 +136,7 @@ input, textarea, select {
 }
 a { color: inherit; text-decoration: none; }
 ::selection { background: rgba(123, 236, 225, .28); color: #06121e; }
-html[data-theme="light"] ::selection { background: rgba(11, 131, 119, .22); color: #081521; }
+html[data-theme="dark"] ::selection { background: rgba(11, 131, 119, .22); color: #081521; }
 
 .app-shell { isolation: isolate; }
 .app-shell::after {
@@ -923,3 +938,237 @@ html[data-theme="light"] .inapp-notice__icon {
   .inapp-notice__copy,
   .inapp-notice__dismiss { width: 100%; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   REDESIGN OVERRIDES — PROTOTYPE SKIN (appearance only)
+
+   The rules above were authored for a dark, cinematic, photo-backed
+   design. The finished prototype is the opposite: a plain white (or
+   deep-slate) canvas, faint doodles, Almarai type and one purple
+   accent. The semantic tokens have already been re-pointed at the
+   top of this file; this final block overrides the remaining
+   HARD-CODED colours/gradients so nothing dark survives.
+
+   This block only sets colour, background, border, shadow and font
+   properties on existing class names. It changes no layout contract
+   and no component logic.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ---- canvas ---------------------------------------------------- */
+html, body { background: var(--page-bg); color: var(--text-strong); }
+body { font-family: 'Almarai', sans-serif; line-height: 1.7; }
+h1, h2, h3, h4 { font-family: 'Almarai', sans-serif; font-weight: 800; letter-spacing: -0.01em; }
+
+/* The cinematic night photo / veil / glow orbs are not part of the
+   prototype look. Hidden rather than removed from the DOM so the
+   AmbientBackdrop component keeps rendering unchanged. */
+.ambient-photo, .ambient-veil, .ambient-orb { display: none !important; }
+.app-shell { background: var(--page-bg); }
+.app-shell::after { border-color: transparent; }
+.hero-section::before, .hero-vignette { display: none; }
+.section-shell, .full-bleed-story { background: transparent; border-block-color: var(--hairline); }
+.story-line { display: none; }
+
+/* ---- header / nav ---------------------------------------------- */
+.site-header { border-bottom-color: var(--hairline); }
+.site-header--scrolled {
+  background: var(--header-bg);
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  border-color: var(--border);
+}
+.brand-word {
+  font-family: 'Almarai', sans-serif;
+  font-weight: 800;
+  color: var(--text-strong);
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+}
+.brand-underscore { background: linear-gradient(to left, var(--purple), transparent); }
+.footer-brand { font-family: 'Almarai', sans-serif; color: var(--text-strong); }
+.nav-link { color: var(--text-base); font-weight: 700; }
+.nav-link:hover, .nav-link--active { color: var(--purple); }
+.nav-link::after { background: var(--purple); }
+.menu-button {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-strong);
+  border-radius: 12px;
+}
+.menu-button:hover { background: var(--purple-soft); }
+.mobile-menu__scrim { background: rgba(17, 17, 17, .45); }
+html[data-theme="dark"] .mobile-menu__scrim { background: rgba(6, 7, 11, .62); }
+.mobile-menu {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-card);
+}
+html[data-theme="dark"] .mobile-menu { background: #171923; }
+.mobile-menu__link { color: var(--text-base); }
+.mobile-menu__link:hover, .mobile-menu__link:active { background: var(--purple-soft); color: var(--purple); }
+
+/* ---- buttons (the prototype's pill shapes) --------------------- */
+.button-primary, .button-secondary, .button-ghost {
+  font-family: 'Almarai', sans-serif;
+  border-radius: var(--radius-btn);
+  font-weight: 800;
+}
+.button-primary {
+  color: #FFFFFF;
+  background: var(--purple);
+  box-shadow: var(--shadow-purple);
+}
+.button-primary:hover {
+  background: var(--purple-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-purple-hover);
+}
+.button-secondary {
+  color: var(--text-strong);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  box-shadow: none;
+}
+.button-secondary:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-soft); }
+.button-ghost { color: var(--text-base); }
+.button-ghost:hover { color: var(--purple); }
+
+/* ---- type / accents -------------------------------------------- */
+.eyebrow, .hero-eyebrow { color: var(--purple); font-family: 'Almarai', sans-serif; }
+.eyebrow::before { background: linear-gradient(to left, var(--purple), transparent); }
+.hero-eyebrow__dot { background: var(--purple); box-shadow: 0 0 0 4px var(--purple-soft); }
+.section-index { color: var(--purple); }
+.section-title, .display-quote, .hero-slogan, .story-paragraph, .subscription-title {
+  font-family: 'Almarai', sans-serif;
+  color: var(--text-strong);
+  text-shadow: none;
+}
+.section-copy, .platform-paragraph { color: var(--text-muted); font-family: 'Almarai', sans-serif; }
+.hero-slogan .write-in__plain { color: var(--text-base); }
+.hero-slogan .write-in__brand, .story-paragraph .write-in__brand { text-shadow: none; }
+.write-in__plain { color: var(--text-base); }
+.write-in__brand { color: var(--purple); }
+.text-gradient, .platform-brand {
+  color: var(--purple);
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+}
+.scroll-cue { color: var(--text-faint); }
+.quote-mark, .quote-mark p { color: var(--text-muted); }
+.quote-mark span { color: var(--purple); }
+
+/* Tailwind's text-white/NN utilities were written for a dark canvas.
+   Re-point them to the prototype ink so body copy stays readable. */
+.text-white { color: var(--text-strong) !important; }
+[class*="text-white/"] { color: var(--text-muted) !important; }
+.border-white\/8 { border-color: var(--hairline) !important; }
+
+/* ---- cards / surfaces ------------------------------------------ */
+.auth-card, .decision-card, .offering-card, .final-cta, .stat-hero, .laureate {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+  color: var(--text-strong);
+}
+html[data-theme="dark"] .auth-card,
+html[data-theme="dark"] .decision-card,
+html[data-theme="dark"] .offering-card,
+html[data-theme="dark"] .final-cta,
+html[data-theme="dark"] .stat-hero,
+html[data-theme="dark"] .laureate { background: #171923; }
+.laureate { box-shadow: none; border: 0; border-bottom: 1px solid var(--hairline); border-radius: 0; background: transparent; }
+.auth-card__glow, .decision-card__shine, .papers-desk__grain { display: none; }
+.laureate__ordinal { -webkit-text-stroke: 1px var(--border-strong); }
+.laureate__school { color: var(--text-faint); }
+.papers-desk__hint { color: var(--text-muted); }
+.papers-desk__hint-dot { background: var(--purple); box-shadow: 0 0 10px var(--purple-soft); }
+.paper__text, .paper__clip { font-family: 'Almarai', sans-serif; }
+
+/* ---- Google sign-in button ------------------------------------- */
+.google-signin-button {
+  font-family: 'Almarai', sans-serif;
+  font-weight: 800;
+  border-radius: var(--radius-btn);
+  background: var(--bg-elevated);
+  color: var(--text-strong);
+  border: 1.5px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.google-signin-button:hover { border-color: var(--purple); box-shadow: var(--shadow-md); }
+html[data-theme="dark"] .google-signin-button { background: #1F2231; }
+
+/* ---- copy-link / share panel (the in-app-browser notice) ------- */
+.inapp-notice__backdrop { background: rgba(17, 17, 17, .55); }
+html[data-theme="dark"] .inapp-notice__backdrop { background: rgba(6, 7, 11, .72); }
+.inapp-notice__panel {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
+  color: var(--text-strong);
+  font-family: 'Almarai', sans-serif;
+}
+html[data-theme="dark"] .inapp-notice__panel { background: #171923; }
+.inapp-notice__glow { display: none; }
+.inapp-notice__icon { background: var(--purple-soft); color: var(--purple); }
+.inapp-notice__title { color: var(--text-strong); font-weight: 800; }
+.inapp-notice__body { color: var(--text-base); }
+.inapp-notice__reason, .inapp-notice__steps { color: var(--text-muted); }
+.inapp-notice__url {
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 12px;
+  color: var(--text-base);
+}
+.inapp-notice__copy {
+  background: var(--purple);
+  color: #FFFFFF;
+  border: 0;
+  border-radius: var(--radius-btn);
+  font-family: 'Almarai', sans-serif;
+  font-weight: 800;
+  box-shadow: var(--shadow-purple);
+}
+.inapp-notice__copy:hover { background: var(--purple-dark); }
+.inapp-notice__dismiss {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-btn);
+  font-family: 'Almarai', sans-serif;
+  font-weight: 700;
+}
+.inapp-notice__dismiss:hover { color: var(--purple); border-color: var(--purple); }
+
+/* ---- React theme toggle ----------------------------------------
+   The exterior keeps its OWN React toggle component (ThemeToggle.tsx,
+   driven by ThemeProvider). Only its skin is restyled to match the
+   prototype's day/night pill; its behaviour is untouched. */
+.theme-toggle {
+  background: linear-gradient(135deg, #1B1A3B 0%, #2A2360 55%, #3F2A78 100%);
+  border: 1px solid var(--border-strong);
+}
+.theme-toggle--light {
+  background: linear-gradient(135deg, #FFE7A3 0%, #FFB88A 55%, #FF9DBF 100%);
+}
+.theme-toggle__glow { display: none; }
+.theme-toggle__knob {
+  background: linear-gradient(160deg, #F5F3FF 0%, #D9CFFF 100%);
+  color: #6B5FFF;
+}
+.theme-toggle--light .theme-toggle__knob {
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFF3D4 100%);
+  color: #F59E2A;
+}
+
+/* ---- misc ------------------------------------------------------- */
+::selection { background: var(--purple-soft); color: var(--text-strong); }
+html[data-theme="dark"] ::selection { background: rgba(143,107,255,.28); color: #F2F2F5; }
+.stat-divider, .laureate__rule, .value-item { border-color: var(--hairline); }
+.route-loading { background: transparent; }

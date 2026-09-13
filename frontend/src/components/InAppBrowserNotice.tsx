@@ -143,6 +143,27 @@ export default function InAppBrowserNotice() {
       <div className="inapp-notice__panel" tabIndex={-1} autoFocus>
         <div className="inapp-notice__glow" aria-hidden="true" />
 
+        {/* ── REDESIGN (appearance only) ──────────────────────────────────
+            This panel IS the copy-link / share view: it is what a visitor
+            sees when a تيسير link is opened from another site (TikTok /
+            Instagram / Facebook / Telegram), and its job is to get that link
+            copied into a real browser.
+
+            The "mail-sent" illustration is therefore placed here. It is
+            rendered as an <img class="taysir-illu">, which
+            /static/illustrations.js swaps for an inline <svg> whose fills
+            read the --illu-* custom properties — so it re-tints itself
+            smoothly whenever the light/dark theme changes, with no second
+            download and no flash. Styling lives in taysir-theme.css §17.5(B).
+
+            Purely decorative: aria-hidden, empty alt, and it sits outside
+            the panel's labelled title/body. None of the detection, the
+            clipboard write, the dismissal or the sessionStorage key below is
+            touched. */}
+        <span className="inapp-notice__illu" aria-hidden="true">
+          <img src="/static/illustrations/mail-sent.svg" alt="" className="taysir-illu" />
+        </span>
+
         <span className="inapp-notice__icon" aria-hidden="true">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="9" />

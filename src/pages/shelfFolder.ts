@@ -74,6 +74,10 @@
 // param is carried in the URL but deliberately not consumed yet.
 // ============================================================================
 
+// Presentation-only shared markup for the redesign (faint background doodles
+// and the theme stylesheet links). Pure string constants — no logic.
+import { bgDecor, themeHead } from './_decor'
+
 export const shelfFolderPage = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -110,8 +114,17 @@ export const shelfFolderPage = `<!DOCTYPE html>
 
   <!-- isolated shelf skin — every rule inside is scoped under .shelf-root -->
   <link rel="stylesheet" href="/static/shelf.css" />
+
+  <!-- REDESIGN (appearance only): the prototype theme, loaded LAST so its
+       tokens win. Mirrors src/pages/shelf.ts exactly, keeping both shelf pages
+       on one identical <head>. The scene artwork and this page's OWN theme
+       toggle (handled by /static/shelf/js/app.js) are left untouched. -->
+  ${themeHead}
 </head>
-<body>
+<body class="shelf-page">
+
+<!-- Prototype backdrop: inert (aria-hidden + pointer-events:none). -->
+${bgDecor}
 
 <!-- ISOLATION CONTAINER — required: all of shelf.css lives under .shelf-root.
      "folder-page" moved here off <body> (the rule is ".shelf-root .folder-page"). -->

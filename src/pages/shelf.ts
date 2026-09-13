@@ -61,6 +61,10 @@
 // books still point wherever the staged config.js points them.
 // ============================================================================
 
+// Presentation-only shared markup for the redesign (faint background doodles
+// and the theme stylesheet links). Pure string constants — no logic.
+import { bgDecor, themeHead } from './_decor'
+
 export const shelfPage = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -97,8 +101,19 @@ export const shelfPage = `<!DOCTYPE html>
 
   <!-- isolated shelf skin — every rule inside is scoped under .shelf-root -->
   <link rel="stylesheet" href="/static/shelf.css" />
+
+  <!-- REDESIGN (appearance only): the prototype theme, loaded LAST so its
+       tokens win. It re-points the shelf's glass-panel variables and the page
+       canvas to the prototype palette and switches the type to Almarai.
+       The illustrated room itself (wood, lamps, book spines) is artwork and is
+       left untouched, as is this page's OWN theme toggle (#theme-toggle,
+       handled by /static/shelf/js/app.js) — deliberately not re-wired. -->
+  ${themeHead}
 </head>
-<body>
+<body class="shelf-page">
+
+<!-- Prototype backdrop: inert (aria-hidden + pointer-events:none). -->
+${bgDecor}
 
 <!-- ISOLATION CONTAINER — required: all of shelf.css lives under .shelf-root -->
 <div class="shelf-root">

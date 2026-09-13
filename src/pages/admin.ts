@@ -30,6 +30,10 @@
 // ============================================================================
 
 import type { SubscriberStats } from '../lib/users'
+// Presentation-only shared markup for the redesign (the animated sun/moon
+// toggle, the pre-paint theme resolver and the theme stylesheet links).
+// Pure string constants — no logic.
+import { themeToggle, themeBoot, themeHead } from './_decor'
 
 /** HTML-escape helper for safely injecting server values into the page. */
 function esc(s: string): string {
@@ -69,18 +73,21 @@ export function adminPage(stats: SubscriberStats, adminEmail: string, adminId: s
   const pending = stats.pendingSubscribers
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Admin · Dashboard — تيسير</title>
+  <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  ${themeBoot}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="/static/tokens.css" rel="stylesheet" />
   <link href="/static/components.css" rel="stylesheet" />
+  ${themeHead}
   <style>
     .admin-shell { min-height: 100vh; background: var(--color-surface-2, #f2ede3); }
     .admin-bar {
@@ -241,12 +248,16 @@ export function adminPage(stats: SubscriberStats, adminEmail: string, adminId: s
     }
   </style>
 </head>
-<body>
+<!-- REDESIGN (appearance only): the admin-page class opts this console into the
+     prototype palette + Almarai via /static/taysir-theme.css §17.6. The
+     console's markup, forms and every endpoint they call are unchanged. -->
+<body class="admin-page">
   <div class="admin-shell">
     <header class="admin-bar">
       <a href="/" class="wordmark" aria-label="تيسير — home">تيسير</a>
       <span class="admin-tag">Admin</span>
       <span class="admin-who">Signed in as ${esc(adminEmail)}</span>
+      <span style="margin-inline-start:auto;">${themeToggle}</span>
     </header>
 
     <main class="admin-main" id="admin-dashboard">
@@ -454,6 +465,9 @@ export function adminPage(stats: SubscriberStats, adminEmail: string, adminId: s
        regardless). -->
   <script>window.__ADMIN_ID__ = ${JSON.stringify(adminId)};</script>
   <script src="/static/admin.js" defer></script>
+  <!-- Cosmetic only: drives the theme toggle. Loaded after admin.js and does
+       not wrap, patch or call any function in it. -->
+  <script src="/static/illustrations.js" defer></script>
 </body>
 </html>`
 }

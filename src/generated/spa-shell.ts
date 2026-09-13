@@ -5,36 +5,43 @@ export const spaShell = `<!doctype html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07111f" />
+    <meta name="theme-color" content="#FFFFFF" />
     <meta name="description" content="تيسير — منصّتك التعليمية المتكاملة للتفوق في البكالوريا." />
     <link rel="icon" type="image/svg+xml" href="/react/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <title>تيسير | لأننا نؤمن أن خلف كل تفوقٍ حلمٌ يستحق الدعم</title>
+    <!-- REDESIGN (appearance only): the prototype's Almarai type + the shared
+         prototype theme (tokens, faint doodles, sun/moon toggle styling and the
+         illustration recolouring variables). Loaded here so the exterior and
+         the internal pages resolve to ONE palette. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet" />
+    <link href="/static/taysir-theme.css" rel="stylesheet" />
     <script>
       /* Apply the saved (or OS-preferred) theme before paint to avoid a flash
          of the wrong palette. Mirrors ThemeProvider's resolution logic. */
       (function () {
         try {
+          /* REDESIGN: the finished prototype's default is LIGHT (white canvas).
+             Same storage key and same values as before — only the fallback
+             changed from dark to light, matching the prototype. */
           var t = localStorage.getItem('taysir-theme');
-          if (t !== 'light' && t !== 'dark') {
-            t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-              ? 'light'
-              : 'dark';
-          }
+          if (t !== 'light' && t !== 'dark') t = 'light';
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var m = document.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', t === 'light' ? '#eef3fb' : '#07111f');
+          if (m) m.setAttribute('content', t === 'light' ? '#FFFFFF' : '#0E1016');
         } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
     </script>
-    <script type="module" crossorigin src="/react/assets/index-Dla06M37.js"></script>
+    <script type="module" crossorigin src="/react/assets/index-BinZjflk.js"></script>
     <link rel="modulepreload" crossorigin href="/react/assets/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/assets/react-vendor-C5_X-1Nf.js">
     <link rel="modulepreload" crossorigin href="/react/assets/icons-DFv0dkUs.js">
-    <link rel="stylesheet" crossorigin href="/react/assets/index-ow5UO3Sz.css">
+    <link rel="stylesheet" crossorigin href="/react/assets/index-z16aKLVQ.css">
     <link rel="stylesheet" crossorigin href="/react/assets/vendor-0prxbah9.css">
   </head>
   <body>
@@ -52,24 +59,27 @@ export const spaShell = `<!doctype html>
       <style>
         #app-boot{position:fixed;inset:0;display:flex;flex-direction:column;
           align-items:center;justify-content:center;gap:22px;
-          background:var(--color-ink,#06101c);z-index:1;
-          font-family:'Noto Kufi Arabic','Tajawal',system-ui,sans-serif}
-        html[data-theme="light"] #app-boot{background:#eef3fb}
+          background:var(--bg,#FFFFFF);z-index:1;
+          font-family:'Almarai',system-ui,sans-serif}
+        html[data-theme="dark"] #app-boot{background:#0E1016}
         .app-boot__brand{font-size:2rem;font-weight:800;letter-spacing:.04em;
-          color:#6ee7dc;text-shadow:0 0 24px rgba(110,231,220,.35);
+          color:#6C3EF4;text-shadow:none;
           animation:app-boot-pulse 1.6s ease-in-out infinite}
-        html[data-theme="light"] .app-boot__brand{color:#0d7d72;text-shadow:none}
+        html[data-theme="dark"] .app-boot__brand{color:#8F6BFF}
         .app-boot__spinner{width:34px;height:34px;border-radius:50%;
-          border:3px solid rgba(110,231,220,.22);border-top-color:#6ee7dc;
+          border:3px solid rgba(108,62,244,.16);border-top-color:#6C3EF4;
           animation:app-boot-spin .8s linear infinite}
-        html[data-theme="light"] .app-boot__spinner{
-          border-color:rgba(13,125,114,.2);border-top-color:#0d7d72}
+        html[data-theme="dark"] .app-boot__spinner{
+          border-color:rgba(143,107,255,.20);border-top-color:#8F6BFF}
         @keyframes app-boot-spin{to{transform:rotate(360deg)}}
         @keyframes app-boot-pulse{0%,100%{opacity:.7}50%{opacity:1}}
         @media (prefers-reduced-motion:reduce){
           .app-boot__brand,.app-boot__spinner{animation:none}}
       </style>
     </div>
+    <!-- Cosmetic only: inlines <img class="taysir-illu"> illustrations so their
+         fills follow the theme variables. It patches no React code. -->
+    <script src="/static/illustrations.js" defer></script>
   </body>
 </html>
 `
