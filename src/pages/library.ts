@@ -30,30 +30,20 @@ const icons = {
   grid: `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>`,
   list: `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M4 6h2v2H4zM4 11h2v2H4zM4 16h2v2H4zM9 6h11v2H9zM9 11h11v2H9zM9 16h11v2H9z"/></svg>`,
   chevron: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8.6 5.6 14 11l-5.4 5.4L10 18l7-7-7-7z"/></svg>`,
-  menu: `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>`,
-  account: `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/></svg>`,
   logout: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>`,
   tiktok: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.3 0 .58.05.85.13V9.4a6.33 6.33 0 0 0-.85-.05A6.34 6.34 0 0 0 3.15 15.7a6.34 6.34 0 0 0 10.86 4.43 6.3 6.3 0 0 0 1.82-4.45V8.6a8.18 8.18 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.01-.03Z"/></svg>`,
   home: `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`,
 }
 
 /* -------------------------------------------------------------- topbar
-   Drive-style app bar: brand+wordmark, big search field, account glyph. */
+   Slim app bar: on the left only the "تيسير" wordmark; on the right a small
+   3D search box with the red 3D log-out button sitting to its left. */
 const topbar = `
 <header class="gd-topbar" id="gd-topbar">
   <div class="gd-topbar-left">
-    <button type="button" class="gd-icon-btn gd-menu-toggle" id="gd-menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="gd-sidebar">${icons.menu}</button>
     <a href="/" class="gd-brand" aria-label="تيسير — الرئيسية">
       <span class="gd-brand-name">تيسير</span>
     </a>
-  </div>
-
-  <div class="gd-search" role="search">
-    <button type="button" class="gd-search-icon" id="gd-search-icon" aria-label="Search">${icons.search}</button>
-    <input type="search" class="gd-search-input" id="lib-search"
-           placeholder="Search in Library" autocomplete="off" spellcheck="false"
-           aria-label="Search files and folders across the library" />
-    <button type="button" class="gd-search-clear" id="lib-search-clear" aria-label="Clear search" hidden>${icons.close}</button>
   </div>
 
   <div class="gd-topbar-right">
@@ -62,8 +52,15 @@ const topbar = `
          persists to the SAME 'taysir-theme' key the site already used. -->
     ${themeToggle}
     <a href="/" class="gd-icon-btn gd-hide-mobile" data-tooltip="Home" aria-label="Home">${icons.home}</a>
-    <button type="button" class="gd-account js-subscribe" id="subscribe-header" data-tooltip="Account" aria-label="Account">${icons.account}</button>
-    <button type="button" class="gd-icon-btn gd-logout" id="lib-logout" data-tooltip="Log out" aria-label="Log out">${icons.logout}</button>
+    <button type="button" class="gd-logout" id="lib-logout" data-tooltip="Log out" aria-label="Log out">${icons.logout}</button>
+
+    <div class="gd-search" role="search">
+      <button type="button" class="gd-search-icon" id="gd-search-icon" aria-label="Search">${icons.search}</button>
+      <input type="search" class="gd-search-input" id="lib-search"
+             placeholder="Search in Library" autocomplete="off" spellcheck="false"
+             aria-label="Search files and folders across the library" />
+      <button type="button" class="gd-search-clear" id="lib-search-clear" aria-label="Clear search" hidden>${icons.close}</button>
+    </div>
   </div>
 </header>`
 
