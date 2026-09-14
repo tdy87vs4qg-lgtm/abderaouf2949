@@ -1,0 +1,1161 @@
+/* ==========================================================
+   تيسير — Taysir landing (RTL Arabic)
+   Palette: purple #6C3EF4 | white #FFFFFF | black #111111
+   Font: Almarai (400, 800)
+
+   Dark mode: added via [data-theme="dark"] on <html>.
+   Every color, surface, shadow and illustration fill has a
+   dedicated dark counterpart — chosen (not inverted) — so
+   the site looks intentionally designed in both modes.
+   ========================================================== */
+
+/* ==========================================================
+   1. THEME TOKENS
+   ========================================================== */
+:root,
+:root[data-theme="light"] {
+  /* Brand */
+  --purple:       #6C3EF4;
+  --purple-dark:  #5828E0;
+  --purple-soft:  rgba(108, 62, 244, 0.08);
+
+  /* Neutrals */
+  --bg:           #FFFFFF;
+  --bg-elevated:  #FFFFFF;         /* cards, header background */
+  --bg-input:     #FAFAFC;
+  --bg-tabs:      #F5F4FA;
+  --footer-bg:    #17151E;
+
+  --text:         #111111;
+  --text-soft:    rgba(17, 17, 17, 0.7);
+  --text-mute:    rgba(17, 17, 17, 0.4);
+
+  --border:       rgba(17, 17, 17, 0.06);
+  --border-strong:rgba(17, 17, 17, 0.08);
+  --border-input: rgba(17, 17, 17, 0.08);
+  --check-border: rgba(17, 17, 17, 0.25);
+
+  /* Header on scroll (frosted) */
+  --header-bg:    rgba(255, 255, 255, 0.92);
+
+  /* Decorative doodles */
+  --doodle-color:   #111111;
+  --doodle-opacity: 0.06;
+  --doodle-opacity-soft: 0.05;
+
+  /* Illustration semantic fills (matches SVG hex map in script.js) */
+  --illu-outline:    #111111;
+  --illu-mid:        #222222;
+  --illu-accent:     #6C3EF4;
+  --illu-skin:       #EFD9CC;
+  --illu-paper:      #F2F2F5;
+  --illu-paperAlt:   #E8E8EE;
+  --illu-paperPure:  #FFFFFF;
+
+  /* Shadows */
+  --shadow-sm:      0 2px 8px rgba(17, 17, 17, 0.04);
+  --shadow-md:      0 8px 24px rgba(17, 17, 17, 0.06);
+  --shadow-lg:      0 24px 60px rgba(17, 17, 17, 0.10);
+  --shadow-purple:  0 12px 30px rgba(108, 62, 244, 0.28);
+  --shadow-purple-hover: 0 16px 36px rgba(108, 62, 244, 0.35);
+  --shadow-tab:     0 4px 14px rgba(17, 17, 17, 0.08);
+  --shadow-focus:   0 0 0 4px rgba(108, 62, 244, 0.14);
+
+  /* Radii */
+  --radius-card: 20px;
+  --radius-btn:  30px;
+  --container:   1100px;
+
+  /* Motion */
+  --theme-duration: 0.42s;
+  --theme-ease:     cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* -----------------------  DARK THEME  ----------------------
+   Carefully designed second version — NOT auto-inverted.
+   - deep soft slate background (#0E1016 / #14161F cards)
+   - soft off-white text
+   - brighter purple that pops on dark
+   - illustrations recolored to purple + soft light neutrals
+   ----------------------------------------------------------- */
+:root[data-theme="dark"] {
+  --purple:       #8F6BFF;
+  --purple-dark:  #7A54FF;
+  --purple-soft:  rgba(143, 107, 255, 0.16);
+
+  --bg:           #0E1016;
+  --bg-elevated:  #17192200;        /* set via layered surfaces below */
+  --bg-input:     #1A1D28;
+  --bg-tabs:      #191C25;
+  --footer-bg:    #0A0B10;
+
+  --text:         #F2F2F5;
+  --text-soft:    rgba(242, 242, 245, 0.72);
+  --text-mute:    rgba(242, 242, 245, 0.38);
+
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.10);
+  --border-input:  rgba(255, 255, 255, 0.09);
+  --check-border:  rgba(255, 255, 255, 0.28);
+
+  --header-bg:    rgba(14, 16, 22, 0.78);
+
+  --doodle-color:   #F2F2F5;
+  --doodle-opacity: 0.055;
+  --doodle-opacity-soft: 0.045;
+
+  /* Illustrations recolored for dark: no more black silhouettes;
+     replace with a deep desaturated purple. Accent is brighter.
+     Skin tone is softened. Paper tones are a family of dark
+     purples so cards inside the illustrations still feel
+     paper-like without being white. */
+  --illu-outline:    #201B33;    /* was black — now deep indigo */
+  --illu-mid:        #2B2445;    /* mid gray -> slightly lighter deep indigo */
+  --illu-accent:     #A78BFF;    /* brighter purple pops on dark */
+  --illu-skin:       #D9B7A0;    /* softer skin so it doesn't glow */
+  --illu-paper:      #E6E2F5;    /* off-white with a lilac cast */
+  --illu-paperAlt:   #C9C2E8;    /* darker paper for depth */
+  --illu-paperPure:  #F3F0FF;
+
+  --shadow-sm:      0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md:      0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-lg:      0 28px 70px rgba(0, 0, 0, 0.55);
+  --shadow-purple:  0 12px 30px rgba(143, 107, 255, 0.35);
+  --shadow-purple-hover: 0 18px 40px rgba(143, 107, 255, 0.45);
+  --shadow-tab:     0 4px 14px rgba(0, 0, 0, 0.4);
+  --shadow-focus:   0 0 0 4px rgba(143, 107, 255, 0.22);
+}
+
+/* ==========================================================
+   2. GLOBAL COLOR TRANSITIONS
+   Applied only during a toggle (root gets .theme-transitioning)
+   so we don't pay for transitions during normal interactions.
+   ========================================================== */
+:root.theme-transitioning,
+:root.theme-transitioning *:not(.no-theme-fade) {
+  transition:
+    background-color var(--theme-duration) var(--theme-ease),
+    color            var(--theme-duration) var(--theme-ease),
+    border-color     var(--theme-duration) var(--theme-ease),
+    box-shadow       var(--theme-duration) var(--theme-ease),
+    fill             var(--theme-duration) var(--theme-ease),
+    stroke           var(--theme-duration) var(--theme-ease),
+    opacity          var(--theme-duration) var(--theme-ease) !important;
+}
+
+/* ==========================================================
+   3. BASE
+   ========================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Almarai', sans-serif;
+  font-weight: 400;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html, body { overflow-x: hidden; max-width: 100%; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+img, svg { max-width: 100%; display: block; }
+
+h1, h2, h3, h4 {
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+p { margin: 0; color: var(--text); }
+
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================
+   4. BACKGROUND DOODLES
+   ========================================================== */
+.bg-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: var(--doodle-color);
+}
+.doodle {
+  position: absolute;
+  opacity: var(--doodle-opacity);
+}
+.doodle.d1 { width: 420px; top: 40px; right: -80px; }
+.doodle.d2 { width: 380px; top: 480px; left: -60px; }
+.doodle.d3 { width: 180px; top: 700px; right: 40px; }
+.doodle.d4 { width: 60px;  top: 240px; left: 12%; }
+.doodle.d5 { width: 220px; top: 1200px; left: -60px; opacity: var(--doodle-opacity-soft); }
+.doodle.d6 { width: 200px; top: 1500px; right: 5%; }
+.doodle.d7 { width: 420px; top: 1900px; left: 8%; }
+.doodle.d8 { width: 44px;  top: 900px; right: 20%; }
+
+/* ==========================================================
+   5. HEADER
+   ========================================================== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--header-bg);
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 28px;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Nav on desktop */
+.nav-desktop {
+  display: flex;
+  gap: 36px;
+  align-items: center;
+}
+.nav-desktop a {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  position: relative;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+.nav-desktop a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: 0;
+  height: 2px;
+  width: 0;
+  background: var(--purple);
+  transition: width 0.25s ease;
+}
+.nav-desktop a:hover { color: var(--purple); }
+.nav-desktop a:hover::after { width: 100%; }
+
+/* Hamburger */
+.hamburger {
+  display: none;
+  background: transparent;
+  border: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+.hamburger:hover { background: var(--purple-soft); }
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.25s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  padding: 12px 24px 20px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.mobile-menu a {
+  padding: 14px 0;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.mobile-menu a:last-child { border-bottom: 0; }
+.mobile-menu[data-open="true"] { display: flex; }
+
+/* ==========================================================
+   6. THEME TOGGLE — sun/moon pill switch
+   Distinctive, elegant, and animated. The thumb slides, the
+   two icons cross-fade + rotate, and tiny stars fade in on
+   the moon side when dark.
+   ========================================================== */
+.theme-toggle {
+  --w: 62px;
+  --h: 32px;
+  --thumb: 26px;
+
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: var(--w);
+  height: var(--h);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+.theme-toggle:focus-visible .theme-toggle-track {
+  box-shadow: 0 0 0 3px var(--purple-soft), inset 0 0 0 1px var(--purple);
+}
+
+.theme-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  /* Two gradient stacks — day and night — cross-fade via background-image.
+     Fallback: solid color so the thing never looks broken. */
+  background:
+    linear-gradient(135deg, #FFE7A3 0%, #FFB88A 55%, #FF9DBF 100%);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  overflow: hidden;
+  transition:
+    background var(--theme-duration) var(--theme-ease),
+    border-color var(--theme-duration) var(--theme-ease),
+    box-shadow 0.2s ease;
+}
+:root[data-theme="dark"] .theme-toggle-track {
+  background:
+    radial-gradient(circle at 78% 28%, rgba(255,255,255,0.10), transparent 45%),
+    linear-gradient(135deg, #1B1A3B 0%, #2A2360 55%, #3F2A78 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Tiny star pinpricks — only visible in dark mode */
+.theme-toggle-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #F2F2F5;
+  border-radius: 999px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--theme-duration) var(--theme-ease),
+    transform var(--theme-duration) var(--theme-ease);
+}
+.theme-toggle-star.s1 { top: 8px;  left: 10px; }
+.theme-toggle-star.s2 { top: 20px; left: 22px; width: 2px; height: 2px; }
+.theme-toggle-star.s3 { top: 6px;  left: 26px; width: 2px; height: 2px; }
+:root[data-theme="dark"] .theme-toggle-star {
+  opacity: 0.9;
+  transform: scale(1);
+}
+:root[data-theme="dark"] .theme-toggle-star.s2 { transition-delay: 0.05s; opacity: 0.65; }
+:root[data-theme="dark"] .theme-toggle-star.s3 { transition-delay: 0.1s;  opacity: 0.85; }
+
+/* The thumb slides right when dark (in RTL "start" is right;
+   we intentionally position it visually to reflect day-left/night-right). */
+.theme-toggle-thumb {
+  position: absolute;
+  top: 50%;
+  left: 3px;                              /* light = left (sun) */
+  transform: translateY(-50%) rotate(0deg);
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 999px;
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFF3D4 100%);
+  box-shadow:
+    0 2px 6px rgba(17, 17, 17, 0.18),
+    inset 0 -2px 4px rgba(255, 190, 90, 0.35);
+  display: grid;
+  place-items: center;
+  color: #F59E2A;                         /* sun color */
+  transition:
+    left var(--theme-duration) var(--theme-ease),
+    transform var(--theme-duration) var(--theme-ease),
+    background var(--theme-duration) var(--theme-ease),
+    color var(--theme-duration) var(--theme-ease),
+    box-shadow var(--theme-duration) var(--theme-ease);
+}
+:root[data-theme="dark"] .theme-toggle-thumb {
+  left: calc(var(--w) - var(--thumb) - 3px);
+  transform: translateY(-50%) rotate(360deg);
+  background: linear-gradient(160deg, #F5F3FF 0%, #D9CFFF 100%);
+  color: #6B5FFF;                         /* moon color */
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    inset 0 -2px 4px rgba(107, 95, 255, 0.35);
+}
+
+.theme-toggle-thumb .icon-sun,
+.theme-toggle-thumb .icon-moon {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  transition:
+    opacity var(--theme-duration) var(--theme-ease),
+    transform var(--theme-duration) var(--theme-ease);
+}
+.theme-toggle-thumb .icon-sun  { opacity: 1; transform: rotate(0deg)   scale(1); }
+.theme-toggle-thumb .icon-moon { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+
+:root[data-theme="dark"] .theme-toggle-thumb .icon-sun  { opacity: 0; transform: rotate(90deg)  scale(0.6); }
+:root[data-theme="dark"] .theme-toggle-thumb .icon-moon { opacity: 1; transform: rotate(0deg)   scale(1); }
+
+/* Hover flourish */
+@media (hover: hover) and (pointer: fine) {
+  .theme-toggle:hover .theme-toggle-thumb {
+    box-shadow:
+      0 4px 10px rgba(17, 17, 17, 0.25),
+      inset 0 -2px 4px rgba(255, 190, 90, 0.4);
+  }
+  :root[data-theme="dark"] .theme-toggle:hover .theme-toggle-thumb {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.65),
+      inset 0 -2px 4px rgba(107, 95, 255, 0.45);
+  }
+}
+
+/* ==========================================================
+   7. BUTTONS
+   ========================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 30px;
+  border-radius: var(--radius-btn);
+  font-weight: 800;
+  font-size: 15px;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.2s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--purple);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-purple);
+}
+.btn-primary:hover {
+  background: var(--purple-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-purple-hover);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  padding: 14px 22px;
+  border-radius: var(--radius-btn);
+  position: relative;
+}
+.btn-ghost::after {
+  content: '';
+  position: absolute;
+  inset: auto 22px 8px 22px;
+  height: 2px;
+  background: var(--text);
+  transform: scaleX(0.6);
+  transform-origin: right;
+  transition: transform 0.25s;
+}
+.btn-ghost:hover::after { transform: scaleX(1); }
+
+.btn-block { width: 100%; }
+
+/* ==========================================================
+   8. HERO
+   ========================================================== */
+.hero { padding: 80px 0 40px; }
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-copy h1 {
+  font-size: clamp(38px, 5.4vw, 62px);
+  margin-bottom: 20px;
+}
+
+.hero-copy .lead {
+  font-size: 19px;
+  max-width: 460px;
+  margin-bottom: 32px;
+  color: var(--text-soft);
+}
+
+.hero-cta {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hero-illu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hero-illu img,
+.hero-illu svg {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  background: transparent;
+}
+
+/* ==========================================================
+   9. GLIMPSE STRIP
+   ========================================================== */
+.glimpse { padding: 40px 0 40px; }
+.glimpse-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  align-items: center;
+  justify-items: center;
+  opacity: 0.9;
+}
+.glimpse-item {
+  width: 100%;
+  max-width: 160px;
+  display: flex;
+  justify-content: center;
+}
+.glimpse-item img,
+.glimpse-item svg {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: transparent;
+}
+
+/* ==========================================================
+   10. SECTION HEAD
+   ========================================================== */
+.section-head {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.section-head h2 {
+  font-size: clamp(30px, 3.6vw, 44px);
+  margin-bottom: 12px;
+}
+.section-head p {
+  font-size: 17px;
+  color: var(--text-soft);
+}
+
+/* ==========================================================
+   11. GUIDE
+   ========================================================== */
+.guide { padding: 80px 0; }
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.guide-illu { display: flex; justify-content: center; }
+.guide-illu img,
+.guide-illu svg {
+  width: 100%;
+  max-width: 440px;
+  background: transparent;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 18px;
+  align-items: center;
+  background: var(--bg-elevated);
+  padding: 22px 24px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+  border: 1px solid transparent;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+:root[data-theme="dark"] .step {
+  background: #171923;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+.step:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+:root[data-theme="dark"] .step:hover {
+  border-color: rgba(143, 107, 255, 0.35);
+}
+
+.step-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 800;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+:root[data-theme="dark"] .step-num {
+  background: linear-gradient(135deg, #8F6BFF, #6B4CFF);
+  color: #FFFFFF;
+}
+
+.step-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--purple-soft);
+  color: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-icon svg { width: 22px; height: 22px; }
+
+.step-body h3 { font-size: 19px; margin-bottom: 4px; }
+.step-body p  { font-size: 15px; color: var(--text-soft); }
+
+/* ==========================================================
+   12. ACCOUNT / LOGIN
+   ========================================================== */
+.account { padding: 80px 0 100px; }
+
+.account-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.account-illu {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 420px;
+}
+.account-illu .illu-primary {
+  width: 100%;
+  max-width: 460px;
+  background: transparent;
+}
+.account-illu .illu-mini {
+  position: absolute;
+  width: 110px;
+  height: auto;
+  background: transparent;
+  opacity: 0.85;
+}
+.account-illu .illu-mini-a { bottom: 0; right: 0; }
+.account-illu .illu-mini-b { top: 10px; left: 0; width: 90px; }
+
+.auth-card {
+  background: var(--bg-elevated);
+  border-radius: 24px;
+  padding: 36px 32px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+:root[data-theme="dark"] .auth-card {
+  background: #171923;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(108, 62, 244, 0.18), rgba(17, 17, 17, 0.04));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  transition: background var(--theme-duration) var(--theme-ease);
+}
+:root[data-theme="dark"] .auth-card::before {
+  background: linear-gradient(180deg, rgba(143, 107, 255, 0.45), rgba(255, 255, 255, 0.04));
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  background: var(--bg-tabs);
+  border-radius: 999px;
+  margin-bottom: 28px;
+}
+.tab {
+  border: 0;
+  background: transparent;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text-soft);
+  transition: background 0.25s, color 0.2s, box-shadow 0.25s;
+}
+.tab.active {
+  background: var(--bg-elevated);
+  color: var(--purple);
+  box-shadow: var(--shadow-tab);
+}
+:root[data-theme="dark"] .tab.active {
+  background: #22253A;
+}
+
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 18px;
+}
+.tab-panel.active { display: flex; }
+.tab-panel.active.is-switching { animation: fade 0.25s ease; }
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-input);
+  border-radius: 14px;
+  padding: 0 16px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.input-wrap:focus-within {
+  border-color: var(--purple);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-focus);
+}
+:root[data-theme="dark"] .input-wrap:focus-within {
+  background: #1F2231;
+}
+.input-wrap svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.input-wrap input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 14px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text);
+  outline: none;
+  text-align: right;
+}
+.input-wrap input::placeholder { color: var(--text-mute); }
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -4px 0 4px;
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+.check input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid var(--check-border);
+  background: var(--bg-elevated);
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+:root[data-theme="dark"] .check input { background: #1A1D28; }
+.check input:checked {
+  background: var(--purple);
+  border-color: var(--purple);
+}
+.check input:checked::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: #FFFFFF;
+  clip-path: polygon(14% 44%, 0 60%, 40% 100%, 100% 20%, 84% 6%, 40% 68%);
+}
+
+.link {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--purple);
+  transition: color 0.2s;
+}
+.link:hover { color: var(--purple-dark); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ==========================================================
+   13. FOOTER
+   ========================================================== */
+.site-footer {
+  background: var(--footer-bg);
+  color: #FFFFFF;
+  padding: 60px 0 24px;
+  position: relative;
+  z-index: 2;
+}
+:root[data-theme="dark"] .site-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-inner .footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand-white {
+  font-weight: 800;
+  font-size: 30px;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+}
+.footer-brand p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  max-width: 320px;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.footer-links a {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: #FFFFFF; }
+
+.footer-social {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.footer-social a {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+}
+.footer-social a:hover {
+  background: var(--purple);
+  transform: translateY(-2px);
+}
+.footer-social svg { width: 18px; height: 18px; }
+
+.footer-bottom {
+  padding-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ==========================================================
+   14. ILLUSTRATION RECOLORING
+   Applied to any inline <svg> that came from an <img.float-illu>
+   or that lives inside an illustration container. The script
+   swapped every fill hex we care about into one of these
+   semantic classes. In dark mode, the CSS variables shift.
+   ========================================================== */
+.float-illu .illu-fill-outline,
+.hero-illu .illu-fill-outline,
+.guide-illu .illu-fill-outline,
+.account-illu .illu-fill-outline,
+.glimpse-item .illu-fill-outline { fill: var(--illu-outline); }
+
+.float-illu .illu-fill-mid,
+.hero-illu .illu-fill-mid,
+.guide-illu .illu-fill-mid,
+.account-illu .illu-fill-mid,
+.glimpse-item .illu-fill-mid { fill: var(--illu-mid); }
+
+.float-illu .illu-fill-accent,
+.hero-illu .illu-fill-accent,
+.guide-illu .illu-fill-accent,
+.account-illu .illu-fill-accent,
+.glimpse-item .illu-fill-accent { fill: var(--illu-accent); }
+
+.float-illu .illu-fill-skin,
+.hero-illu .illu-fill-skin,
+.guide-illu .illu-fill-skin,
+.account-illu .illu-fill-skin,
+.glimpse-item .illu-fill-skin { fill: var(--illu-skin); }
+
+.float-illu .illu-fill-paper,
+.hero-illu .illu-fill-paper,
+.guide-illu .illu-fill-paper,
+.account-illu .illu-fill-paper,
+.glimpse-item .illu-fill-paper { fill: var(--illu-paper); }
+
+.float-illu .illu-fill-paperAlt,
+.hero-illu .illu-fill-paperAlt,
+.guide-illu .illu-fill-paperAlt,
+.account-illu .illu-fill-paperAlt,
+.glimpse-item .illu-fill-paperAlt { fill: var(--illu-paperAlt); }
+
+.float-illu .illu-fill-paperPure,
+.hero-illu .illu-fill-paperPure,
+.guide-illu .illu-fill-paperPure,
+.account-illu .illu-fill-paperPure,
+.glimpse-item .illu-fill-paperPure { fill: var(--illu-paperPure); }
+
+.float-illu .illu-stroke-mid,
+.hero-illu .illu-stroke-mid,
+.guide-illu .illu-stroke-mid,
+.account-illu .illu-stroke-mid,
+.glimpse-item .illu-stroke-mid { stroke: var(--illu-mid); }
+
+.float-illu .illu-stroke-outline,
+.hero-illu .illu-stroke-outline,
+.guide-illu .illu-stroke-outline,
+.account-illu .illu-stroke-outline,
+.glimpse-item .illu-stroke-outline { stroke: var(--illu-outline); }
+
+/* Smooth color fade on illustrations — always on during theme toggle.
+   Also on for hover/mouse events (~150ms) so any interactive tint
+   feels alive but doesn't compete with the toggle. */
+.float-illu [class*="illu-fill-"],
+.float-illu [class*="illu-stroke-"],
+.hero-illu   [class*="illu-fill-"],
+.guide-illu  [class*="illu-fill-"],
+.account-illu [class*="illu-fill-"],
+.glimpse-item [class*="illu-fill-"] {
+  transition: fill var(--theme-duration) var(--theme-ease),
+              stroke var(--theme-duration) var(--theme-ease);
+}
+
+/* ==========================================================
+   15. ANIMATIONS — floats + reveals (unchanged behavior)
+   ========================================================== */
+.float-illu {
+  will-change: transform;
+  animation: floatY 3.6s ease-in-out infinite;
+  transition: transform 0.35s ease;
+}
+.float-illu.float-a { animation-duration: 4.2s; animation-delay: -0.4s; }
+.float-illu.float-b { animation-duration: 3.4s; animation-delay: -0.9s; }
+.float-illu.float-c { animation-duration: 3.8s; animation-delay: -1.7s; }
+.float-illu.float-d { animation-duration: 4.0s; animation-delay: -0.2s; }
+.float-illu.float-e { animation-duration: 3.6s; animation-delay: -2.3s; }
+.float-illu.float-f { animation-duration: 4.4s; animation-delay: -0.7s; }
+.float-illu.float-g { animation-duration: 4.0s; animation-delay: -1.2s; }
+.float-illu.float-h { animation-duration: 3.2s; animation-delay: -0.5s; }
+.float-illu.float-i { animation-duration: 3.8s; animation-delay: -1.9s; }
+
+@keyframes floatY {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-8px); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .float-illu:hover { transform: translateY(-4px) scale(1.03); }
+}
+
+/* Reveal-on-scroll */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+  will-change: opacity, transform;
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.float-illu[data-reveal] { animation: none; }
+.float-illu[data-reveal].is-visible { animation: floatY 3.6s ease-in-out infinite; }
+.float-illu.float-a[data-reveal].is-visible { animation-duration: 4.2s; animation-delay: -0.4s; }
+.float-illu.float-b[data-reveal].is-visible { animation-duration: 3.4s; animation-delay: -0.9s; }
+.float-illu.float-c[data-reveal].is-visible { animation-duration: 3.8s; animation-delay: -1.7s; }
+.float-illu.float-d[data-reveal].is-visible { animation-duration: 4.0s; animation-delay: -0.2s; }
+.float-illu.float-e[data-reveal].is-visible { animation-duration: 3.6s; animation-delay: -2.3s; }
+.float-illu.float-f[data-reveal].is-visible { animation-duration: 4.4s; animation-delay: -0.7s; }
+.float-illu.float-g[data-reveal].is-visible { animation-duration: 4.0s; animation-delay: -1.2s; }
+
+.btn { will-change: transform; }
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(17, 17, 17, 0.08);
+  }
+  :root[data-theme="dark"] .btn-ghost:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Respect reduced-motion — kill every animation we added
+   INCLUDING the theme fade. */
+@media (prefers-reduced-motion: reduce) {
+  .float-illu,
+  .float-illu[data-reveal].is-visible,
+  .float-illu.float-a[data-reveal].is-visible,
+  .float-illu.float-b[data-reveal].is-visible,
+  .float-illu.float-c[data-reveal].is-visible,
+  .float-illu.float-d[data-reveal].is-visible,
+  .float-illu.float-e[data-reveal].is-visible,
+  .float-illu.float-f[data-reveal].is-visible,
+  .float-illu.float-g[data-reveal].is-visible {
+    animation: none !important;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .float-illu:hover { transform: none !important; }
+  .btn:hover, .btn-ghost:hover, .btn-primary:hover { transform: none !important; }
+
+  /* Kill the theme transition — snap instantly instead */
+  :root.theme-transitioning,
+  :root.theme-transitioning * {
+    transition: none !important;
+  }
+  .theme-toggle-thumb,
+  .theme-toggle-thumb .icon-sun,
+  .theme-toggle-thumb .icon-moon,
+  .theme-toggle-track,
+  .theme-toggle-star {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================
+   16. RESPONSIVE
+   ========================================================== */
+@media (max-width: 900px) {
+  .nav-desktop { display: none; }
+  .hamburger { display: inline-flex; }
+
+  .hero { padding: 48px 0 24px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 24px; text-align: right; }
+  .hero-illu { order: -1; }
+  .hero-illu img, .hero-illu svg { max-width: 320px; }
+
+  .glimpse-row { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+
+  .guide { padding: 60px 0; }
+  .guide-grid { grid-template-columns: 1fr; gap: 32px; }
+  .guide-illu img, .guide-illu svg { max-width: 320px; }
+
+  .account { padding: 60px 0 80px; }
+  .account-grid { grid-template-columns: 1fr; gap: 32px; }
+  .account-illu { min-height: 300px; }
+  .account-illu .illu-primary { max-width: 340px; }
+  .account-illu .illu-mini { display: none; }
+
+  .auth-card { padding: 28px 22px; }
+
+  .footer-inner .footer-top {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 520px) {
+  .container { padding: 0 18px; }
+  .brand { font-size: 24px; }
+  .hero-copy h1 { font-size: 34px; }
+  .hero-copy .lead { font-size: 17px; }
+  .btn { padding: 13px 22px; font-size: 14px; }
+  .step { grid-template-columns: auto 1fr; padding: 18px 18px; }
+  .step-icon { display: none; }
+  .section-head { margin-bottom: 40px; }
+}
