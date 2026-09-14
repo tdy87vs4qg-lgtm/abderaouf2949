@@ -30,7 +30,20 @@ import { useState } from 'react'
 /** The existing OAuth start route (Part A). Must stay a top-level navigation. */
 const GOOGLE_OAUTH_START = '/api/auth/google'
 
-export default function GoogleSignInButton() {
+type GoogleSignInButtonProps = {
+  /**
+   * PURELY COSMETIC. Lets a caller show "أنشئ حسابك بحساب Google" on the
+   * sign-up tab instead of the default "سجّل الدخول بحساب Google". The href,
+   * the navigation and the whole OAuth flow are IDENTICAL either way — Google
+   * covers signing in and account creation with the same route.
+   */
+  label?: string
+  /** Cosmetic too: the accessible name, defaults to `label`. */
+  ariaLabel?: string
+}
+
+export default function GoogleSignInButton({ label, ariaLabel }: GoogleSignInButtonProps = {}) {
+  const idleLabel = label ?? 'سجّل الدخول بحساب Google'
   // Purely cosmetic: once the navigation is under way we swap the label and
   // disable further clicks so an impatient double-tap can't restart the flow
   // (which would mint a second `state` and invalidate the first).
@@ -40,7 +53,7 @@ export default function GoogleSignInButton() {
     <a
       href={GOOGLE_OAUTH_START}
       className="google-signin-button"
-      aria-label="سجّل الدخول بحساب Google"
+      aria-label={ariaLabel ?? idleLabel}
       aria-disabled={redirecting || undefined}
       // `rel=external` documents that this leaves the SPA; `data-no-spa` is a
       // hint for any future link interceptor. Neither changes the navigation.
@@ -58,7 +71,7 @@ export default function GoogleSignInButton() {
     >
       <GoogleGlyph />
       <span className="google-signin-button__label">
-        {redirecting ? 'جارٍ التحويل إلى Google…' : 'سجّل الدخول بحساب Google'}
+        {redirecting ? 'جارٍ التحويل إلى Google…' : idleLabel}
       </span>
     </a>
   )

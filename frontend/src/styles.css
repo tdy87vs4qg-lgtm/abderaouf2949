@@ -929,6 +929,34 @@ html[data-theme="dark"] .stat-hero { background: #171923; }
 .google-signin-button:hover { border-color: var(--purple); box-shadow: var(--shadow-md); }
 html[data-theme="dark"] .google-signin-button { background: #1F2231; }
 
+/* ---- prototype auth card: Google-only login / 2-step sign-up ----
+   Tiny layout helpers for the prototype's .auth-card tab panels after the
+   fake email/password inputs were replaced by the real Google button.
+   Purely presentational — the card, tabs, fields and SVG illustrations keep
+   the prototype's own styling untouched. */
+.auth-card .auth-step {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-card .auth-note {
+  margin: 0 0 2px;
+  font-family: 'Almarai', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.9;
+  color: var(--text-muted);
+  text-align: center;
+}
+.auth-card .auth-back {
+  align-self: center;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  font-family: 'Almarai', sans-serif;
+  cursor: pointer;
+}
+
 /* ---- copy-link / share panel (the in-app-browser notice) ------- */
 .inapp-notice__backdrop { background: rgba(17, 17, 17, .55); }
 html[data-theme="dark"] .inapp-notice__backdrop { background: rgba(6, 7, 11, .72); }

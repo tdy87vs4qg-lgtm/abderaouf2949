@@ -25,12 +25,20 @@
 //   • src/routes/auth.ts  (/api/auth/*)
 // ─────────────────────────────────────────────────────────────────────────
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 /** Where the prototype's own files were placed, verbatim, inside public/. */
 const PROTO = '/static/prototype'
 
 export default function HomePage() {
+  // ── Sign-up tab step (LOCAL UI STATE ONLY) ──────────────────────────────
+  // 1 = the decorative الاسم / اللقب fields + "متابعة"
+  // 2 = the real "Sign up with Google" button (same OAuth flow as login).
+  // The two name fields are NEVER read, stored, or sent anywhere: no state
+  // holds their values, no fetch is made, the backend and the database are
+  // not involved at all. They exist purely for the visual flow.
+  const [signupStep, setSignupStep] = useState<1 | 2>(1)
   // Load the prototype's exact styles.css + script.js (and its Almarai font
   // links) for as long as this page is on screen, then clean them up again.
   // The files themselves are the prototype's originals, unmodified.
@@ -283,63 +291,65 @@ export default function HomePage() {
                   <button className="tab" data-tab="signup" role="tab" aria-selected="false">إنشاء حساب</button>
                 </div>
 
-                {/* LOGIN TAB */}
-                <form className="tab-panel active" data-panel="login" onSubmit={(event) => event.preventDefault()}>
-                  <label className="field">
-                    <span className="field-label">البريد الإلكتروني</span>
-                    <div className="input-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                      <input type="email" placeholder="example@email.com" />
+                {/* LOGIN TAB — real Google OAuth, no fake fields.
+                    NOTE: className is a CONSTANT string on purpose. The
+                    prototype's own script.js owns the .active class on the
+                    panels; because React never changes this prop between
+                    renders it never rewrites the attribute, so the vanilla
+                    tab switching keeps working exactly as designed. */}
+                <div className="tab-panel active" data-panel="login">
+                  <p className="auth-note">سجّل دخولك بحساب Google — بخطوة واحدة، دون كلمة مرور.</p>
+                  <GoogleSignInButton />
+                </div>
+
+                {/* SIGNUP TAB — step 1 (decorative name fields) → step 2 (real Google OAuth) */}
+                <div className="tab-panel" data-panel="signup">
+                  {signupStep === 1 ? (
+                    <form
+                      className="auth-step"
+                      /* DECORATIVE ONLY: nothing is read from these inputs and
+                         nothing is submitted. The handler just advances the
+                         local UI step — no fetch, no backend, no database. */
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        setSignupStep(2)
+                      }}
+                    >
+                      <label className="field">
+                        <span className="field-label">الاسم</span>
+                        <div className="input-wrap">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <input type="text" name="decorative-first-name" placeholder="الاسم" autoComplete="off" />
+                        </div>
+                      </label>
+
+                      <label className="field">
+                        <span className="field-label">اللقب</span>
+                        <div className="input-wrap">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <input type="text" name="decorative-last-name" placeholder="اللقب" autoComplete="off" />
+                        </div>
+                      </label>
+
+                      <button type="submit" className="btn btn-primary btn-block">متابعة</button>
+                    </form>
+                  ) : (
+                    <div className="auth-step">
+                      <p className="auth-note">أكمل إنشاء حسابك بحساب Google — بخطوة واحدة، دون كلمة مرور.</p>
+                      <GoogleSignInButton
+                        label="أنشئ حسابك بحساب Google"
+                        ariaLabel="أنشئ حسابك بحساب Google"
+                      />
+                      <button
+                        type="button"
+                        className="link auth-back"
+                        onClick={() => setSignupStep(1)}
+                      >
+                        رجوع
+                      </button>
                     </div>
-                  </label>
-
-                  <label className="field">
-                    <span className="field-label">كلمة المرور</span>
-                    <div className="input-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      <input type="password" placeholder="••••••••" />
-                    </div>
-                  </label>
-
-                  <div className="row-between">
-                    <label className="check">
-                      <input type="checkbox" />
-                      <span>تذكّرني</span>
-                    </label>
-                    <a href="#" className="link">نسيت كلمة المرور؟</a>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-block">دخول</button>
-                </form>
-
-                {/* SIGNUP TAB */}
-                <form className="tab-panel" data-panel="signup" onSubmit={(event) => event.preventDefault()}>
-                  <label className="field">
-                    <span className="field-label">الاسم الكامل</span>
-                    <div className="input-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                      <input type="text" placeholder="الاسم واللقب" />
-                    </div>
-                  </label>
-
-                  <label className="field">
-                    <span className="field-label">البريد الإلكتروني</span>
-                    <div className="input-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                      <input type="email" placeholder="example@email.com" />
-                    </div>
-                  </label>
-
-                  <label className="field">
-                    <span className="field-label">كلمة المرور</span>
-                    <div className="input-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      <input type="password" placeholder="••••••••" />
-                    </div>
-                  </label>
-
-                  <button type="submit" className="btn btn-primary btn-block">إنشاء الحساب</button>
-                </form>
+                  )}
+                </div>
               </div>
             </div>
           </div>
