@@ -19,6 +19,11 @@ const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'))
 export default function App() {
   const location = useLocation()
 
+  // The prototype home page ships its own header inside HomePage, so the
+  // app-shell header would render twice on "/". Hide the shell header there
+  // only — /login, /signup and /subscription still need it.
+  const isHomeRoute = location.pathname === '/'
+
   return (
     <div className="app-shell min-h-screen overflow-x-hidden bg-ink text-white" dir="rtl">
       <ScrollToTop />
@@ -27,7 +32,7 @@ export default function App() {
           Telegram web views), where Google's OAuth screen refuses to load.
           Renders null everywhere else and touches no auth logic. */}
       <InAppBrowserNotice />
-      <SiteHeader />
+      {!isHomeRoute && <SiteHeader />}
       <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
         <LazyAnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
