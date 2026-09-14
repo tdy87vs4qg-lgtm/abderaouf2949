@@ -55,7 +55,7 @@
 // Bump this on EVERY future shell change (any edit to a SHELL_ASSETS file or
 // to this list). The activate handler deletes every cache whose name differs,
 // so a bump is what actually ships the new shell to returning visitors.
-const CACHE_NAME = 'taysir-shell-v5';
+const CACHE_NAME = 'taysir-shell-v6';
 
 // Exactly the 6 stable shell assets + the web app manifest. Nothing else.
 const SHELL_ASSETS = [

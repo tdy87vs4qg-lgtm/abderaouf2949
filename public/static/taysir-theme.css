@@ -1386,13 +1386,43 @@ html[data-theme="dark"] .gd-body {
   color: var(--doodle-color);
 }
 
-/* The library uses fixed chrome + an inner scroller, so its own
-   layers must sit above the doodles. */
-.gd-body .gd-topbar,
-.gd-body .gd-sidebar,
-.gd-body .gd-main,
-.gd-body .gd-shell { position: relative; z-index: 1; }
-.gd-body .gd-topbar { z-index: 40; }
+/* The library uses fixed chrome + an inner scroller, so its own layers must
+   sit above the doodles. IMPORTANT: raise z-index ONLY — do NOT set
+   `position: relative` here. These selectors are (0,2,0) and would override
+   library.css's (0,1,0) `position: fixed` architecture
+   (.gd-topbar:171, .gd-shell:371, and the <=1000px drawer .gd-sidebar:1038),
+   which demotes the fixed chrome into document flow. That caused two bugs:
+   the off-canvas mobile drawer kept reserving 248px of flex width (blank
+   band on the left, folders squeezed right), and the document started
+   overflowing by 64-128px with boxes at negative x, making the page
+   draggable sideways on touch devices. z-index works on fixed boxes, so
+   `fixed` is restated here at matching specificity instead. */
+.gd-body .gd-topbar { position: fixed; z-index: 40; }
+.gd-body .gd-shell  { position: fixed; z-index: 1; }
+
+/* Flex child of the shell — `relative` is required for z-index and is
+   harmless (it is not part of the fixed chrome). */
+.gd-body .gd-main   { position: relative; z-index: 1; }
+
+/* Desktop: the sidebar is an in-flow 248px rail (library.css:377-386). */
+@media (min-width: 1001px) {
+  .gd-body .gd-sidebar { position: relative; z-index: 1; }
+}
+/* Phone/tablet: the sidebar is an OFF-CANVAS DRAWER (library.css:1037-1049).
+   It MUST stay out of flow, or it reserves width while invisible. */
+@media (max-width: 1000px) {
+  .gd-body .gd-sidebar { position: fixed; z-index: 30; }
+}
+
+/* Belt-and-braces against sideways drag: the fixed shell means the document
+   never needs to scroll, so clip any residual horizontal overflow from the
+   decorative doodle layer (.doodle.d1 right:-80px etc.) on the library page
+   specifically. `clip` cannot be scrolled or rubber-banded, unlike
+   `hidden`, which iOS Safari can still drag. */
+.gd-body {
+  overflow-x: clip;
+  max-width: 100%;
+}
 
 /* Let the doodles show through the library's large flat panes. */
 html[data-theme="light"] .gd-body .gd-main,
