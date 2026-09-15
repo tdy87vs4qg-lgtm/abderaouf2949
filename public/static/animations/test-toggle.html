@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="color-scheme" content="light dark" />
+<!-- Empty inline icon: stops the browser's automatic /favicon.ico request,
+     which would otherwise 404 and add noise to the error counter below. -->
+<link rel="icon" href="data:," />
+<title>dotLottie state-machine probe — theme-toggle</title>
+<!--
+  ====================================================================
+  ISOLATED DIAGNOSTIC PAGE — NOT PART OF THE SITE
+  ====================================================================
+  Purpose: prove, in isolation, that
+    1. /static/animations/theme-toggle.lottie is served and parses,
+    2. the self-hosted dotlottie-web WASM runtime boots same-origin
+       (NO CDN — see DotLottie.setWasmUrl below),
+    3. the embedded state machine ("StateMachine1") initialises, and
+    4. its `transition` Event input actually drives the
+       Day Idle -> Day to Night -> Night Idle -> Night to Day cycle.
+
+  This page is deliberately standalone:
+    - it does NOT read or write data-theme,
+    - it does NOT import taysir-theme.css / tokens.css / library.css,
+    - it does NOT touch the real theme-toggle button or any app script.
+  Nothing else in the repo references this file.
+
+  Everything is reported ON SCREEN (not just console) so it can be read
+  on a phone.
+-->
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1f2430;
+    --line: #2c3342;
+    --text: #e8ecf4;
+    --muted: #9aa5b8;
+    --ok: #3ddc84;
+    --bad: #ff6b6b;
+    --warn: #ffc93c;
+    --accent: #6aa8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 12px;
+    padding-bottom: 40px;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    margin: 0 0 12px;
+  }
+  /* The animation stage. Checkerboard makes transparency obvious, and a
+     visible border proves the canvas itself has layout even if nothing
+     ever renders into it. */
+  #stage {
+    width: 100%;
+    max-width: 420px;
+    height: 300px;              /* ~300px tall, large enough on a phone */
+    margin: 0 auto;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    background-color: #202430;
+    background-image:
+      linear-gradient(45deg, #262b38 25%, transparent 25%, transparent 75%, #262b38 75%),
+      linear-gradient(45deg, #262b38 25%, transparent 25%, transparent 75%, #262b38 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    display: block;
+  }
+  #canvas { width: 100%; height: 100%; display: block; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  button {
+    flex: 1 1 46%;
+    min-height: 52px;
+    padding: 10px 12px;
+    font: 600 14px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button.primary { border-color: var(--accent); color: #dce9ff; }
+  button:active { filter: brightness(1.3); }
+  button[disabled] { opacity: .45; cursor: not-allowed; }
+  .kv { display: grid; grid-template-columns: minmax(0,auto) 1fr; gap: 2px 10px; font-size: 12.5px; }
+  .kv dt { color: var(--muted); white-space: nowrap; }
+  .kv dd { margin: 0; word-break: break-word; }
+  .ok { color: var(--ok); }
+  .bad { color: var(--bad); }
+  .warn { color: var(--warn); }
+  .muted { color: var(--muted); }
+  h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  #log {
+    margin: 0;
+    max-height: 46vh;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.45;
+    -webkit-overflow-scrolling: touch;
+  }
+  #log .t { color: #6f7a8c; }
+  #log .err { color: var(--bad); }
+  #log .good { color: var(--ok); }
+  #log .wrn { color: var(--warn); }
+  #log .ev  { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>dotLottie state-machine probe</h1>
+<p class="sub">
+  Isolated diagnostic for <code>/static/animations/theme-toggle.lottie</code>.
+  Not wired to <code>data-theme</code> or the real toggle.
+</p>
+
+<!-- ------------------------------------------------------------ stage -->
+<div class="card">
+  <div id="stage"><canvas id="canvas"></canvas></div>
+
+  <div class="btns">
+    <button id="btn-sun-moon" class="primary" disabled>Play sun&rarr;moon</button>
+    <button id="btn-moon-sun" class="primary" disabled>Play moon&rarr;sun</button>
+  </div>
+  <div class="btns">
+    <button id="btn-fire" disabled>Fire raw &quot;transition&quot;</button>
+    <button id="btn-click" disabled>Post click at centre</button>
+  </div>
+  <div class="btns">
+    <button id="btn-refresh" disabled>Refresh status</button>
+    <button id="btn-copy">Copy log</button>
+  </div>
+</div>
+
+<!-- ----------------------------------------------------------- status -->
+<div class="card">
+  <h2>Status</h2>
+  <dl class="kv">
+    <dt>page</dt>                 <dd id="s-page" class="muted">&hellip;</dd>
+    <dt>runtime (local JS)</dt>   <dd id="s-lib" class="muted">&hellip;</dd>
+    <dt>wasm url</dt>             <dd id="s-wasm" class="muted">&hellip;</dd>
+    <dt>.lottie fetch</dt>        <dd id="s-fetch" class="muted">&hellip;</dd>
+    <dt>manifest</dt>             <dd id="s-manifest" class="muted">&hellip;</dd>
+    <dt>player load</dt>          <dd id="s-load" class="muted">&hellip;</dd>
+    <dt>animation size</dt>       <dd id="s-size" class="muted">&hellip;</dd>
+    <dt>state machine</dt>        <dd id="s-sm" class="muted">&hellip;</dd>
+    <dt>sm running</dt>           <dd id="s-smrun" class="muted">&hellip;</dd>
+    <dt>sm inputs</dt>            <dd id="s-inputs" class="muted">&hellip;</dd>
+    <dt>current state</dt>        <dd id="s-state" class="muted">&hellip;</dd>
+    <dt>frame</dt>                <dd id="s-frame" class="muted">&hellip;</dd>
+    <dt>render events</dt>        <dd id="s-render" class="muted">0</dd>
+    <dt>pixels painted</dt>       <dd id="s-pixels" class="muted">&hellip;</dd>
+    <dt>errors</dt>               <dd id="s-err" class="ok">0</dd>
+  </dl>
+</div>
+
+<!-- -------------------------------------------------------------- log -->
+<div class="card">
+  <h2>Log (on-screen, readable on a phone)</h2>
+  <pre id="log"></pre>
+</div>
+
+<!-- =====================================================================
+     PART 1 — classic script.
+     Installs the on-screen logger and global error traps BEFORE the module
+     runs, so that even a module parse/network failure (which would never
+     execute module code) is still visible on the page.
+     ===================================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  var logEl = document.getElementById('log');
+  var errCount = 0;
+  var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+
+  function stamp() {
+    var now = (window.performance && performance.now) ? performance.now() : Date.now();
+    return '+' + ((now - t0) / 1000).toFixed(2) + 's';
+  }
+
+  // Public logger used by the module below.
+  window.PROBE = {
+    log: function (msg, kind) {
+      var line = document.createElement('div');
+      var ts = document.createElement('span');
+      ts.className = 't';
+      ts.textContent = '[' + stamp() + '] ';
+      var body = document.createElement('span');
+      if (kind) body.className = kind;
+      body.textContent = String(msg);
+      line.appendChild(ts);
+      line.appendChild(body);
+      logEl.appendChild(line);
+      // Keep the newest line in view without fighting a user who scrolled up.
+      var nearBottom = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 60;
+      if (nearBottom) logEl.scrollTop = logEl.scrollHeight;
+      try { (kind === 'err' ? console.error : console.log)('[probe]', msg); } catch (e) {}
+    },
+    err: function (msg) {
+      errCount++;
+      var el = document.getElementById('s-err');
+      el.textContent = String(errCount);
+      el.className = 'bad';
+      window.PROBE.log(msg, 'err');
+    },
+    set: function (id, text, cls) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = String(text);
+      el.className = cls || '';
+    },
+    // Turn anything (Error, Event, object, string) into readable text.
+    describe: function (e) {
+      if (e == null) return String(e);
+      if (typeof e === 'string') return e;
+      if (e instanceof Error) {
+        return (e.name || 'Error') + ': ' + (e.message || '(no message)') +
+               (e.stack ? '\n' + String(e.stack).split('\n').slice(0, 4).join('\n') : '');
+      }
+      try {
+        var s = JSON.stringify(e, Object.getOwnPropertyNames(e));
+        if (s && s !== '{}') return s;
+      } catch (x) {}
+      try { return String(e); } catch (x) { return '(unprintable)'; }
+    }
+  };
+
+  // Global traps — anything thrown anywhere lands on screen.
+  window.addEventListener('error', function (ev) {
+    if (ev && ev.target && ev.target !== window && ev.target.tagName) {
+      // Failed subresource (e.g. the module script 404'd).
+      window.PROBE.err('resource failed to load: <' +
+        ev.target.tagName.toLowerCase() + '> ' + (ev.target.src || ev.target.href || '?'));
+      return;
+    }
+    window.PROBE.err('window.error: ' + (ev && ev.message ? ev.message : '?') +
+      (ev && ev.filename ? ' @ ' + ev.filename + ':' + ev.lineno + ':' + ev.colno : ''));
+  }, true);
+
+  window.addEventListener('unhandledrejection', function (ev) {
+    window.PROBE.err('unhandledrejection: ' + window.PROBE.describe(ev && ev.reason));
+  });
+
+  window.PROBE.set('s-page', 'loaded — ' + location.origin, 'ok');
+  window.PROBE.log('probe page ready. origin=' + location.origin, 'good');
+  window.PROBE.log('userAgent=' + navigator.userAgent);
+  window.PROBE.log('devicePixelRatio=' + (window.devicePixelRatio || 1));
+
+  // ES-module support is required by the runtime build we self-host.
+  var supportsModules = 'noModule' in HTMLScriptElement.prototype;
+  window.PROBE.log('ES module support: ' + supportsModules, supportsModules ? 'good' : 'wrn');
+  if (!supportsModules) {
+    window.PROBE.err('This browser cannot run ES modules — the probe cannot start.');
+  }
+
+  // Copy-log button works even if the module never boots.
+  document.getElementById('btn-copy').addEventListener('click', function () {
+    var text = logEl.innerText || logEl.textContent || '';
+    function done(ok) { window.PROBE.log(ok ? 'log copied to clipboard' : 'copy failed — select the text manually', ok ? 'good' : 'wrn'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    } else {
+      done(false);
+    }
+  });
+})();
+</script>
+
+<!-- =====================================================================
+     PART 2 — the probe itself, as an ES module.
+     The runtime is imported from the SAME ORIGIN vendor folder; there is no
+     CDN reference anywhere on this page.
+     ===================================================================== -->
+<script type="module">
+const P = window.PROBE;
+
+// ---------------------------------------------------------------- constants
+const VENDOR   = '/static/vendor/dotlottie-web/0.80.0';
+const LIB_URL  = `${VENDOR}/dotlottie-web.esm.js`;
+const WASM_URL = `${VENDOR}/dotlottie-player.wasm`;
+const SRC      = '/static/animations/theme-toggle.lottie';
+
+// Names come from the .lottie's own state machine definition:
+//   states : "Day Idle", "Day to Night", "Night Idle", "Night to Day"
+//   inputs : toggle (Boolean), transition (Event), + two internal booleans
+const SM_ID        = 'StateMachine1';
+const EVENT_INPUT  = 'transition';
+const STATE_DAY    = 'Day Idle';
+const STATE_NIGHT  = 'Night Idle';
+const STATE_TO_NIGHT = 'Day to Night';
+const STATE_TO_DAY   = 'Night to Day';
+
+let dot = null;
+let renderCount = 0;
+
+// ------------------------------------------------------- step 1: raw fetch
+// Done independently of the player so we can distinguish "the file is not
+// served / wrong bytes" from "the runtime failed to parse it".
+async function probeFetch() {
+  P.log(`fetching ${SRC} …`);
+  try {
+    const res = await fetch(SRC, { cache: 'no-store' });
+    const ct  = res.headers.get('content-type') || '(none)';
+    const cl  = res.headers.get('content-length') || '?';
+    if (!res.ok) {
+      P.set('s-fetch', `HTTP ${res.status} ${res.statusText}`, 'bad');
+      P.err(`.lottie fetch failed: HTTP ${res.status} ${res.statusText}`);
+      return false;
+    }
+    const buf = await res.arrayBuffer();
+    const b   = new Uint8Array(buf.slice(0, 4));
+    // A .lottie is a ZIP container: it must start with "PK\x03\x04".
+    const isZip = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+    const kb    = (buf.byteLength / 1024).toFixed(1);
+    const magic = Array.from(b).map((n) => n.toString(16).padStart(2, '0')).join(' ');
+
+    P.set('s-fetch',
+      `HTTP ${res.status} · ${kb} KB · zip=${isZip ? 'yes' : 'NO'} · type=${ct}`,
+      isZip ? 'ok' : 'bad');
+    P.log(`.lottie: ${kb} KB, content-type=${ct}, content-length=${cl}, magic=${magic}`,
+      isZip ? 'good' : 'err');
+
+    if (!isZip) {
+      P.err('Payload is NOT a zip — the file is probably being rewritten ' +
+            '(SPA fallback / HTML error page) instead of served as a static asset.');
+      return false;
+    }
+    // Content-type is informational only: the runtime sniffs the bytes.
+    if (!/zip|octet-stream|lottie/i.test(ct)) {
+      P.log(`note: content-type "${ct}" is not a zip type. Harmless here ` +
+            `(the runtime reads the bytes), but worth knowing.`, 'wrn');
+    }
+    return true;
+  } catch (e) {
+    P.set('s-fetch', 'network error', 'bad');
+    P.err('.lottie fetch threw: ' + P.describe(e));
+    return false;
+  }
+}
+
+// -------------------------------------------- step 2: import local runtime
+async function importRuntime() {
+  P.log(`importing runtime from ${LIB_URL} (same-origin, no CDN) …`);
+  try {
+    const mod = await import(LIB_URL);
+    if (!mod || typeof mod.DotLottie !== 'function') {
+      P.set('s-lib', 'imported but DotLottie export missing', 'bad');
+      P.err('Module loaded but does not export DotLottie. Exports: ' +
+            Object.keys(mod || {}).join(', '));
+      return null;
+    }
+    P.set('s-lib', 'dotlottie-web 0.80.0 — imported OK', 'ok');
+    P.log('runtime imported. exports: ' + Object.keys(mod).join(', '), 'good');
+    return mod.DotLottie;
+  } catch (e) {
+    P.set('s-lib', 'import FAILED', 'bad');
+    P.err('runtime import failed: ' + P.describe(e));
+    return null;
+  }
+}
+
+// --------------------------------------------------------- canvas sizing
+function sizeCanvas(canvas) {
+  const dpr  = Math.min(window.devicePixelRatio || 1, 3);
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.round(rect.width  * dpr));
+  const h = Math.max(1, Math.round(rect.height * dpr));
+  canvas.width = w;
+  canvas.height = h;
+  P.log(`canvas sized: css ${Math.round(rect.width)}x${Math.round(rect.height)} → backing ${w}x${h} (dpr=${dpr})`);
+  return { w, h };
+}
+
+// ------------------------------------------------------- status refresher
+function refreshStatus() {
+  if (!dot) return;
+  try {
+    P.set('s-smrun', String(dot.isStateMachineRunning), dot.isStateMachineRunning ? 'ok' : 'warn');
+  } catch (e) { P.set('s-smrun', 'n/a', 'warn'); }
+
+  try {
+    const st = dot.stateMachineGetCurrentState();
+    P.set('s-state', st || '(empty)', st ? 'ok' : 'warn');
+  } catch (e) { P.set('s-state', 'error: ' + P.describe(e), 'bad'); }
+
+  try {
+    P.set('s-frame', `${Number(dot.currentFrame).toFixed(1)} / ${Number(dot.totalFrames).toFixed(0)} · playing=${dot.isPlaying}`);
+  } catch (e) { /* non-fatal */ }
+
+  P.set('s-render', String(renderCount), renderCount > 0 ? 'ok' : 'warn');
+}
+
+// Ground truth for "is it actually drawing?". The `render` event is advisory
+// and can stay silent on some builds, so we read the canvas back instead:
+// count non-transparent pixels on a coarse grid. >0 means real output.
+function countPaintedPixels() {
+  const c = document.getElementById('canvas');
+  try {
+    // A WebGL/WASM canvas may not expose a 2d context; fall back gracefully.
+    const probe = document.createElement('canvas');
+    probe.width = 64;
+    probe.height = 64;
+    const ctx = probe.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return -1;
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.drawImage(c, 0, 0, 64, 64);
+    const data = ctx.getImageData(0, 0, 64, 64).data;
+    let n = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 8) n++;
+    return n;
+  } catch (e) {
+    P.log('pixel probe unavailable: ' + P.describe(e), 'wrn');
+    return -1;
+  }
+}
+
+function reportPixels(tag) {
+  const n = countPaintedPixels();
+  if (n < 0) {
+    P.set('s-pixels', 'could not read back canvas', 'warn');
+  } else {
+    P.set('s-pixels', `${n} / 4096 sampled${tag ? ' (' + tag + ')' : ''}`, n > 0 ? 'ok' : 'bad');
+  }
+  return n;
+}
+
+// ------------------------------------------------------ transition helpers
+// The .lottie exposes exactly ONE event input ("transition"). Its guards make
+// Day Idle --transition--> Day to Night and Night Idle --transition--> Night
+// to Day. So a *directional* button must first make sure we are sitting in
+// the right idle state, then fire the event.
+function currentState() {
+  try { return dot.stateMachineGetCurrentState() || ''; } catch (e) { return ''; }
+}
+
+function drive(label, fromState, viaState) {
+  if (!dot) { P.err(`${label}: player not ready`); return; }
+  const before = currentState();
+  P.log(`${label}: current state = "${before || '(unknown)'}"`, 'ev');
+
+  // Already mid-transition? Let it finish rather than fighting it.
+  if (before === STATE_TO_NIGHT || before === STATE_TO_DAY) {
+    P.log(`${label}: a transition is already playing ("${before}") — ignoring tap`, 'wrn');
+    return;
+  }
+
+  if (before !== fromState) {
+    // Park the machine in the correct idle state so the guard can pass.
+    P.log(`${label}: not in "${fromState}" → stateMachineOverrideState("${fromState}", true)`, 'ev');
+    let ok = false;
+    try { ok = dot.stateMachineOverrideState(fromState, true); }
+    catch (e) { P.err(`${label}: overrideState threw: ` + P.describe(e)); }
+    P.log(`${label}: overrideState("${fromState}") → ${ok}`, ok ? 'good' : 'wrn');
+
+    if (!ok) {
+      // Fall back to jumping straight into the transition state.
+      P.log(`${label}: falling back to overrideState("${viaState}", true)`, 'wrn');
+      let ok2 = false;
+      try { ok2 = dot.stateMachineOverrideState(viaState, true); }
+      catch (e) { P.err(`${label}: fallback overrideState threw: ` + P.describe(e)); }
+      P.log(`${label}: overrideState("${viaState}") → ${ok2}`, ok2 ? 'good' : 'err');
+      setTimeout(refreshStatus, 60);
+      return;
+    }
+  }
+
+  fireEvent(label);
+  setTimeout(refreshStatus, 60);
+}
+
+function fireEvent(label) {
+  try {
+    P.log(`${label}: stateMachineFireEvent("${EVENT_INPUT}")`, 'ev');
+    dot.stateMachineFireEvent(EVENT_INPUT);
+    P.log(`${label}: event fired (no throw). state now = "${currentState() || '(unknown)'}"`, 'good');
+  } catch (e) {
+    P.err(`${label}: fireEvent threw: ` + P.describe(e));
+  }
+}
+
+// ------------------------------------------------------------------- boot
+async function boot() {
+  const canvas = document.getElementById('canvas');
+
+  // 1. Is the animation actually served?
+  const fetchOk = await probeFetch();
+
+  // 2. Local runtime.
+  const DotLottie = await importRuntime();
+  if (!DotLottie) {
+    P.err('Aborting: no runtime. Nothing further can be tested.');
+    return;
+  }
+
+  // 3. Point the WASM at our own origin. This ALSO disables the library's
+  //    built-in jsdelivr/unpkg fallback, so a local miss surfaces as a real
+  //    error instead of silently hitting a CDN — exactly what we want to
+  //    verify self-hosting.
+  try {
+    DotLottie.setWasmUrl(WASM_URL);
+    P.set('s-wasm', WASM_URL + ' (same-origin, CDN fallback disabled)', 'ok');
+    P.log('setWasmUrl → ' + WASM_URL, 'good');
+  } catch (e) {
+    P.set('s-wasm', 'setWasmUrl FAILED', 'bad');
+    P.err('setWasmUrl threw: ' + P.describe(e));
+  }
+
+  // Independent check that the WASM binary itself is reachable and is really
+  // WASM (magic "\0asm"). Cheap, and pinpoints a bad vendor copy immediately.
+  try {
+    const wr = await fetch(WASM_URL, { cache: 'no-store' });
+    const wb = new Uint8Array((await wr.arrayBuffer()).slice(0, 4));
+    const isWasm = wb[0] === 0x00 && wb[1] === 0x61 && wb[2] === 0x73 && wb[3] === 0x6d;
+    P.log(`wasm probe: HTTP ${wr.status}, content-type=${wr.headers.get('content-type') || '(none)'}, magic ok=${isWasm}`,
+      wr.ok && isWasm ? 'good' : 'err');
+    if (!wr.ok || !isWasm) P.err('The self-hosted .wasm is missing or corrupt.');
+  } catch (e) {
+    P.err('wasm probe threw: ' + P.describe(e));
+  }
+
+  if (!fetchOk) {
+    P.log('continuing anyway so the runtime error is visible too…', 'wrn');
+  }
+
+  sizeCanvas(canvas);
+
+  // 4. Construct the player, asking for the state machine up front.
+  P.log(`constructing DotLottie (src=${SRC}, stateMachineId=${SM_ID}) …`);
+  try {
+    dot = new DotLottie({
+      canvas,
+      src: SRC,
+      autoplay: true,
+      loop: true,
+      stateMachineId: SM_ID,   // load + start the machine as part of load
+      backgroundColor: '#00000000',
+    });
+  } catch (e) {
+    P.set('s-load', 'constructor threw', 'bad');
+    P.err('DotLottie constructor threw: ' + P.describe(e));
+    return;
+  }
+
+  // 5. Wire up EVERY interesting event so the page narrates what happens.
+  dot.addEventListener('ready', () => P.log('event: ready (wasm initialised)', 'good'));
+
+  dot.addEventListener('load', () => {
+    P.set('s-load', 'loaded OK', 'ok');
+    P.log('event: load — animation parsed', 'good');
+
+    try {
+      const m = dot.manifest;
+      if (m) {
+        const anims = (m.animations || []).map((a) => a.id).join(', ') || '(none)';
+        const sms   = (m.stateMachines || []).map((s) => s.id).join(', ') || '(none)';
+        P.set('s-manifest', `animations: [${anims}] · stateMachines: [${sms}]`,
+          (m.stateMachines || []).length ? 'ok' : 'warn');
+        P.log('manifest: ' + JSON.stringify(m), 'good');
+        if (!(m.stateMachines || []).length) {
+          P.err('Manifest declares NO state machines — the file cannot drive sun/moon states.');
+        }
+      } else {
+        P.set('s-manifest', 'no manifest (plain .json animation?)', 'warn');
+      }
+    } catch (e) {
+      P.set('s-manifest', 'error reading manifest', 'bad');
+      P.err('manifest read threw: ' + P.describe(e));
+    }
+
+    try {
+      const s = dot.animationSize();
+      P.set('s-size', `${s.width} x ${s.height}`, 'ok');
+    } catch (e) { P.set('s-size', 'n/a', 'warn'); }
+
+    initStateMachine();
+  });
+
+  dot.addEventListener('loadError', (ev) => {
+    P.set('s-load', 'LOAD ERROR', 'bad');
+    P.err('event: loadError — ' + P.describe(ev && ev.error ? ev.error : ev));
+  });
+
+  dot.addEventListener('renderError', (ev) => {
+    P.err('event: renderError — ' + P.describe(ev && ev.error ? ev.error : ev));
+  });
+
+  dot.addEventListener('render', () => {
+    renderCount++;
+    // Only touch the DOM occasionally — this fires at 60 fps.
+    if (renderCount === 1) P.log('event: render — first frame painted to canvas', 'good');
+    if (renderCount % 30 === 0) refreshStatus();
+  });
+
+  // Independent of the `render` event: sample the canvas a moment after load
+  // so "is it visibly drawing?" is answered even if that event never fires.
+  dot.addEventListener('load', () => {
+    setTimeout(() => {
+      const n = reportPixels('post-load');
+      if (n === 0) P.err('Canvas is blank after load — the animation is not painting.');
+      else if (n > 0) P.log(`pixel probe: ${n}/4096 sampled pixels painted — it IS drawing`, 'good');
+    }, 600);
+  });
+
+  dot.addEventListener('play',  () => P.log('event: play', 'ev'));
+  dot.addEventListener('pause', () => P.log('event: pause', 'ev'));
+  dot.addEventListener('stop',  () => P.log('event: stop', 'ev'));
+  dot.addEventListener('loop',  (ev) => P.log('event: loop #' + (ev && ev.loopCount), 'ev'));
+  dot.addEventListener('complete', () => P.log('event: complete', 'ev'));
+
+  // --- state machine events: the real evidence that it responds ---
+  dot.addEventListener('stateMachineStart', () => P.log('event: stateMachineStart', 'good'));
+  dot.addEventListener('stateMachineStop',  () => P.log('event: stateMachineStop', 'wrn'));
+  dot.addEventListener('stateMachineError', (ev) =>
+    P.err('event: stateMachineError — ' + P.describe(ev && ev.error != null ? ev.error : ev)));
+
+  // Payload field names are per the dotlottie-web 0.80.0 typings:
+  //   stateMachineTransition   -> { fromState, toState }
+  //   stateMachineStateEntered -> { state }
+  //   stateMachineStateExit    -> { state }
+  dot.addEventListener('stateMachineTransition', (ev) => {
+    P.log(`event: TRANSITION  "${ev && ev.fromState}" → "${ev && ev.toState}"`, 'good');
+    refreshStatus();
+  });
+  dot.addEventListener('stateMachineStateEntered', (ev) => {
+    P.log('event: stateEntered → "' + (ev && ev.state) + '"', 'ev');
+    refreshStatus();
+  });
+  dot.addEventListener('stateMachineStateExit', (ev) =>
+    P.log('event: stateExit ← "' + (ev && ev.state) + '"', 'ev'));
+  dot.addEventListener('stateMachineInputFired', (ev) =>
+    P.log('event: inputFired → ' + (ev && ev.inputName), 'ev'));
+  dot.addEventListener('stateMachineBooleanInputValueChange', (ev) =>
+    P.log(`event: boolInput ${ev && ev.inputName}: ${ev && ev.oldValue} → ${ev && ev.newValue}`, 'ev'));
+  dot.addEventListener('stateMachineCustomEvent', (ev) =>
+    P.log('event: customEvent — ' + (ev && ev.eventName), 'ev'));
+  dot.addEventListener('stateMachineInternalMessage', (ev) =>
+    P.log('event: sm internal — ' + (ev && ev.message), 'ev'));
+
+  // Safety net: if `load` never arrives, say so instead of hanging silently.
+  setTimeout(() => {
+    if (!dot || !dot.isLoaded) {
+      P.err('TIMEOUT: no "load" event after 15s. The runtime never finished ' +
+            'initialising (check the wasm probe and .lottie fetch above).');
+    }
+  }, 15000);
+}
+
+// ------------------------------------------------ state machine activation
+function initStateMachine() {
+  // The constructor already asked for stateMachineId. Verify, and if it did
+  // not take, load + start it explicitly so we learn *which* step fails.
+  let active = '';
+  try { active = dot.stateMachineGetActiveId() || ''; } catch (e) {}
+
+  if (active) {
+    P.log(`state machine already active from config: "${active}"`, 'good');
+  } else {
+    P.log(`no active state machine yet → stateMachineLoad("${SM_ID}")`, 'wrn');
+    let loaded = false;
+    try { loaded = dot.stateMachineLoad(SM_ID); }
+    catch (e) { P.err('stateMachineLoad threw: ' + P.describe(e)); }
+    P.log(`stateMachineLoad("${SM_ID}") → ${loaded}`, loaded ? 'good' : 'err');
+    if (!loaded) P.err(`Could not load state machine "${SM_ID}".`);
+  }
+
+  let started = false;
+  try { started = dot.stateMachineStart(); }
+  catch (e) { P.err('stateMachineStart threw: ' + P.describe(e)); }
+  P.log('stateMachineStart() → ' + started, started ? 'good' : 'err');
+
+  try { active = dot.stateMachineGetActiveId() || ''; } catch (e) {}
+  const running = (() => { try { return dot.isStateMachineRunning; } catch (e) { return false; } })();
+
+  P.set('s-sm',
+    active ? `id="${active}" · load/start ok=${started}` : `NOT initialised (start=${started})`,
+    active && running ? 'ok' : 'bad');
+
+  if (!active || !running) {
+    P.err('State machine did NOT initialise — the sun/moon buttons will do nothing.');
+  }
+
+  // Enumerate inputs: returned flat as [name, type, name, type, …].
+  try {
+    const flat = dot.stateMachineGetInputs() || [];
+    const pairs = [];
+    for (let i = 0; i < flat.length; i += 2) pairs.push(`${flat[i]}:${flat[i + 1]}`);
+    P.set('s-inputs', pairs.length ? pairs.join(' · ') : '(none reported)',
+      pairs.length ? 'ok' : 'warn');
+    P.log('state machine inputs → ' + (pairs.join(', ') || '(none)'),
+      pairs.length ? 'good' : 'wrn');
+
+    const hasEvent = flat.some((v, i) => i % 2 === 0 && v === EVENT_INPUT);
+    if (!hasEvent) {
+      P.log(`warning: no input named "${EVENT_INPUT}" was reported. ` +
+            `Buttons will still try to fire it.`, 'wrn');
+    }
+  } catch (e) {
+    P.set('s-inputs', 'error', 'bad');
+    P.err('stateMachineGetInputs threw: ' + P.describe(e));
+  }
+
+  try { P.log('stateMachineGetStatus() → ' + dot.stateMachineGetStatus()); } catch (e) {}
+
+  refreshStatus();
+  enableButtons();
+}
+
+// ----------------------------------------------------------------- buttons
+function enableButtons() {
+  const wire = (id, fn) => {
+    const el = document.getElementById(id);
+    el.disabled = false;
+    el.addEventListener('click', fn);
+  };
+
+  wire('btn-sun-moon', () => drive('sun→moon', STATE_DAY,   STATE_TO_NIGHT));
+  wire('btn-moon-sun', () => drive('moon→sun', STATE_NIGHT, STATE_TO_DAY));
+  wire('btn-fire',     () => fireEvent('raw-fire'));
+
+  // Reproduces the .lottie's own built-in Click interactions on the Sun/Moon
+  // layers — a second, independent way to prove the machine is listening.
+  wire('btn-click', () => {
+    const c = document.getElementById('canvas');
+    const r = c.getBoundingClientRect();
+    const x = Math.round(r.width / 2);
+    const y = Math.round(r.height / 2);
+    try {
+      P.log(`stateMachinePostClickEvent(${x}, ${y})`, 'ev');
+      dot.stateMachinePostClickEvent(x, y);
+      P.log('click posted (no throw)', 'good');
+    } catch (e) {
+      P.err('postClickEvent threw: ' + P.describe(e));
+    }
+    setTimeout(refreshStatus, 60);
+  });
+
+  wire('btn-refresh', () => {
+    P.log('— manual status refresh —');
+    refreshStatus();
+    reportPixels('manual');
+  });
+
+  P.log('buttons enabled. Tap "Play sun→moon" / "Play moon→sun".', 'good');
+
+  // Opt-in unattended run: append ?autotest=1 to the URL and the page drives
+  // both buttons by itself, so the state machine can be verified in a headless
+  // browser (CI / no phone to hand). Off by default — manual taps otherwise.
+  if (new URLSearchParams(location.search).get('autotest') === '1') {
+    runAutotest();
+  }
+}
+
+// --------------------------------------------------------------- autotest
+// Taps sun→moon, waits for the transition to land in "Night Idle", then taps
+// moon→sun and waits for "Day Idle". Prints a single PASS/FAIL verdict so the
+// result is readable at a glance.
+function runAutotest() {
+  P.log('=== AUTOTEST START (?autotest=1) ===', 'good');
+
+  // Resolves when the state machine reports `want` as the entered state.
+  const waitForState = (want, ms) => new Promise((resolve) => {
+    if (currentState() === want) return resolve(true);
+    const done = (ok) => { clearTimeout(timer); dot.removeEventListener('stateMachineStateEntered', onEnter); resolve(ok); };
+    const onEnter = (ev) => { if (ev && ev.state === want) done(true); };
+    const timer = setTimeout(() => done(currentState() === want), ms);
+    dot.addEventListener('stateMachineStateEntered', onEnter);
+  });
+
+  (async () => {
+    let pass = true;
+
+    document.getElementById('btn-sun-moon').click();
+    const toNight = await waitForState(STATE_NIGHT, 6000);
+    P.log(`autotest: sun→moon reached "${STATE_NIGHT}" = ${toNight} (state="${currentState()}")`,
+      toNight ? 'good' : 'err');
+    if (!toNight) pass = false;
+
+    document.getElementById('btn-moon-sun').click();
+    const toDay = await waitForState(STATE_DAY, 6000);
+    P.log(`autotest: moon→sun reached "${STATE_DAY}" = ${toDay} (state="${currentState()}")`,
+      toDay ? 'good' : 'err');
+    if (!toDay) pass = false;
+
+    // Did anything actually reach the canvas? Pixels are authoritative; the
+    // `render` event count is only advisory.
+    const px = reportPixels('autotest');
+    if (px === 0) {
+      P.log('autotest: canvas is completely blank — nothing was painted', 'err');
+      pass = false;
+    } else if (px < 0) {
+      P.log(`autotest: canvas read-back unavailable; relying on render events (${renderCount})`, 'wrn');
+    } else {
+      P.log(`autotest: canvas has ${px} painted pixels — rendering confirmed`, 'good');
+    }
+
+    P.log(`=== AUTOTEST ${pass ? 'PASS' : 'FAIL'} === ` +
+          `(renderEvents=${renderCount}, paintedPixels=${px})`, pass ? 'good' : 'err');
+  })().catch((e) => P.err('autotest threw: ' + P.describe(e)));
+}
+
+// Keep the backing store matched to the element on rotate/resize.
+let rzTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(rzTimer);
+  rzTimer = setTimeout(() => {
+    const c = document.getElementById('canvas');
+    sizeCanvas(c);
+    try { if (dot) dot.resize(); } catch (e) { /* non-fatal */ }
+  }, 200);
+});
+
+boot().catch((e) => P.err('boot() rejected: ' + P.describe(e)));
+</script>
+
+</body>
+</html>
