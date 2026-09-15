@@ -853,6 +853,11 @@ html[data-theme="light"] .gd-body {
   padding: 64px 24px;
   color: var(--gd-text-2);
 }
+/* The `hidden` attribute must win over the `display:flex` above (same reason
+   as .gd-modal-overlay[hidden] / .gd-viewer-overlay[hidden] below). Without
+   this, #lib-search-empty ("No matches") is permanently visible and covers
+   the real search results. */
+.gd-empty[hidden] { display: none !important; }
 .gd-empty-art { color: var(--gd-line); margin-bottom: 16px; }
 .gd-empty-title { margin: 0 0 6px; font-family: var(--font-heading, 'Fraunces', Georgia, serif); font-size: 1.15rem; font-weight: 600; color: var(--gd-blue); }
 .gd-empty-text { margin: 0 0 16px; font-size: 0.9rem; color: var(--gd-text-2); max-width: 34ch; }
