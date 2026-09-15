@@ -267,5 +267,9 @@ export const libraryPage = `<!DOCTYPE html>
        theme toggle and inlines illustrations for recolouring. It does not
        wrap, patch or call any function in library.js / file-cache.js. -->
   <script src="/static/illustrations.js" defer></script>
+  <!-- Decorative Lottie follower for the theme pill. ES module (so no `defer`
+       needed — modules are deferred by design). One-way observer: it watches
+       <html data-theme> and animates; it never toggles the theme itself. -->
+  <script type="module" src="/static/theme-lottie.js"></script>
 </body>
 </html>`
