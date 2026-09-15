@@ -71,6 +71,54 @@ export default function HomePage() {
     document.body.appendChild(script)
     injected.push(script)
 
+    // ── Decorative theme-toggle animation (purely cosmetic) ───────────────
+    // /static/theme-lottie.js is a plain ES module living in public/, NOT part
+    // of the Vite graph, so it cannot be `import`ed by path from TSX at build
+    // time — it is injected as <script type="module"> instead (a module is the
+    // hard requirement: the file itself `import`s the dotLottie runtime).
+    //
+    // TIMING: React mounts this header AFTER the document has loaded, so the
+    // module's own DOMContentLoaded boot may have already run (e.g. when the
+    // visitor arrives from /login via client-side routing, or on a remount).
+    // The module is idempotent and exposes `window.taysirThemeLottie.scan()`
+    // for exactly this case, so:
+    //   • first visit  -> the tag is added, the module boots and scans; the
+    //     host is already in the DOM because this effect runs after commit.
+    //   • later mounts -> the module is already evaluated (browsers execute a
+    //     given module URL once), so we call scan() ourselves to attach to the
+    //     freshly-mounted host. scan() is a no-op on hosts already wired
+    //     (data-theme-lottie-ready), so calling both paths is safe.
+    // The one-way MutationObserver on <html data-theme> lives in the module and
+    // is unaffected by this component: nothing here touches applyTheme /
+    // themeBoot / localStorage, and the real toggling stays with the delegated
+    // handler in the prototype's own script.js.
+    const themeLottie = window as unknown as {
+      taysirThemeLottie?: { scan?: () => void }
+    }
+
+    if (themeLottie.taysirThemeLottie?.scan) {
+      themeLottie.taysirThemeLottie.scan()
+    } else if (!document.querySelector('script[data-taysir-theme-lottie]')) {
+      const lottie = document.createElement('script')
+      lottie.type = 'module'
+      lottie.src = '/static/theme-lottie.js'
+      lottie.setAttribute('data-taysir-theme-lottie', '')
+      // Deliberately NOT pushed into `injected`: module scripts are evaluated
+      // once per URL, so removing the tag on unmount would not "unload" it and
+      // re-adding it on the next mount would do nothing. Leaving the single tag
+      // in place keeps the scan() path above working for later mounts.
+      document.head.appendChild(lottie)
+      // The host span is already committed to the DOM at this point, so the
+      // module's own boot()/scan() finds it as soon as it evaluates.
+      lottie.addEventListener('load', () => {
+        try {
+          themeLottie.taysirThemeLottie?.scan?.()
+        } catch {
+          /* decorative only — never break the page */
+        }
+      })
+    }
+
     return () => {
       injected.forEach((el) => el.parentNode?.removeChild(el))
     }
@@ -139,23 +187,11 @@ export default function HomePage() {
           <div className="header-actions">
             {/* Theme toggle (sun / moon) */}
             <button type="button" className="theme-toggle" data-theme-toggle aria-label="التبديل إلى الوضع الليلي" aria-pressed="false" title="الوضع الليلي / النهاري">
-              <span className="theme-toggle-track" aria-hidden="true">
-                <span className="theme-toggle-thumb">
-                  {/* Sun icon (visible in light mode) */}
-                  <svg className="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="4.2"/>
-                    <path d="M12 2.5v2.4M12 19.1v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.3 19.7l1.7-1.7M18 6l1.7-1.7"/>
-                  </svg>
-                  {/* Moon icon (visible in dark mode) */}
-                  <svg className="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M20.5 14.2A8.3 8.3 0 0 1 9.8 3.5a8.3 8.3 0 1 0 10.7 10.7Z"/>
-                  </svg>
-                </span>
-                {/* Tiny decorative stars, only visible in dark mode */}
-                <span className="theme-toggle-star s1" aria-hidden="true"></span>
-                <span className="theme-toggle-star s2" aria-hidden="true"></span>
-                <span className="theme-toggle-star s3" aria-hidden="true"></span>
-              </span>
+              {/* Host for the decorative dotLottie sun<->moon animation. The
+                  follower module (/static/theme-lottie.js) mounts its canvas in
+                  here; if it never loads the span stays empty and the button
+                  still toggles the theme exactly as before. */}
+              <span className="theme-toggle-lottie" aria-hidden="true"></span>
             </button>
 
             <button className="hamburger" id="hamburger" aria-label="القائمة" aria-expanded="false" aria-controls="mobile-menu">
