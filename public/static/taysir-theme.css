@@ -2225,23 +2225,60 @@ html[data-theme="dark"] .gd-card { background: #171923; }
    fixed, viewport-filling box, and every inner layer is
    positioned `absolute` against that root.
 
-   B2 — NEUTRALISING THE BARE `.mobile-menu` LEAK
+   B2 — NEUTRALISING THE `.mobile-menu` DROPDOWN-CARD LEAK
    --------------------------------------------------------
-   frontend/src/styles.css:198 styles a bare `.mobile-menu` as a
-   dark, rounded, blurred dropdown CARD (absolute, padding,
-   1px border, 22px radius, opaque background, backdrop-filter,
-   box-shadow). That rule is global and still matches this root,
-   which is also `.mobile-menu`. The root rule below therefore
-   explicitly zeroes those card decorations so the full-screen
-   menu renders as a clean, transparent, edge-to-edge surface.
-   Note that its own `backdrop-filter` had to go too: left in
-   place it would have re-created the containing-block trap for
-   the fixed root from the inside.
+   This root also carries the class `.mobile-menu`, and
+   frontend/src/styles.css styles that class as a dark, rounded,
+   blurred dropdown CARD. It is NOT one rule: FOUR separate
+   top-level rules there match this root, and all four load
+   AFTER this file (see the load-order note below):
 
-   All of that is done with plain specificity, never
-   `!important`: `.home-mobile-menu[data-open="true"]` is 0-2-0,
-   which beats the 0-1-0 `.mobile-menu` rule in
-   frontend/src/styles.css.
+     :198  `.mobile-menu`                          0-1-0
+           the full card — absolute, padding, 1px border,
+           22px radius, opaque background, backdrop-filter,
+           box-shadow, plus `will-change` and `transform-origin`
+     :472  `html[data-theme="light"] .mobile-menu` 0-2-1
+           re-applies background-color + border-color + box-shadow
+     :839  `.mobile-menu`                          0-1-0
+           re-applies border-color, background, box-shadow, radius
+     :845  `html[data-theme="dark"]  .mobile-menu` 0-2-1
+           re-applies background-color
+
+   The two THEME-SCOPED rules (:472 light, :845 dark) are the
+   reason the root selector below needs 0-2-1-or-higher. They sit
+   at 0-2-1, so the previous 0-2-0 root rule was simply outranked
+   and its `background` / `box-shadow` resets were discarded — the
+   card fill and drop shadow leaked straight back onto the open
+   full-screen root, in BOTH themes.
+
+   LOAD ORDER — WHY A TIE IS NOT ENOUGH
+   --------------------------------------------------------
+   The HTML shells load this sheet FIRST and the bundled
+   styles.css SECOND (see public/react/index.html and
+   frontend/index.html: `/static/taysir-theme.css` precedes the
+   Vite CSS bundle that `frontend/src/main.tsx` imports). With
+   equal specificity the LAST declaration wins, so styles.css
+   wins every tie. A merely-equal 0-2-1 root selector (e.g. a
+   bare `html ` prefix) would tie :472/:845 and still LOSE.
+
+   The root selector is therefore
+   `html[data-theme] .home-mobile-menu[data-open="true"]`, which
+   is 0-3-1 — `[data-theme]`, `.home-mobile-menu` and
+   `[data-open="true"]` are three class/attribute components,
+   plus the `html` type selector. That outranks 0-2-1 outright,
+   so source order never comes into play and the reset holds in
+   light AND dark. The unquoted `[data-theme]` matches whichever
+   value is set; the pre-paint inline script in every shell
+   always sets one, so the attribute is guaranteed present.
+   Verified empirically against all four rules in both themes.
+
+   Note that the card's own `backdrop-filter` had to go too: left
+   in place it would have re-created the containing-block trap
+   for the fixed root from the inside. `will-change` and
+   `transform-origin` are reset for the same reason — see the
+   per-property notes on the rule itself.
+
+   All of this is plain specificity. No `!important` anywhere.
 
    CLOSED / OPEN GEOMETRY
    --------------------------------------------------------
@@ -2267,49 +2304,83 @@ html[data-theme="dark"] .gd-card { background: #171923; }
    root carries, so nothing here can leak into the internal
    pages' `.gd-topbar` header or into any other `.mobile-menu`.
    Every selector keeps the `[data-open="true"]` attribute, so
-   specificity is 0-2-0 at minimum (root rule) and higher for
-   the descendants — comfortably above the 0-1-0 `.mobile-menu`
-   rule in frontend/src/styles.css that has to be overridden.
+   specificity is 0-3-1 for the root rule (which has to outrank
+   the 0-2-1 theme rules listed above) and 0-3-0 or more for the
+   descendant rules. The descendants deliberately keep their
+   original specificity: no rule in frontend/src/styles.css
+   targets `.mm-scrim` / `.mm-wave*` / `.mm-panel` / `.mm-close`
+   / `.mm-links` at all, so they compete with nothing and need
+   no `html[data-theme]` prefix. Only the ROOT shares the
+   `.mobile-menu` class, and only the root needed the bump.
    No `!important` is used.
    ========================================================== */
 
 /* ---- 18.1  The fixed, viewport-filling root ---------------
-   Specificity 0-2-0. `z-index: 1000` lifts the whole menu
-   above the sticky header and the page content. */
-.home-mobile-menu[data-open="true"] {
+   Specificity 0-3-1: `[data-theme]` + `.home-mobile-menu` +
+   `[data-open="true"]` are three class/attribute components and
+   `html` is one type component. That is what it takes to outrank
+   the 0-2-1 theme rules at frontend/src/styles.css:472 and :845,
+   which load after this file and would otherwise win any tie on
+   source order (see the LOAD ORDER note in the header above).
+   `z-index: 1000` lifts the whole menu above the sticky header
+   and the page content. */
+html[data-theme] .home-mobile-menu[data-open="true"] {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  /* GEOMETRY ONLY: §5 puts a 1px `border-bottom` on
-     `.mobile-menu`. On a fixed `inset: 0` root that border
-     shrinks the PADDING BOX — which is the containing block
-     the absolute layers below resolve `inset: 0` / `bottom: 0`
-     against — leaving every layer 1px short of the viewport
-     bottom. Zeroing the WIDTH (not the colour) removes that
-     1px error. Scoped to the open state, so the §5 closed
-     state is untouched. */
-  border-bottom-width: 0;
 
-  /* B2 — neutralise the bare `.mobile-menu` dropdown-card leak
-     from frontend/src/styles.css:198 (0-1-0, beaten by the
-     0-2-0 selector above without `!important`). Each of these
-     zeroes one card decoration that rule applies:
-       border-width    kills its 1px border on ALL four sides
-                       (the `border-bottom-width` above only
-                       handles the §5 bottom edge), so the
-                       absolute layers get the full viewport.
-       border-radius   the 22px rounding — a full-screen
-                       surface must have square corners.
-       background      its opaque dark fill, which would hide
-                       the scrim and the four wave layers.
-       backdrop-filter its blur/saturate. MUST be removed: on
-                       the root it would make the root its own
-                       containing block and re-trap the fixed
-                       box — the very B1 failure mode.
-       box-shadow      the dropdown drop shadow + inset hairline.
-       padding         its .75rem inset, which would push the
-                       absolute layers' containing block in on
-                       every side. */
+  /* B2 — neutralise the `.mobile-menu` dropdown-card leak that
+     frontend/src/styles.css applies across FOUR rules (:198 and
+     :839 at 0-1-0, plus the theme-scoped :472 and :845 at
+     0-2-1). All four are outranked by the 0-3-1 selector above,
+     with no `!important`. Each declaration here zeroes one card
+     decoration those rules apply:
+       border-width     kills its 1px border on ALL four sides.
+                        On a fixed `inset: 0` root a border
+                        shrinks the PADDING BOX — the containing
+                        block the absolute layers below resolve
+                        `inset: 0` / `bottom: 0` against — so any
+                        border left standing would leave every
+                        layer short of the viewport edge. This
+                        also covers the 1px `border-bottom` that
+                        §5 puts on `.mobile-menu`. Only the WIDTH
+                        is zeroed, never the colour, and it is
+                        scoped to the open state, so the §5
+                        closed state is untouched.
+       border-radius    the 22px / `--radius-card` rounding — a
+                        full-screen surface must have square
+                        corners.
+       background       its opaque fill (dark from :198/:839,
+                        near-white from :472, #171923 from :845),
+                        which would hide the scrim and the four
+                        wave layers.
+       backdrop-filter  its blur/saturate. MUST be removed: on
+                        the root it would make the root its own
+                        containing block and re-trap the fixed
+                        box — the very B1 failure mode.
+       box-shadow       the dropdown drop shadow + inset hairline
+                        (re-applied by :472 and :839).
+       padding          its .75rem inset, which would push the
+                        absolute layers' containing block in on
+                        every side.
+       will-change      :198 declares `transform, opacity` for
+                        its scale-fade dropdown reveal. Left
+                        leaking it would pin a permanent
+                        compositor layer on a full-viewport
+                        element for the entire session, wasting
+                        GPU memory even while the menu is shut.
+                        2C will re-declare it deliberately, for
+                        the elements and the duration it needs.
+       transform-origin :198 sets `top center` so its scaleY
+                        grows the dropdown downward from under
+                        the nav bar. That anchor is wrong here:
+                        this menu is a right-edge slide-in, so it
+                        is reset to `right center` — the visual
+                        RIGHT edge, vertically centred, which is
+                        the edge the panel and waves enter from
+                        in this RTL layout. Resetting it now
+                        keeps 2C's slide-in from being mis-
+                        anchored to the top-centre point. */
   border-width: 0;
   border-radius: 0;
   background: transparent;
@@ -2317,6 +2388,8 @@ html[data-theme="dark"] .gd-card { background: #171923; }
   -webkit-backdrop-filter: none;
   box-shadow: none;
   padding: 0;
+  will-change: auto;
+  transform-origin: right center;
 }
 
 /* ---- 18.2  Scrim — backdrop area, lowest layer -----------
