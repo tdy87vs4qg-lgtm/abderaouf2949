@@ -2747,3 +2747,528 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================
+   19. MOBILE MENU — STEP 2C: THE STAGGERED SLIDE-IN
+   ==========================================================
+   §18 gave the multi-layer menu on the HomePage its geometry
+   (2A) and its palette (2B) but left it DELIBERATELY
+   MOTIONLESS. This section is the motion, and nothing else:
+   not one box, not one colour and not one z-index from §18 is
+   restated or overridden below. §19 adds `transform`,
+   `opacity`, `transition` and the per-layer stagger delays —
+   that is the entire surface area of this section, plus the
+   two small affordances in 19.7 and the scroll lock in 19.9.
+
+   WHY THE MENU LOOKED DEAD BEFORE THIS SECTION
+   --------------------------------------------------------
+   HomePage.tsx renders the whole layer stack already
+   (`#mobile-menu.home-mobile-menu` > `.mm-scrim`,
+   `.mm-wave-1..4`, `.mm-panel` > `.mm-close` + `nav.mm-links`)
+   and prototype/script.js already flips `data-open`. But for a
+   while the only rule that reacted to that flag was §5's
+   `.mobile-menu[data-open="true"] { display: flex }`, written
+   for the OLD FLAT TEXT MENU: the layers existed in the DOM
+   and no stylesheet painted them, so the hamburger appeared to
+   do nothing at all. §18 fixed the paint. §19 fixes the
+   movement.
+
+   ── THE CENTRAL DESIGN DECISION: `data-open` IS NOT THE
+      ANIMATION FLAG — `.mm-in` IS ────────────────────────────
+   This is the one thing to understand before changing
+   anything here.
+
+   §18 keys EVERYTHING on `[data-open="true"]`: the fixed
+   full-viewport root, the 70vw wave boxes, the panel, the
+   z-index ladder AND the entire 2B palette (`--mm-wave-1..4`,
+   `--mm-scrim`, `--mm-panel`, `--mm-ink`, `--mm-num` are all
+   declared on the `[data-open="true"]` root rule). §5, in two
+   different sheets, additionally ties `display` to the same
+   flag.
+
+   So `data-open` is a PAINT flag, not a motion flag. If the
+   closing animation were driven by flipping it to "false",
+   then on the very first frame of the close the root would
+   lose `position: fixed`, the waves would lose their width and
+   their colour, the panel would lose its white fill, and §5
+   would set `display: none` on top — the element would simply
+   vanish and there would be nothing left on screen to animate.
+   That is exactly the "hidden cuts off the closing animation"
+   failure this step has to fix, and driving the exit from
+   `data-open` would have re-created it in a subtler form.
+
+   The contract is therefore:
+
+     data-open="true"   the menu is ON SCREEN — either sliding
+                        in, resting open, or sliding out. §18
+                        paints it for this entire window.
+     .mm-in             the menu is at its RESTING OPEN
+                        position. Present = layers in place;
+                        absent = layers parked off-canvas.
+     data-open="false"  the menu is fully gone. §5's
+                        `display: none` applies again and the
+                        subtree leaves the a11y tree and
+                        hit-testing entirely.
+
+   The close sequence is consequently: remove `.mm-in` (the
+   layers animate out while §18 keeps painting them, because
+   `data-open` is still "true"), and only when the last
+   transition has finished does the script set
+   `data-open="false"` and let `display: none` take over. That
+   is the whole reason the JS in prototype/script.js waits for
+   `transitionend` instead of hiding the menu immediately, and
+   the reason it no longer sets the `hidden` attribute while
+   the menu is closing — `hidden` is `display: none` in the UA
+   sheet and would cut the exit off on frame one.
+
+   BENEFIT OF THIS SPLIT: §18 needs NO changes whatsoever, and
+   the closed state stays byte-for-byte what §5 always did
+   (`display: none`), so the closed menu is genuinely removed
+   from the box tree, unfocusable and untappable, with no
+   `visibility` / `pointer-events` juggling and no risk of an
+   invisible full-viewport overlay swallowing taps on the page
+   underneath. It also means no rule in §19 has to fight §5
+   over `display` at all.
+
+   THE ONE COST: a transition cannot start from a
+   `display: none` element, because there is no previous
+   computed style to interpolate from. The script therefore
+   sets `data-open="true"` (which makes the element rendered
+   and parked off-canvas by 19.2), forces a synchronous reflow,
+   and only then adds `.mm-in` on the next animation frame.
+   That is class toggling, not JS animation — every value that
+   moves is interpolated by the CSS engine.
+
+   ── SPECIFICITY / LOAD-ORDER CONTRACT ─────────────────────
+   Verified before writing this section:
+
+     frontend/src/styles.css :198 `.mobile-menu`             0-1-0
+     frontend/src/styles.css :472 html[light] .mobile-menu   0-2-1
+     frontend/src/styles.css :839 `.mobile-menu`             0-1-0
+     frontend/src/styles.css :845 html[dark]  .mobile-menu   0-2-1
+     taysir-theme.css §5          `.mobile-menu`             0-1-0
+     taysir-theme.css §5          `.mobile-menu[data-open]`  0-1-1
+     prototype/styles.css §5      the same two, injected LAST
+
+   NONE of them uses `!important`, and none of them sets
+   `transform`, `transition`, `transition-delay` or (except the
+   dropdown-card `will-change`, which §18.1 already resets)
+   anything else this section declares. Grepping the whole of
+   taysir-theme.css for `!important` returns only §2's theme
+   fade, §15's `prefers-reduced-motion` block
+   (`[data-reveal]`, `.float-illu`, `.btn:hover`,
+   `.theme-toggle*`, `:root.theme-transitioning *`) and the
+   `.gd-skeleton` / `.inapp-notice` / `.taysir-illu-stage`
+   reduced-motion resets — not one of them targets
+   `.mobile-menu`, `#mobile-menu`, `[data-open]`, `.mm-*` or
+   `.hamburger`. So there is no `!important` to beat here.
+
+   The one `!important` that DOES reach this subtree is §15's
+   `:root.theme-transitioning * { transition: none !important }`.
+   That class is only on <html> for ~0.5s during a theme
+   toggle, and suppressing the menu transition inside that
+   window is harmless.
+
+   Because the prototype sheet is injected at runtime by
+   HomePage.tsx and therefore lands LAST in <head>, an
+   equal-specificity selector here would lose on source order.
+   Every selector below is consequently ID-scoped
+   (`#mobile-menu`, 1-x-x), which outranks all of the 0-x-x
+   rules above outright regardless of sheet order. Each one
+   also keeps `.home-mobile-menu`, so these rules can only
+   match this one HomePage root and can never reach
+   SiteHeader.tsx, `.gd-topbar` or the internal pages.
+
+   ── RTL / DIRECTION (deliberate — do not "fix") ───────────
+   The entrance is a PHYSICAL right-edge slide. `translateX()`
+   is a physical transform and is NOT flipped by `dir="rtl"`,
+   so `translateX(100%)` means "displaced to the right" in both
+   directions. §18 anchors the waves and the panel with
+   `inset-inline-start: 0`, which in this RTL document is the
+   VISUAL RIGHT edge. Together that parks each layer just off
+   the right edge of the viewport and slides it LEFTWARD into
+   place. This pairing of a physical transform with a logical
+   inset is intentional and correct.
+
+   ── PERFORMANCE (low-end phones over LTE) ─────────────────
+   Pure CSS transitions. No JS animation, no library, no
+   `@keyframes`. Only `transform` and `opacity` are animated,
+   both compositor-only, so no frame triggers layout or paint.
+   `will-change` is declared ONLY on the layers that actually
+   move and ONLY while `.mm-in` is being applied, so no
+   compositor layer is retained while the menu is shut — §18.1
+   resets `will-change: auto` on the root for that exact
+   reason and is left untouched.
+
+   ── NO HARD-CODED COLOURS ─────────────────────────────────
+   §19 declares no colour of its own. Every surface keeps the
+   value §18 gave it, and the two affordances added in 19.7
+   resolve through `--purple`, `--purple-dark`, `--purple-soft`
+   and `--border`, so both themes keep working with no
+   theme-scoped rule.
+   ========================================================== */
+
+/* ---- 19.1  Motion tokens --------------------------------
+   Declared on the root regardless of state, so the parked
+   rules and the resting rules read the same values and one
+   edit re-times the whole sequence. Custom properties are
+   inert: declaring them paints nothing and moves nothing.
+
+   --mm-dur-panel  the panel's travel. 380ms reads as a
+                   deliberate reveal without feeling sluggish
+                   when a student taps the hamburger twice.
+   --mm-dur-wave   slightly faster, so the waves snap out from
+                   behind the panel rather than lagging it.
+   --mm-dur-scrim  the backdrop only cross-fades.
+   --mm-step       the stagger interval. Four layers x 55ms
+                   spreads the fan-out over ~165ms, well
+                   inside the panel's own 380ms travel, so the
+                   whole thing still reads as ONE gesture
+                   rather than a sequence of separate moves.
+   --mm-ease-out   fast off the mark, long settle — this is
+                   what makes the layers look like they
+                   decelerate into place.
+   --mm-ease-in    its mirror, used on the way out so the exit
+                   accelerates away instead of crawling.
+
+   --mm-exit-total is the single source of truth for "how long
+   does the close take", and is consumed by the JS fallback
+   timer in prototype/script.js. Longest exit path = the
+   panel's duration plus the largest exit delay (the waves'
+   mirrored ladder tops out at 3 steps). */
+#mobile-menu.home-mobile-menu {
+  --mm-dur-panel: 380ms;
+  --mm-dur-wave:  340ms;
+  --mm-dur-scrim: 260ms;
+  --mm-step:       55ms;
+  --mm-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --mm-ease-in:  cubic-bezier(0.55, 0, 1, 0.45);
+  --mm-exit-total: calc(var(--mm-dur-panel) + var(--mm-step) * 3);
+}
+
+/* ---- 19.2  PARKED — on screen, layers off-canvas ---------
+   Matches whenever the menu is RENDERED but not at rest:
+   during the first frame of the opening (before `.mm-in` is
+   added) and for the whole of the closing (after `.mm-in` is
+   removed, while `data-open` is still "true" so §18 keeps
+   painting everything).
+
+   Specificity 1-2-1 for the layers, comfortably above §18's
+   0-3-0 equivalents, and ID-scoped so the runtime-injected
+   prototype sheet cannot outrank it on source order.
+
+   Only `transform` / `opacity` / `transition` are set. The
+   position, the 70vw width, the z-index ladder and every
+   colour still come from §18 and are deliberately not
+   repeated.
+
+   `pointer-events: none` on the root during this state means
+   a menu that is still visibly sliding away can no longer
+   intercept taps: the student can hit the page underneath
+   immediately, without waiting out the animation. It is not
+   transitioned, so it applies on the first frame of the
+   close. */
+#mobile-menu.home-mobile-menu[data-open="true"]:not(.mm-in) {
+  pointer-events: none;
+}
+
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-scrim {
+  opacity: 0;
+  transition: opacity var(--mm-dur-scrim) var(--mm-ease-in);
+}
+
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-wave {
+  transform: translateX(100%);
+  transition: transform var(--mm-dur-wave) var(--mm-ease-in);
+}
+
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-panel {
+  transform: translateX(100%);
+  transition: transform var(--mm-dur-panel) var(--mm-ease-in);
+}
+
+/* The close button and the three link rows ride the panel in,
+   then settle a beat later, so the panel reads as a surface
+   that CARRIES its content rather than one with the text
+   baked onto it. `translateY` + `opacity` only — still
+   compositor-only.
+
+   Specificity 1-2-2 / 1-2-3, above §18.5 (0-4-0) and §18.6
+   (0-3-1). */
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-panel .mm-close,
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-links a {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity   160ms var(--mm-ease-in),
+    transform 160ms var(--mm-ease-in);
+}
+
+/* ---- 19.3  EXIT LADDER — mirrored, front to back ---------
+   On the way OUT the DARKEST, FRONTMOST wave leaves first and
+   the lightest, backmost one trails, so the stack peels away
+   front-to-back instead of looking like the entrance played
+   backwards. The panel leaves immediately (delay 0), which
+   uncovers the waves behind it and is what makes the peel
+   visible at all.
+
+   The rows and the close button just fade with no per-row
+   delay: the panel is sliding out from under them anyway, a
+   staggered exit would be invisible, and the cheaper
+   transition is the right call on a low-end phone.
+
+   These delays live on the PARKED state, so they apply during
+   the close. The entrance ladder in 19.4 overrides each of
+   them while `.mm-in` is present. Specificity 1-2-2. */
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-wave-4 { transition-delay: 0ms; }
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-wave-3 { transition-delay: var(--mm-step); }
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-wave-2 { transition-delay: calc(var(--mm-step) * 2); }
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-wave-1 { transition-delay: calc(var(--mm-step) * 3); }
+
+/* ---- 19.4  RESTING OPEN — the staggered entrance ---------
+   `.mm-in` is added by the script on the frame AFTER the menu
+   becomes rendered, which is what lets these values animate
+   from the parked ones in 19.2 rather than being applied
+   instantly.
+
+   Every layer travels to `translateX(0)` — the position §18
+   already defines — but each starts later than the one behind
+   it. Because the four waves are coincident 70vw boxes
+   stacked back to front (wave-1 lightest at the back, wave-4
+   darkest at the front, panel above all four), delaying the
+   FRONT layers briefly exposes the ones behind: that is what
+   produces the fan of graduated purple bands the design calls
+   for. Once the sequence settles they are coincident again
+   and only the panel shows, exactly as §18 describes.
+
+   The panel is last in, so the bands are on screen before it
+   covers them.
+
+   `will-change: transform` is declared here and ONLY here —
+   on the children, on the open state — so the compositor
+   layers exist exactly while they are needed and are dropped
+   again the moment the menu closes. §18.1's
+   `will-change: auto` reset on the ROOT (which undoes a
+   permanent leak from frontend/src/styles.css) stands
+   untouched; this is the deliberate, scoped re-declaration
+   §18 anticipated.
+
+   Specificity: 1-3-1 for the layers, 1-3-2 / 1-3-3 for the
+   rows — one class above their 19.2 / 19.3 counterparts. */
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-scrim {
+  opacity: 1;
+  transition: opacity var(--mm-dur-scrim) var(--mm-ease-out);
+}
+
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-wave {
+  transform: translateX(0);
+  transition: transform var(--mm-dur-wave) var(--mm-ease-out);
+  will-change: transform;
+}
+
+/* IN — lightest/backmost leads, darkest/frontmost trails. */
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-wave-1 { transition-delay: 0ms; }
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-wave-2 { transition-delay: var(--mm-step); }
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-wave-3 { transition-delay: calc(var(--mm-step) * 2); }
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-wave-4 { transition-delay: calc(var(--mm-step) * 3); }
+
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-panel {
+  transform: translateX(0);
+  transition: transform var(--mm-dur-panel) var(--mm-ease-out) calc(var(--mm-step) * 2);
+  will-change: transform;
+}
+
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-panel .mm-close,
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-links a {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity   240ms var(--mm-ease-out),
+    transform 240ms var(--mm-ease-out);
+}
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-panel .mm-close {
+  transition-delay: calc(var(--mm-step) * 3);
+}
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-links a:nth-child(1) {
+  transition-delay: calc(var(--mm-step) * 4);
+}
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-links a:nth-child(2) {
+  transition-delay: calc(var(--mm-step) * 5);
+}
+#mobile-menu.home-mobile-menu[data-open="true"].mm-in .mm-links a:nth-child(3) {
+  transition-delay: calc(var(--mm-step) * 6);
+}
+
+/* ---- 19.5  The hamburger's own transition ----------------
+   §5 already morphs the three bars into an X via
+   `.hamburger.open`, and already transitions `transform` and
+   `opacity` on the bars. Nothing is added to that. This rule
+   only matches the menu's easing to the bars' so the two do
+   not visibly disagree, and is scoped to the HomePage header
+   so the identical `.hamburger` in the prototype sheet and on
+   any other page is untouched.
+
+   The 62x32 theme toggle, its Lottie host and every
+   `.theme-toggle*` rule are deliberately NOT referenced
+   anywhere in §19. */
+.site-header.home-header .hamburger span {
+  transition:
+    transform 0.25s var(--mm-ease-out),
+    opacity   0.25s var(--mm-ease-out);
+}
+
+/* ---- 19.6  Overscroll containment inside the panel -------
+   §18.4 gives the panel `overflow-y: auto` so a long link
+   list can scroll on a short viewport. `overscroll-behavior:
+   contain` stops that scroll from chaining to the document
+   underneath once the panel hits its end — the standard
+   scroll-trap fix, and it costs nothing. */
+#mobile-menu.home-mobile-menu .mm-panel {
+  overscroll-behavior: contain;
+}
+
+/* ---- 19.7  Interaction affordances — TOKEN-DRIVEN --------
+   Both colours resolve through the theme tokens, so dark mode
+   keeps working with no theme-scoped rule: §1 flips the tokens
+   themselves.
+
+   FOCUS RING: the menu is now keyboard-reachable (the script
+   moves focus into it on open and traps Escape), so there must
+   be a visible focus indicator. `:focus-visible` only paints
+   for keyboard / AT navigation and never on a touch tap, so it
+   costs a phone user nothing. `--purple` is the brand accent
+   and clears contrast on §18's always-white panel in both
+   themes (#6C3EF4 light / #8F6BFF dark).
+
+   PRESSED STATE: `--purple-soft`, a translucent brand tint
+   that is defined in BOTH themes. `:active` rather than
+   `:hover`, because this is a touch surface; the hover variant
+   is gated behind `hover: hover` so it can never stick on a
+   phone after a tap. Radius matches the 12px §18.5 already
+   puts on the close button.
+
+   NO NEW COLOUR VALUE IS INTRODUCED ANYWHERE IN §19. */
+#mobile-menu.home-mobile-menu .mm-panel .mm-close:focus-visible,
+#mobile-menu.home-mobile-menu .mm-links a:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+#mobile-menu.home-mobile-menu .mm-links a:active,
+#mobile-menu.home-mobile-menu .mm-panel .mm-close:active {
+  background: var(--purple-soft);
+  border-radius: 12px;
+}
+@media (hover: hover) and (pointer: fine) {
+  #mobile-menu.home-mobile-menu .mm-links a:hover {
+    color: var(--purple-dark);
+  }
+  #mobile-menu.home-mobile-menu .mm-panel .mm-close:hover {
+    background: var(--purple-soft);
+    border-radius: 12px;
+  }
+}
+
+/* ---- 19.8  Desktop — the menu can never be left open -----
+   VERIFIED BREAKPOINT: 900px, not 901px. Both this file's §16
+   and the runtime-injected prototype/styles.css §16 switch the
+   hamburger on at `max-width: 900px`, and §17.8c rule (6)
+   restates the same value at `.home-header` specificity.
+
+   The form is `not all and (max-width: 900px)` rather than
+   `min-width: 901px`, copying §17.8c verbatim and for its
+   documented reason: a viewport width is a floating-point
+   length, so 900.5px (browser zoom, fractional DPR) satisfies
+   NEITHER `max-width: 900px` NOR `min-width: 901px` and would
+   fall straight through the gap. Negating the exact query the
+   hamburger uses is its precise complement, so the guard here
+   can never disagree with the guard on the button.
+
+   `display: none` is safe in THIS rule — unlike anywhere else
+   in §19 — because on desktop there is no animation to cut
+   off: the only control that can open the menu is hidden at
+   these widths. This is purely the backstop for a visitor who
+   opens the menu on a narrow window and then widens it; the
+   menu is removed outright instead of being stranded over the
+   desktop layout. Specificity 1-2-1, above §5's
+   `display: flex`. */
+@media not all and (max-width: 900px) {
+  #mobile-menu.home-mobile-menu,
+  #mobile-menu.home-mobile-menu[data-open="true"] {
+    display: none;
+  }
+}
+
+/* ---- 19.9  Scroll lock ----------------------------------
+   While the menu is open the page behind it must not scroll
+   under the finger. prototype/script.js toggles `mm-open` on
+   <html>; this is the CSS half of that contract.
+
+   `overflow: hidden` on <html> and <body> is the
+   widest-supported lock and needs no scroll-position
+   bookkeeping in JS, so it costs nothing on a low-end device.
+   `overscroll-behavior: contain` additionally stops the
+   pull-to-refresh / rubber-band chain from reaching the
+   document on mobile Safari and Chrome.
+
+   The class is removed as soon as the close begins, so the
+   lock never outlives the gesture. Specificity 0-2-0 — no
+   other rule in taysir-theme.css, prototype/styles.css or
+   frontend/src/styles.css sets `overflow` on <html> or
+   <body>, so this competes with nothing. */
+html.mm-open,
+html.mm-open body {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* ---- 19.10  Reduced motion ------------------------------
+   Honour `prefers-reduced-motion: reduce` the way §15 already
+   does for the rest of the site: keep the FUNCTION, drop the
+   MOVEMENT. The menu still opens, still closes, still traps
+   Escape and still locks the scroll — the layers simply appear
+   at their final positions instead of travelling there.
+
+   `transition-duration` / `transition-delay` are zeroed rather
+   than writing `transition: none`, so the script's
+   `transitionend` listener still fires (a 0s transition on a
+   changing property still dispatches the event) and the close
+   still completes. The script also carries its own timeout
+   fallback, so the menu can never get stuck open even if no
+   event arrives.
+
+   The `.mm-in` resting values are then forced onto the parked
+   state so nothing is left stranded off-canvas for the frame
+   before the class lands.
+
+   `!important` is used here and nowhere else in §19, for one
+   narrow reason: these rules must override the per-layer
+   `transition-delay` ladders in 19.3 / 19.4, which sit at
+   equal-or-higher specificity, without restating every rung.
+   §15 of this file uses `!important` in its own
+   reduced-motion block for exactly the same reason, so this
+   follows the established pattern. Nothing outside this media
+   query is affected. */
+@media (prefers-reduced-motion: reduce) {
+  #mobile-menu.home-mobile-menu .mm-scrim,
+  #mobile-menu.home-mobile-menu .mm-wave,
+  #mobile-menu.home-mobile-menu .mm-panel,
+  #mobile-menu.home-mobile-menu .mm-panel .mm-close,
+  #mobile-menu.home-mobile-menu .mm-links a,
+  .site-header.home-header .hamburger span {
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+  #mobile-menu.home-mobile-menu[data-open="true"] .mm-scrim {
+    opacity: 1;
+  }
+  #mobile-menu.home-mobile-menu[data-open="true"] .mm-wave,
+  #mobile-menu.home-mobile-menu[data-open="true"] .mm-panel {
+    transform: none;
+  }
+  #mobile-menu.home-mobile-menu[data-open="true"] .mm-panel .mm-close,
+  #mobile-menu.home-mobile-menu[data-open="true"] .mm-links a {
+    opacity: 1;
+    transform: none;
+  }
+}
