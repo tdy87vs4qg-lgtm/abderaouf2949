@@ -230,10 +230,55 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* ============ MOBILE MENU — STEP 1: STRUCTURE ONLY ============ */}
+        {/* Multi-layer staggered slide-in menu scaffold. NO CSS and NO
+            animation are added in this step — only the DOM layers the later
+            steps will style and animate.
+
+            Layers, back to front:
+              .mm-scrim          dimmed backdrop (decorative)
+              .mm-wave-1..4      four graduated Taysir-purple wave layers
+                                 (decorative; the 4 shades + the staggered
+                                 slide-in come later in CSS)
+              .mm-panel          the white 70vw / 100vh panel that carries the
+                                 close button and the numbered link list
+
+            CONTRACT WITH /static/prototype/script.js (unchanged in this step):
+              - `id="mobile-menu"` is preserved — the script finds this element
+                with getElementById and keeps toggling `data-open` + `hidden`.
+                That open/close mechanism is replaced in STEP 3.
+              - The root stays a DIRECT CHILD of <header>, exactly as before.
+              - The 3 <a> links stay real anchors inside this subtree, so the
+                script's `menu.querySelectorAll('a')` close-on-click binding
+                (a descendant query) still matches all three.
+              - `.mm-close` is a <button>, so it is deliberately NOT picked up
+                by that anchor query; it gets wired in STEP 3/4.
+              - `id="hamburger"` above is untouched. */}
         <div className="mobile-menu" id="mobile-menu" hidden>
-          <a href="#hero">الرئيسية</a>
-          <a href="#guide">الإرشادات</a>
-          <a href="#account">تسجيل الدخول</a>
+          {/* Backdrop / scrim behind the wave layers */}
+          <div className="mm-scrim" aria-hidden="true"></div>
+
+          {/* Four decorative purple wave layers (light -> dark), which will
+              slide in staggered from the RIGHT once STEP 2 adds the CSS. */}
+          <div className="mm-wave mm-wave-1" aria-hidden="true"></div>
+          <div className="mm-wave mm-wave-2" aria-hidden="true"></div>
+          <div className="mm-wave mm-wave-3" aria-hidden="true"></div>
+          <div className="mm-wave mm-wave-4" aria-hidden="true"></div>
+
+          {/* The white panel on top */}
+          <div className="mm-panel">
+            <button type="button" className="mm-close" id="mm-close" aria-label="إغلاق القائمة">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+
+            <nav className="mm-links" aria-label="القائمة">
+              <a href="#hero"><span className="mm-link-label">الرئيسية</span><span className="mm-num" aria-hidden="true">01</span></a>
+              <a href="#guide"><span className="mm-link-label">الإرشادات</span><span className="mm-num" aria-hidden="true">02</span></a>
+              <a href="#account"><span className="mm-link-label">تسجيل الدخول</span><span className="mm-num" aria-hidden="true">03</span></a>
+            </nav>
+          </div>
         </div>
       </header>
 
