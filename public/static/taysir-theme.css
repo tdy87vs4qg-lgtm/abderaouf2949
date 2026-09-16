@@ -2022,10 +2022,21 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 /* (1) REMOVE THE SEPARATOR LINE UNDER THE HEADER.
    Neutralises the `border-bottom: 1px solid var(--border)` that §5
    of this file and §5 of the prototype sheet both put on
-   `.site-header`, plus the `box-shadow` that the light-theme
-   `--scrolled` variant in frontend/src/styles.css can add. The
-   shared declarations are left in place for SiteHeader.tsx and the
-   internal pages; only this page's header opts out. */
+   `.site-header`. The shared declaration is left in place for
+   SiteHeader.tsx and the internal pages; only this page's header
+   opts out.
+
+   `box-shadow: none` is a defensive reset of the §5 / prototype
+   baseline only. It does NOT neutralise the light-theme `--scrolled`
+   shadow in frontend/src/styles.css: that selector is
+   `html[data-theme="light"] .site-header--scrolled` (0,2,1), which
+   OUTRANKS this rule (0,2,0) and would win. The shadow is moot here
+   for a different reason — `.site-header--scrolled` is only ever
+   applied by SiteHeader.tsx, and App.tsx renders SiteHeader with
+   `{!isHomeRoute && <SiteHeader />}`, so it never mounts on the
+   HomePage route. Were that ever to change, this rule would need
+   the `--scrolled` selector restated at equal-or-higher
+   specificity. */
 .site-header.home-header {
   border-bottom: 0;
   box-shadow: none;
@@ -2046,21 +2057,34 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 
 /* (3) VISUAL RIGHT (inline-start in RTL): desktop nav + hamburger.
    `min-width: 0` lets this track shrink instead of pushing the
-   brand off-centre when the nav is wide. */
+   brand off-centre when the nav is wide. `overflow: hidden` is the
+   collision guard that makes that shrink safe: min-width alone lets
+   the track shrink, but the flex CONTENT can still paint past the
+   track edge, and the nav's intrinsic width depends on the Almarai
+   webfont resolving (§17.9). If the font fails and the fallback
+   metrics are wider, the nav would otherwise spill out of track 1
+   and overlap the centred brand. Clipping keeps it inside its own
+   track no matter how wide it measures. */
 .site-header.home-header .header-lead {
   display: flex;
   align-items: center;
   gap: 8px;
   justify-self: start;
   min-width: 0;
+  overflow: hidden;
 }
 
-/* (4) CENTRE: the brand. `justify-self: center` centres it inside
-   the middle track, which rule (2) already centres in the bar.
-   Only positioning — font/size/colour still come from §5 `.brand`
-   and the <=520px override. */
+/* (4) CENTRE: the brand. Rule (2) already does all the centring:
+   the two `1fr` side tracks absorb every bit of free space, so the
+   `auto` middle track resolves to exactly the brand's max-content
+   width and lands dead centre of the bar. No `justify-self` is
+   needed here — the item and its track are the same width, so
+   `center` / `start` / the default `stretch` are indistinguishable.
+   `white-space: nowrap` is NOT cosmetic: it keeps the brand on one
+   line, which is what makes that max-content track width stable.
+   Font/size/colour still come from §5 `.brand` and the <=520px
+   override. */
 .site-header.home-header .brand {
-  justify-self: center;
   white-space: nowrap;
 }
 
@@ -2080,7 +2104,15 @@ html[data-theme="dark"] .gd-card { background: #171923; }
   .site-header.home-header .header-lead .nav-desktop { display: none; }
   .site-header.home-header .header-lead .hamburger { display: inline-flex; }
 }
-@media (min-width: 901px) {
+/* `not all and (max-width: 900px)` — NOT `(min-width: 901px)`. Viewport
+   width is a floating-point length, not an integer: browser zoom and
+   fractional device-pixel ratios routinely produce widths like 900.5px,
+   which satisfy neither `max-width: 900px` nor `min-width: 901px`. At
+   those widths the old pair left BOTH the desktop nav and the hamburger
+   visible at once. Negating the exact same query is the precise
+   complement of the block above, so every possible width matches
+   exactly one of the two and the gap closes by construction. */
+@media not all and (max-width: 900px) {
   .site-header.home-header .header-lead .hamburger { display: none; }
 }
 
