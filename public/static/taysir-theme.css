@@ -1929,6 +1929,60 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 .viewer-bar { gap: 10px; }
 
 /* ==========================================================
+   17.8b THEME TOGGLE SIZE LOCK ON THE REACT HOME PAGE
+   WHY THIS EXISTS
+   On /library the toggle sits in `.gd-topbar` / `.viewer-bar`,
+   which pin it with `flex: 0 0 auto` (see §17.8 directly
+   above). The React HomePage header is different markup —
+   `.site-header > .header-inner > .header-actions > button.theme-toggle`
+   — so NONE of those rules apply and nothing caps the pill.
+
+   Two things can then stretch it on that page only:
+     1. `.header-actions` is a flex row, so the button is a flex
+        ITEM. The §6 base rule sizes it with `width: var(--w)`
+        (a custom property), which loses to any later/equal
+        cascade winner and gives no flex floor of its own.
+     2. The React bundle (frontend/src/styles.css, compiled into
+        /react/assets/*.css for its own ThemeToggle component)
+        also declares a bare `.theme-toggle` TWICE. It is a
+        same-specificity selector loaded from a DIFFERENT
+        stylesheet, so whichever link resolves last wins the
+        `width` / `display` declarations — and because the
+        HomePage injects the prototype sheet at RUNTIME (see
+        HomePage.tsx's useEffect) that order is not guaranteed.
+        A stretched button then stretches the Lottie host
+        (`width: 100%`) and the dotLottie canvas inside it, which
+        is the scene overflow that was reported.
+
+   FIX: re-assert the same 62x32 contract the §6 base rule
+   intends, scoped to the HomePage header only, in explicit px
+   (not `var(--w)`) and with the `flex: 0 0 auto` floor that
+   `.gd-topbar` already gives the internal pages. The shared §6
+   values and the §17.8 rule above are both left untouched, and
+   this cannot reach `.gd-topbar`, `.viewer-bar`, or the
+   Tailwind-built `SiteHeader` (it has no `.header-actions`).
+   ========================================================== */
+.site-header .header-actions .theme-toggle {
+  flex: 0 0 auto;
+  width: 62px;
+  height: 32px;
+  min-width: 62px;
+  max-width: 62px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+}
+/* Keep the decorative Lottie host (and its canvas) inside that box, so an
+   oversized backing store can never paint outside the pill. */
+.site-header .header-actions .theme-toggle .theme-toggle-lottie {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+/* ==========================================================
    17.9  ALMARAI WEBFONT (self-hosted, same-origin)
    The prototype loads Almarai from Google Fonts. The internal
    pages are served from our own origin and must keep working
