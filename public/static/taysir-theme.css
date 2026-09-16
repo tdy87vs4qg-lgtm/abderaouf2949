@@ -1983,6 +1983,108 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 }
 
 /* ==========================================================
+   17.8c REACT HOME PAGE HEADER LAYOUT
+   (hamburger visual-right / brand centred / toggle visual-left,
+    and no separator line under the bar)
+
+   WHY EVERY SELECTOR HERE IS DOUBLE-CLASSED
+   `.site-header`, `.header-inner` and `.brand` are each declared
+   TWICE in this codebase: once above in §5 of this file, and once
+   again in the vendored, byte-for-byte prototype sheet at
+   /static/prototype/styles.css §5. The React HomePage INJECTS that
+   prototype sheet at runtime from its own useEffect, so it is
+   appended to <head> AFTER this file's <link> and wins every
+   equal-specificity selector. A bare `.site-header { border: 0 }`
+   here would therefore be overruled by the prototype's
+   `border-bottom` and silently do nothing.
+   So each rule below is qualified with `.home-header` (0,2,0),
+   which outranks the prototype's single-class `.site-header`
+   (0,1,0) regardless of sheet order, and needs no `!important`.
+
+   That scoping is also a hard requirement in the other direction:
+   frontend/src/components/SiteHeader.tsx is a COMPLETELY different
+   Tailwind header that reuses the same bare `.site-header` class
+   name. Only the HomePage renders `.home-header`, so nothing here
+   can reach it, nor `.gd-topbar` / `.viewer-bar` on /library.
+
+   RTL NOTE: the document is `dir="rtl"`, so grid track 1 is the
+   inline-START track, which the user sees on the RIGHT, and track 3
+   is inline-END = the visual LEFT. `justify-self: start` likewise
+   resolves to the visual right. The three requested positions map
+   to: track 1 = hamburger (visual right), track 2 = brand (centre),
+   track 3 = theme toggle (visual left).
+
+   §17.8b directly above is untouched: the toggle still matches
+   `.site-header .header-actions .theme-toggle`, so its 62x32 lock
+   and its Lottie clipping both still apply unchanged.
+   ========================================================== */
+
+/* (1) REMOVE THE SEPARATOR LINE UNDER THE HEADER.
+   Neutralises the `border-bottom: 1px solid var(--border)` that §5
+   of this file and §5 of the prototype sheet both put on
+   `.site-header`, plus the `box-shadow` that the light-theme
+   `--scrolled` variant in frontend/src/styles.css can add. The
+   shared declarations are left in place for SiteHeader.tsx and the
+   internal pages; only this page's header opts out. */
+.site-header.home-header {
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+/* (2) THREE-TRACK BAR. The two side tracks are both `1fr`, so they
+   are always equal width and the `auto` middle track lands dead
+   centre of the bar — the brand is therefore optically centred on
+   mobile AND desktop, independently of how wide the nav or the
+   toggle happen to be. Replaces the inherited
+   `justify-content: space-between` flex row from §5. */
+.site-header.home-header .header-inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 72px; /* unchanged from §5 */
+}
+
+/* (3) VISUAL RIGHT (inline-start in RTL): desktop nav + hamburger.
+   `min-width: 0` lets this track shrink instead of pushing the
+   brand off-centre when the nav is wide. */
+.site-header.home-header .header-lead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  min-width: 0;
+}
+
+/* (4) CENTRE: the brand. `justify-self: center` centres it inside
+   the middle track, which rule (2) already centres in the bar.
+   Only positioning — font/size/colour still come from §5 `.brand`
+   and the <=520px override. */
+.site-header.home-header .brand {
+  justify-self: center;
+  white-space: nowrap;
+}
+
+/* (5) VISUAL LEFT (inline-end in RTL): the theme toggle. Same flex
+   row as §5 `.header-actions`, just pinned to the end track. */
+.site-header.home-header .header-actions {
+  justify-self: end;
+  min-width: 0;
+}
+
+/* (6) The hamburger is `display: none` by default in §5 and is
+   switched to `inline-flex` at <=900px by §16. Because rule (3)
+   makes `.header-lead` a flex container, restate that toggle at the
+   same breakpoint with matching `.home-header` specificity so the
+   button reliably appears on mobile and stays hidden on desktop. */
+@media (max-width: 900px) {
+  .site-header.home-header .header-lead .nav-desktop { display: none; }
+  .site-header.home-header .header-lead .hamburger { display: inline-flex; }
+}
+@media (min-width: 901px) {
+  .site-header.home-header .header-lead .hamburger { display: none; }
+}
+
+/* ==========================================================
    17.9  ALMARAI WEBFONT (self-hosted, same-origin)
    The prototype loads Almarai from Google Fonts. The internal
    pages are served from our own origin and must keep working

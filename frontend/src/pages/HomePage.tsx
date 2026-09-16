@@ -174,16 +174,50 @@ export default function HomePage() {
       </div>
 
       {/* ============ HEADER ============ */}
-      <header className="site-header">
+      {/* LAYOUT ONLY. The bar is a 3-track grid (see taysir-theme.css §17.8c):
+          hamburger on the visual RIGHT, "تيسير" visually CENTERED, and the
+          theme toggle left where it already was on the visual LEFT.
+
+          The page is RTL (<html dir="rtl">), so the FIRST track is the
+          inline-start track = the side the user sees on the RIGHT, and the
+          LAST track is the visual LEFT. DOM order below therefore reads
+          right -> centre -> left on screen.
+
+          The extra `home-header` class is a scoping hook, not a style: it lets
+          §17.8c target THIS header with a higher-specificity selector, which is
+          required because the header rules are declared a second time in the
+          vendored /static/prototype/styles.css that this page injects at
+          runtime (so it lands last in <head> and wins any equal-specificity
+          selector). It also guarantees those overrides can never reach the
+          unrelated Tailwind header in components/SiteHeader.tsx, which shares
+          the bare `.site-header` class name.
+
+          NOT TOUCHED: the toggle button itself is byte-for-byte the same and
+          stays inside `.header-actions` — the 62x32 size lock in §17.8b is
+          keyed on `.site-header .header-actions .theme-toggle`, so moving it
+          out would have broken that fix. The Lottie host, `data-theme-toggle`,
+          theme-lottie.js, applyTheme and themeBoot are all untouched, and
+          `id="hamburger"` is preserved because prototype/script.js finds the
+          button with getElementById. */}
+      <header className="site-header home-header">
         <div className="container header-inner">
+          {/* Visual RIGHT: desktop nav (hidden <=900px) + hamburger (shown <=900px) */}
+          <div className="header-lead">
+            <nav className="nav-desktop" aria-label="التنقل الرئيسي">
+              <a href="#hero">الرئيسية</a>
+              <a href="#guide">الإرشادات</a>
+              <a href="#account">تسجيل الدخول</a>
+            </nav>
+
+            <button className="hamburger" id="hamburger" aria-label="القائمة" aria-expanded="false" aria-controls="mobile-menu">
+              <span></span><span></span><span></span>
+            </button>
+          </div>
+
+          {/* CENTER: the brand, centred in the bar on mobile and desktop */}
           <a href="#" className="brand">تيسير</a>
 
-          <nav className="nav-desktop" aria-label="التنقل الرئيسي">
-            <a href="#hero">الرئيسية</a>
-            <a href="#guide">الإرشادات</a>
-            <a href="#account">تسجيل الدخول</a>
-          </nav>
-
+          {/* Visual LEFT: theme toggle (unchanged markup, unchanged wrapper) */}
           <div className="header-actions">
             {/* Theme toggle (sun / moon) */}
             <button type="button" className="theme-toggle" data-theme-toggle aria-label="التبديل إلى الوضع الليلي" aria-pressed="false" title="الوضع الليلي / النهاري">
@@ -192,10 +226,6 @@ export default function HomePage() {
                   here; if it never loads the span stays empty and the button
                   still toggles the theme exactly as before. */}
               <span className="theme-toggle-lottie" aria-hidden="true"></span>
-            </button>
-
-            <button className="hamburger" id="hamburger" aria-label="القائمة" aria-expanded="false" aria-controls="mobile-menu">
-              <span></span><span></span><span></span>
             </button>
           </div>
         </div>
