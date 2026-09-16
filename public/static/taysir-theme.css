@@ -2187,13 +2187,14 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 }
 
 /* ==========================================================
-   18. MOBILE MENU — STEP 2A: POSITIONING / LAYOUT ONLY
+   18. MOBILE MENU — STEP 2A (LAYOUT) + 2B (COLOUR)
    ==========================================================
-   Gives the STEP-1 scaffold in HomePage.tsx its geometry.
-   This block is DELIBERATELY colourless and motionless:
-   no background/shade, no transition, no transform, no
-   opacity, no delay. Those arrive in 2B (shades) and 2C
-   (staggered animation).
+   Gives the STEP-1 scaffold in HomePage.tsx its geometry (2A)
+   and its palette (2B).
+   This block is still DELIBERATELY MOTIONLESS: no transition,
+   no transform, no animation, no @keyframes, no opacity
+   animation, no will-change. Motion arrives in 2C (the
+   staggered slide-in). Everything below is geometry + paint.
 
    STRATEGY — sibling root escapes the header, then
                fixed root + absolute inner layers
@@ -2313,6 +2314,81 @@ html[data-theme="dark"] .gd-card { background: #171923; }
    no `html[data-theme]` prefix. Only the ROOT shares the
    `.mobile-menu` class, and only the root needed the bump.
    No `!important` is used.
+
+   STEP 2B — THE PALETTE
+   --------------------------------------------------------
+   Re-verified before writing 2B: `.mm-scrim`, `.mm-wave*`,
+   `.mm-panel`, `.mm-close`, `.mm-links`, `.mm-link-label` and
+   `.mm-num` appear NOWHERE outside this section. The only other
+   file that mentions them is HomePage.tsx, and only inside a
+   comment. frontend/src/styles.css styles the BEM variants
+   `.mobile-menu__scrim` / `.mobile-menu__link`, which this DOM
+   does not use. So the inner layers compete with nothing and
+   keep their plain 0-3-0 / 0-4-0 specificity — no `html[data-
+   theme]` bump is needed for any of them. Only two weak
+   inherited rules exist and both are outranked here by orders
+   of magnitude: `.mobile-menu a` (§5, 0-1-1) and the bare
+   `a { color: inherit }` / `button { font: inherit }` element
+   resets.
+
+   DERIVATION — the four wave shades come from the BRAND token
+   `--purple`, not from a new invented hue. `--purple` is
+   `#6C3EF4` = hsl(255.2, 89.2%, 60%) in light and `#8F6BFF` =
+   hsl(254.6, 100%, 71%) in dark; `--purple-dark` is `#5828E0` =
+   hsl(255.7, 74.8%, 51.8%). Every wave therefore locks the hue
+   to the brand's ~255deg and only walks LIGHTNESS, producing one
+   continuous family rather than four unrelated purples:
+
+     --mm-wave-1  hsl(255, 100%, 84%)  #C2ADFF   lightest
+                  a touch lighter than the dark theme's
+                  `--illu-accent` (#A78BFF, L 77%), so the
+                  first wave reads as a pale brand tint.
+     --mm-wave-2  hsl(255,  92%, 72%)  #9776F9
+                  effectively the DARK theme's `--purple`
+                  (#8F6BFF, L 71%) — an existing brand value.
+     --mm-wave-3  hsl(255,  89%, 60%)  #6C3EF4
+                  EXACTLY the light theme's `--purple`. The
+                  ladder's anchor: the middle wave IS the brand
+                  colour.
+     --mm-wave-4  hsl(256,  75%, 46%)  #4C1DCD   darkest
+                  `--purple-dark` (#5828E0, L 51.8%) taken ~6
+                  points deeper so the back of the stack still
+                  separates from wave-3 once 2C staggers them.
+
+   The 12-point lightness step (84 -> 72 -> 60 -> 46) is even
+   enough that the four layers will read as distinct bands while
+   they travel in 2C. These are written as LITERAL hsl() values,
+   not `var(--purple)`, on purpose: the waves must be the SAME
+   four shades in light and dark. `--purple` changes value
+   between themes, so referencing it would silently re-shuffle
+   the ladder and break its light -> dark ordering in dark mode.
+   The literals are documented above against the tokens they
+   derive from.
+
+   --mm-scrim  rgba(12, 9, 22, 0.58)
+   A near-black with a faint violet cast (12/9/22 sits on the
+   brand hue rather than neutral grey, and is a shade of the
+   existing `--footer-bg` #17151E family) at 58% — inside the
+   50-60% the reference shows. Composited it gives #727078 over
+   the light page and #0D0C16 over the dark page, so the white
+   panel keeps 4.88:1 against the dimmed area in light and
+   19.42:1 in dark. Fixed rgba rather than a token because a
+   scrim's job is to darken whatever is behind it identically in
+   both themes.
+
+   --mm-num  #6C3EF4 in light / #8F6BFF in dark — this one DOES
+   track `var(--purple)`, because unlike the waves it sits on the
+   always-white panel and only has to stay legible there: 5.78:1
+   for the light value, and the dark value is only used if a
+   theme ever darkens the panel. See 18.7.
+
+   BOTH THEMES: the panel is white in light AND dark, matching
+   the reference. It is an overlay surface, not a page surface,
+   so it does not follow `--bg`. Consequently every colour
+   painted ON the panel (link text, number, close icon) is also
+   theme-independent and tuned for white — that is what keeps
+   the menu readable in dark mode instead of going
+   light-text-on-white. Stated explicitly on each rule below.
    ========================================================== */
 
 /* ---- 18.1  The fixed, viewport-filling root ---------------
@@ -2328,6 +2404,21 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
   position: fixed;
   inset: 0;
   z-index: 1000;
+
+  /* 2B — the menu's own palette, declared once here and
+     inherited by every inner layer. Custom properties are
+     inert paint values: declaring them applies nothing on its
+     own and triggers no motion. Derivations and the reasoning
+     for each value are in the STEP 2B block of the section
+     header above. */
+  --mm-wave-1:  hsl(255, 100%, 84%);   /* #C2ADFF  lightest */
+  --mm-wave-2:  hsl(255,  92%, 72%);   /* #9776F9           */
+  --mm-wave-3:  hsl(255,  89%, 60%);   /* #6C3EF4 = --purple */
+  --mm-wave-4:  hsl(256,  75%, 46%);   /* #4C1DCD  darkest  */
+  --mm-scrim:   rgba(12, 9, 22, 0.58);
+  --mm-panel:   #FFFFFF;
+  --mm-ink:     #141019;               /* near-black, violet-cast */
+  --mm-num:     var(--purple);
 
   /* B2 — neutralise the `.mobile-menu` dropdown-card leak that
      frontend/src/styles.css applies across FOUR rules (:198 and
@@ -2393,12 +2484,29 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
 }
 
 /* ---- 18.2  Scrim — backdrop area, lowest layer -----------
-   Specificity 0-3-0. Fills the whole fixed root. Colour comes
-   in 2B. */
+   Specificity 0-3-0. Fills the whole fixed root.
+
+   2B COLOUR: `rgba(12, 9, 22, 0.58)` — a violet-cast near-black
+   at 58%, the reference's ~50-60% dim. Because the panel and
+   the waves cover the inline-start 70vw, the visible result is
+   the darkened ~30% strip on the visual LEFT that the design
+   calls for, while the remaining 42% sits harmlessly UNDER the
+   opaque panel. A single flat fill, no gradient, no blur: a
+   `backdrop-filter` here would make this layer a containing
+   block and risk re-introducing the B1 trap for anything fixed
+   inside the menu.
+
+   BOTH THEMES: identical in light and dark — a scrim darkens
+   what is behind it, and the page behind is already light or
+   dark accordingly. Over the light page it composites to
+   #727078, over the dark page to #0D0C16; the white panel keeps
+   4.88:1 and 19.42:1 against it respectively, so the panel edge
+   stays clearly defined either way. */
 .home-mobile-menu[data-open="true"] .mm-scrim {
   position: absolute;
   inset: 0;
   z-index: 1;
+  background: var(--mm-scrim);
 }
 
 /* ---- 18.3  The four wave layers --------------------------
@@ -2415,13 +2523,34 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
   width: 70vw;
 }
 
-/* Stacking order inside the root, back to front:
+/* Stacking order inside the root, back to front, each paired
+   with its shade from the ladder. Back to front:
    scrim(1) < wave-1(2) < wave-2(3) < wave-3(4) < wave-4(5)
-   < panel(6). Each rule is 0-3-0. */
-.home-mobile-menu[data-open="true"] .mm-wave-1 { z-index: 2; }
-.home-mobile-menu[data-open="true"] .mm-wave-2 { z-index: 3; }
-.home-mobile-menu[data-open="true"] .mm-wave-3 { z-index: 4; }
-.home-mobile-menu[data-open="true"] .mm-wave-4 { z-index: 5; }
+   < panel(6). Each rule is 0-3-0.
+
+   2B COLOUR: the four graduated purples, LIGHTEST at the back
+   (wave-1) to DARKEST at the front (wave-4). Flat `background`
+   fills only — no gradients, no shadows, nothing that would
+   imply motion.
+
+   EXPECTED IN 2B: with no animation yet, all four are
+   coincident at the same 70vw right-anchored box, so wave-4
+   (#4C1DCD, the darkest and the frontmost) is the only one
+   actually visible, and it is itself almost entirely hidden
+   behind the opaque panel that sits above it at z-index 6.
+   That is CORRECT for this step. The ladder only reveals
+   itself in 2C, when the stagger offsets each layer and the
+   trailing edges fan out into visible bands. The shades are
+   defined now so 2C has nothing left to do but move them.
+
+   BOTH THEMES: fixed literals, identical in light and dark, so
+   the light -> dark ordering of the ladder can never invert.
+   The waves are pure decoration and carry no text, so they have
+   no contrast requirement of their own. */
+.home-mobile-menu[data-open="true"] .mm-wave-1 { z-index: 2; background: var(--mm-wave-1); }
+.home-mobile-menu[data-open="true"] .mm-wave-2 { z-index: 3; background: var(--mm-wave-2); }
+.home-mobile-menu[data-open="true"] .mm-wave-3 { z-index: 4; background: var(--mm-wave-3); }
+.home-mobile-menu[data-open="true"] .mm-wave-4 { z-index: 5; background: var(--mm-wave-4); }
 
 /* ---- 18.4  The panel — topmost layer ---------------------
    Specificity 0-3-0. Same 70vw / full-height / right-anchored
@@ -2429,7 +2558,33 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
    `.mm-close` takes the top row and `nav.mm-links` flows
    below it. `overflow-y: auto` is layout insurance: on a very
    short viewport the link list scrolls inside the panel
-   instead of spilling past the bottom edge. */
+   instead of spilling past the bottom edge.
+
+   2B COLOUR: flat `#FFFFFF`. A pure white, not a warm off-white
+   — the panel sits directly against the saturated violet waves,
+   and any warmth in it reads as a dirty cream next to that hue,
+   whereas pure white reads as crisp paper. Opaque, so it fully
+   hides the coincident waves beneath it, which is what makes
+   the 2C reveal work: the waves are only ever seen in the gap
+   the panel has not yet covered.
+
+   BOTH THEMES: the panel stays WHITE in dark mode too, exactly
+   as the reference shows. It is an overlay surface, not a page
+   surface, so it deliberately does NOT follow `--bg` (which
+   would turn it #0E1016 in dark). Everything painted on it
+   below is therefore also pinned to dark-on-white values rather
+   than `--text`; if the panel followed the theme and the text
+   did not, dark mode would render near-black text on a
+   near-black panel. Pinning both sides together is what keeps
+   the menu readable in BOTH themes.
+
+   DEPTH: one soft, static drop shadow along the panel's outer
+   edge, purely to lift it off the waves. It is a plain
+   decorative `box-shadow` with no transition and no spread
+   animation — nothing here re-triggers the dropdown-card shadow
+   that 18.1 removes from the ROOT; this is a different element.
+   Kept deliberately minimal: low alpha, no inset hairline, no
+   coloured glow. */
 .home-mobile-menu[data-open="true"] .mm-panel {
   position: absolute;
   top: 0;
@@ -2440,15 +2595,51 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background: var(--mm-panel);
+  box-shadow: 0 0 40px rgba(12, 9, 22, 0.18);
+  padding: 18px 26px 32px;
 }
 
 /* ---- 18.5  Close button — pinned to the panel's top row --
    Specificity 0-4-0. `flex: 0 0 auto` keeps it at its natural
    height so it can never be stretched or squashed by the link
-   list. Its own size / colour / position within the row are
-   2B's job. */
+   list.
+
+   2B COLOUR: a black X on nothing. The inline SVG in
+   HomePage.tsx is `stroke="currentColor"`, so setting `color`
+   to the near-black ink is all it takes to paint the icon —
+   no fill, no separate stroke declaration. The button itself
+   gets a TRANSPARENT background and `border: 0`: the reference
+   shows a bare glyph, and any chip or circle behind it would
+   compete with the numbered links for attention. 18.79:1
+   against the white panel.
+
+   TAP TARGET: 44x44 — the same floor the links use — kept
+   clean by sizing the BUTTON rather than the 22px glyph, which
+   stays centred inside it via flex. `align-self: flex-end` puts
+   it at the panel's inline-end, which in this RTL document is
+   the visual LEFT, i.e. the top corner away from the links'
+   right-aligned edge. `-8px` inline-end margin pulls its
+   generous tap padding back so the GLYPH optically lines up
+   with the panel padding instead of sitting inset from it.
+
+   BOTH THEMES: pinned dark, because the panel under it is white
+   in both. `currentColor` means the glyph can never drift away
+   from the value set here. */
 .home-mobile-menu[data-open="true"] .mm-panel .mm-close {
   flex: 0 0 auto;
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin-inline-end: -8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--mm-ink);
 }
 
 /* ---- 18.6  Link list — vertical stack -------------------
@@ -2458,17 +2649,101 @@ html[data-theme] .home-mobile-menu[data-open="true"] {
    44px minimum height — the standard touch-target floor — so
    the three links stack vertically and stay tappable.
    `space-between` pushes `.mm-num` to the far end of the row
-   from `.mm-link-label`. Type, colour, numbering style and
-   dividers are all 2B. */
+   from `.mm-link-label`.
+
+   2B: the nav is pushed down off the close row with a top
+   margin and given breathing room between rows via `gap`, so
+   the three links read as a deliberate list rather than a
+   stack. `margin-block-start: auto` is NOT used — the
+   reference has the links sitting in the upper-middle of the
+   panel, not pinned to its floor. */
 .home-mobile-menu[data-open="true"] .mm-links {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  margin-block-start: 6vh;
 }
 
+/* The link rows. Specificity 0-3-1, comfortably above the
+   0-1-1 `.mobile-menu a` rule in §5 whose 16px / border-bottom
+   / `var(--text)` treatment this replaces, and above the bare
+   `a { color: inherit }` element reset.
+
+   2B TYPE + COLOUR: large, heavy, near-black. `clamp()` scales
+   the label from 24px on a small phone up to 34px on a wide
+   one without a media query, matching the reference's oversized
+   menu type. Weight 800 lines up with the `h1..h4` weight this
+   sheet already uses, so the links read as headings rather than
+   body links. `line-height: 1.25` is tight enough to keep the
+   big Arabic type compact while still clearing its ascenders
+   and descenders. `letter-spacing: -0.01em` mirrors the
+   heading rule in §3.
+
+   RTL: the document is `dir="rtl"`, so the flex main axis runs
+   right-to-left. `.mm-link-label` is first in the DOM and lands
+   at the row's visual RIGHT; `space-between` throws `.mm-num`
+   to the opposite end, the visual LEFT. That is exactly the
+   reference layout — right-aligned label, small number off to
+   its left — achieved with no positioning at all.
+
+   BOTH THEMES: pinned to `--mm-ink` (#141019), NOT `--text`.
+   `--text` flips to #F2F2F5 in dark, which on this permanently
+   white panel would be white-on-white. Pinning holds 18.79:1
+   in both themes. `text-decoration: none` is inherited from the
+   base reset and left alone. */
 .home-mobile-menu[data-open="true"] .mm-links a {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   min-height: 44px;
+  gap: 16px;
+  padding-block: 10px;
+  color: var(--mm-ink);
+  font-size: clamp(24px, 6.4vw, 34px);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* ---- 18.7  The 01 / 02 / 03 counters -------------------
+   Specificity 0-4-0.
+
+   2B COLOUR: PURPLE, and the only purple on the panel — it is
+   the single accent tying the white panel back to the violet
+   waves behind it. This one tracks `var(--purple)` rather than
+   a literal, because unlike the waves it has no ordering to
+   preserve and simply wants to be "the brand accent": #6C3EF4
+   in light (5.78:1 on white, comfortably readable) and #8F6BFF
+   in dark.
+
+   SIZE / PLACEMENT: small and light against the heavy label —
+   weight 700 instead of 800 — so it reads as a quiet counter,
+   not a second word. The size is an ABSOLUTE `14px`, not an
+   `em` fraction of the label: the label is itself a `clamp()`
+   that bottoms out at 24px on a narrow phone, and a relative
+   `0.4em` would drag the counter down to ~9.6px there, below
+   readable. A fixed 14px stays legible at the small end and
+   still reads as clearly subordinate at the label's 34px
+   maximum.
+
+   Placement is already handled: `space-between` on the row
+   parks it at the visual LEFT end in this RTL layout, so
+   nothing here needs to position it. `flex: 0 0 auto` stops it
+   being squeezed by a long label, and `font-variant-numeric:
+   tabular-nums` locks 01/02/03 to a single column width so
+   their left edges line up down the list. `line-height: 1`
+   keeps the small glyphs optically centred against the much
+   taller label.
+
+   BOTH THEMES: both `--purple` values clear 4.5:1 on the
+   always-white panel, so the accent stays legible either way. */
+.home-mobile-menu[data-open="true"] .mm-links .mm-num {
+  flex: 0 0 auto;
+  color: var(--mm-num);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
