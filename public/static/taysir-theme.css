@@ -2195,23 +2195,53 @@ html[data-theme="dark"] .gd-card { background: #171923; }
    opacity, no delay. Those arrive in 2B (shades) and 2C
    (staggered animation).
 
-   STRATEGY — fixed root + absolute inner layers
+   STRATEGY — sibling root escapes the header, then
+               fixed root + absolute inner layers
    --------------------------------------------------------
-   `.mobile-menu` is a direct child of `<header class="site-header
-   home-header">`, and that header carries a `backdrop-filter`.
-   A `backdrop-filter` (like `filter`, `transform` and
-   `contain`) makes the element a CONTAINING BLOCK for
-   `position: fixed` descendants, so a `fixed` inner layer
-   would be trapped inside the 72px header box instead of
-   filling the viewport.
+   `<header class="site-header home-header">` carries a
+   `backdrop-filter`. A `backdrop-filter` (like `filter`,
+   `transform` and `contain`) makes the element a CONTAINING
+   BLOCK for `position: fixed` descendants, so ANY `fixed`
+   element inside the header — including the menu root itself —
+   is trapped inside the 72px header box instead of filling the
+   viewport. That was bug B1.
 
-   The escape is to make the MENU ROOT ITSELF the one fixed,
-   viewport-filling box, and then position every inner layer
-   `absolute` against that root. Only ONE element has to fight
-   the header's containing-block trap, and `inset: 0` on a
-   fixed element resolves against the initial containing block
-   (the viewport) regardless of where it sits in the DOM, which
-   the header's backdrop-filter cannot shrink.
+   The fix is structural: HomePage.tsx now renders the menu as a
+   SIBLING of the header, immediately after `</header>` and
+   before `<main>`, so it is no longer a descendant of the
+   backdrop-filtered header and its `position: fixed` resolves
+   against the initial containing block (the viewport) again.
+
+   Because the menu left the header, the old
+   `.site-header.home-header .mobile-menu` scope can no longer
+   match it. Every rule below is therefore re-scoped onto the
+   new `.home-mobile-menu` hook class that the root carries
+   alongside the original `.mobile-menu`. `.home-mobile-menu`
+   is the class that "escapes the header containing-block
+   trap": it marks the one root that lives outside the header
+   and owns the full-viewport fixed box.
+
+   Layering is unchanged: the MENU ROOT ITSELF is the single
+   fixed, viewport-filling box, and every inner layer is
+   positioned `absolute` against that root.
+
+   B2 — NEUTRALISING THE BARE `.mobile-menu` LEAK
+   --------------------------------------------------------
+   frontend/src/styles.css:198 styles a bare `.mobile-menu` as a
+   dark, rounded, blurred dropdown CARD (absolute, padding,
+   1px border, 22px radius, opaque background, backdrop-filter,
+   box-shadow). That rule is global and still matches this root,
+   which is also `.mobile-menu`. The root rule below therefore
+   explicitly zeroes those card decorations so the full-screen
+   menu renders as a clean, transparent, edge-to-edge surface.
+   Note that its own `backdrop-filter` had to go too: left in
+   place it would have re-created the containing-block trap for
+   the fixed root from the inside.
+
+   All of that is done with plain specificity, never
+   `!important`: `.home-mobile-menu[data-open="true"]` is 0-2-0,
+   which beats the 0-1-0 `.mobile-menu` rule in
+   frontend/src/styles.css.
 
    CLOSED / OPEN GEOMETRY
    --------------------------------------------------------
@@ -2232,16 +2262,21 @@ html[data-theme="dark"] .gd-card { background: #171923; }
    edge in RTL (and would flip correctly if the page were ever
    served LTR).
 
-   SCOPING: every selector below is scoped under
-   `.site-header.home-header`, so nothing here can leak into
-   the internal pages' `.gd-topbar` header. Specificity is
-   0-4-0 or higher throughout and no `!important` is used.
+   SCOPING: every selector below is scoped under the
+   `.home-mobile-menu` hook class that only this page's menu
+   root carries, so nothing here can leak into the internal
+   pages' `.gd-topbar` header or into any other `.mobile-menu`.
+   Every selector keeps the `[data-open="true"]` attribute, so
+   specificity is 0-2-0 at minimum (root rule) and higher for
+   the descendants — comfortably above the 0-1-0 `.mobile-menu`
+   rule in frontend/src/styles.css that has to be overridden.
+   No `!important` is used.
    ========================================================== */
 
 /* ---- 18.1  The fixed, viewport-filling root ---------------
-   Specificity 0-4-0. `z-index: 1000` lifts the whole menu
+   Specificity 0-2-0. `z-index: 1000` lifts the whole menu
    above the sticky header and the page content. */
-.site-header.home-header .mobile-menu[data-open="true"] {
+.home-mobile-menu[data-open="true"] {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -2254,24 +2289,52 @@ html[data-theme="dark"] .gd-card { background: #171923; }
      1px error. Scoped to the open state, so the §5 closed
      state is untouched. */
   border-bottom-width: 0;
+
+  /* B2 — neutralise the bare `.mobile-menu` dropdown-card leak
+     from frontend/src/styles.css:198 (0-1-0, beaten by the
+     0-2-0 selector above without `!important`). Each of these
+     zeroes one card decoration that rule applies:
+       border-width    kills its 1px border on ALL four sides
+                       (the `border-bottom-width` above only
+                       handles the §5 bottom edge), so the
+                       absolute layers get the full viewport.
+       border-radius   the 22px rounding — a full-screen
+                       surface must have square corners.
+       background      its opaque dark fill, which would hide
+                       the scrim and the four wave layers.
+       backdrop-filter its blur/saturate. MUST be removed: on
+                       the root it would make the root its own
+                       containing block and re-trap the fixed
+                       box — the very B1 failure mode.
+       box-shadow      the dropdown drop shadow + inset hairline.
+       padding         its .75rem inset, which would push the
+                       absolute layers' containing block in on
+                       every side. */
+  border-width: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* ---- 18.2  Scrim — backdrop area, lowest layer -----------
-   Specificity 0-5-0. Fills the whole fixed root. Colour comes
+   Specificity 0-3-0. Fills the whole fixed root. Colour comes
    in 2B. */
-.site-header.home-header .mobile-menu[data-open="true"] .mm-scrim {
+.home-mobile-menu[data-open="true"] .mm-scrim {
   position: absolute;
   inset: 0;
   z-index: 1;
 }
 
 /* ---- 18.3  The four wave layers --------------------------
-   Specificity 0-5-0. Full-height, 70vw wide, all four
+   Specificity 0-3-0. Full-height, 70vw wide, all four
    anchored to the same inline-start (visual RIGHT in RTL)
    edge, so they sit exactly on top of one another. 2B gives
    them their four graduated purple shades and 2C staggers
    their slide-in. */
-.site-header.home-header .mobile-menu[data-open="true"] .mm-wave {
+.home-mobile-menu[data-open="true"] .mm-wave {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -2281,20 +2344,20 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 
 /* Stacking order inside the root, back to front:
    scrim(1) < wave-1(2) < wave-2(3) < wave-3(4) < wave-4(5)
-   < panel(6). Each rule is 0-5-0. */
-.site-header.home-header .mobile-menu[data-open="true"] .mm-wave-1 { z-index: 2; }
-.site-header.home-header .mobile-menu[data-open="true"] .mm-wave-2 { z-index: 3; }
-.site-header.home-header .mobile-menu[data-open="true"] .mm-wave-3 { z-index: 4; }
-.site-header.home-header .mobile-menu[data-open="true"] .mm-wave-4 { z-index: 5; }
+   < panel(6). Each rule is 0-3-0. */
+.home-mobile-menu[data-open="true"] .mm-wave-1 { z-index: 2; }
+.home-mobile-menu[data-open="true"] .mm-wave-2 { z-index: 3; }
+.home-mobile-menu[data-open="true"] .mm-wave-3 { z-index: 4; }
+.home-mobile-menu[data-open="true"] .mm-wave-4 { z-index: 5; }
 
 /* ---- 18.4  The panel — topmost layer ---------------------
-   Specificity 0-5-0. Same 70vw / full-height / right-anchored
+   Specificity 0-3-0. Same 70vw / full-height / right-anchored
    box as the waves, but above all of them. A flex COLUMN so
    `.mm-close` takes the top row and `nav.mm-links` flows
    below it. `overflow-y: auto` is layout insurance: on a very
    short viewport the link list scrolls inside the panel
    instead of spilling past the bottom edge. */
-.site-header.home-header .mobile-menu[data-open="true"] .mm-panel {
+.home-mobile-menu[data-open="true"] .mm-panel {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -2307,16 +2370,16 @@ html[data-theme="dark"] .gd-card { background: #171923; }
 }
 
 /* ---- 18.5  Close button — pinned to the panel's top row --
-   Specificity 0-6-0. `flex: 0 0 auto` keeps it at its natural
+   Specificity 0-4-0. `flex: 0 0 auto` keeps it at its natural
    height so it can never be stretched or squashed by the link
    list. Its own size / colour / position within the row are
    2B's job. */
-.site-header.home-header .mobile-menu[data-open="true"] .mm-panel .mm-close {
+.home-mobile-menu[data-open="true"] .mm-panel .mm-close {
   flex: 0 0 auto;
 }
 
 /* ---- 18.6  Link list — vertical stack -------------------
-   Specificity 0-5-0 for the nav, 0-5-1 for the anchors (both
+   Specificity 0-3-0 for the nav, 0-3-1 for the anchors (both
    comfortably above the 0-1-1 `.mobile-menu a` rule in §5 they
    need to extend). Each anchor becomes a full-width row with a
    44px minimum height — the standard touch-target floor — so
@@ -2324,12 +2387,12 @@ html[data-theme="dark"] .gd-card { background: #171923; }
    `space-between` pushes `.mm-num` to the far end of the row
    from `.mm-link-label`. Type, colour, numbering style and
    dividers are all 2B. */
-.site-header.home-header .mobile-menu[data-open="true"] .mm-links {
+.home-mobile-menu[data-open="true"] .mm-links {
   display: flex;
   flex-direction: column;
 }
 
-.site-header.home-header .mobile-menu[data-open="true"] .mm-links a {
+.home-mobile-menu[data-open="true"] .mm-links a {
   display: flex;
   align-items: center;
   justify-content: space-between;
