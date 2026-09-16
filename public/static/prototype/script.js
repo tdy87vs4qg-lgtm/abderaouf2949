@@ -1,27 +1,225 @@
 // Mobile hamburger menu
+//
+// Opens / closes the multi-layer menu that HomePage.tsx renders as
+// #mobile-menu.home-mobile-menu (> .mm-scrim, .mm-wave-1..4, .mm-panel >
+// .mm-close + nav.mm-links) and that /static/taysir-theme.css paints in §18
+// and animates in §19.
+//
+// WHAT CHANGED AND WHY
+// --------------------
+// The previous version toggled `data-open` and the `hidden` attribute
+// together. That worked for the old flat text menu but breaks the animated
+// one in two ways:
+//
+//   1. `hidden` is `display: none` in the UA stylesheet, so setting it on
+//      close removed the element from the box tree on the FIRST frame and
+//      the closing animation never rendered.
+//   2. Only the hamburger could close the menu. `.mm-close`, the scrim and
+//      the Escape key did nothing, so a student who opened the full-screen
+//      panel had exactly one way back out.
+//
+// THE CSS CONTRACT (taysir-theme.css §19)
+// ---------------------------------------
+//   data-open="true"   the menu is ON SCREEN — sliding in, resting, or
+//                      sliding out. §18 paints it for this whole window.
+//   .mm-in             the menu is at its RESTING OPEN position. Present =
+//                      layers in place; absent = layers parked off-canvas.
+//   data-open="false"  fully gone; §5's `display: none` applies again and
+//                      the subtree leaves the a11y tree and hit-testing.
+//
+// So `data-open` is a PAINT flag and `.mm-in` is the MOTION flag. §18 keys
+// its geometry AND its entire palette on [data-open="true"], so flipping
+// that attribute to "false" at the start of a close would strip the layers'
+// position, size and colour mid-animation. The close therefore removes
+// `.mm-in` first, lets the transitions run, and only sets data-open="false"
+// once the last one has finished.
+//
+// `hidden` is no longer set at all — `data-open="false"` plus §5's
+// `display: none` already hides the menu completely, and `hidden` would
+// re-introduce the frame-one cut-off. The attribute is cleared once on boot
+// in case the server-rendered markup still carries it.
+//
+// NO JS ANIMATION. Every value that moves is interpolated by the CSS engine;
+// this file only toggles a class and reads the transition duration back out
+// of the stylesheet so the fallback timer can never disagree with it.
+//
+// UNTOUCHED: the theme toggle (applyTheme / themeBoot / the 'taysir-theme'
+// localStorage key / the [data-theme-toggle] delegated listener), the Lottie
+// module, and the reveal/IntersectionObserver code all live in other IIFEs in
+// this file and are not referenced here.
 (function () {
   const btn = document.getElementById('hamburger');
   const menu = document.getElementById('mobile-menu');
   if (!btn || !menu) return;
 
-  btn.addEventListener('click', () => {
-    const isOpen = menu.getAttribute('data-open') === 'true';
-    const next = !isOpen;
-    menu.setAttribute('data-open', String(next));
-    menu.hidden = !next;
+  const root = document.documentElement;
+  const panel = menu.querySelector('.mm-panel');
+  const scrim = menu.querySelector('.mm-scrim');
+  const closeBtn = menu.querySelector('.mm-close');
+
+  // The old markup may still ship `hidden`. Drop it once: from here on the
+  // open state is expressed purely by `data-open`, so that `display: none`
+  // can never cut a closing animation off on its first frame.
+  menu.hidden = false;
+  menu.removeAttribute('hidden');
+  if (!menu.hasAttribute('data-open')) menu.setAttribute('data-open', 'false');
+
+  let isOpen = menu.getAttribute('data-open') === 'true';
+  let closeTimer = 0;
+
+  // Read the exit duration straight out of §19's `--mm-exit-total` so the
+  // fallback timer below can never drift from the stylesheet. Supports both
+  // `ms` and `s`. If the property is missing (old cached CSS), fall back to a
+  // value comfortably longer than the longest transition in §19.
+  function exitDuration() {
+    let raw = '';
+    try {
+      raw = getComputedStyle(menu).getPropertyValue('--mm-exit-total').trim();
+    } catch (e) { /* ignore */ }
+    if (!raw) return 700;
+    const n = parseFloat(raw);
+    if (!isFinite(n)) return 700;
+    return /ms\s*$/.test(raw) ? n : n * 1000;
+  }
+
+  function setExpanded(next) {
     btn.classList.toggle('open', next);
     btn.setAttribute('aria-expanded', String(next));
+  }
+
+  function open() {
+    if (isOpen) return;
+    isOpen = true;
+    window.clearTimeout(closeTimer);
+
+    // 1. Make the menu rendered and PARKED (§19.2 puts every layer
+    //    off-canvas). `hidden` is never set, so this only flips paint on.
+    menu.setAttribute('data-open', 'true');
+    root.classList.add('mm-open');          // §19.9 scroll lock
+    setExpanded(true);
+
+    // 2. A transition cannot start from a `display: none` element — there is
+    //    no previous computed style to interpolate from. Force a synchronous
+    //    reflow so the parked values are committed, then add `.mm-in` on the
+    //    next frame so §19.4's resting values animate from them.
+    void menu.offsetWidth;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (isOpen) menu.classList.add('mm-in');
+      });
+    });
+  }
+
+  function finishClose() {
+    if (isOpen) return;                     // re-opened mid-close
+    window.clearTimeout(closeTimer);
+    menu.setAttribute('data-open', 'false');
+    menu.classList.remove('mm-in');
+  }
+
+  function close(restoreFocus) {
+    if (!isOpen) return;
+    isOpen = false;
+
+    // Remove the MOTION flag only. `data-open` stays "true" so §18 keeps
+    // painting the layers while §19.2/19.3 slide them back out.
+    menu.classList.remove('mm-in');
+    root.classList.remove('mm-open');
+    setExpanded(false);
+
+    // Return focus to the control that opened the menu, so a keyboard user is
+    // not dropped at the top of the document. Done immediately rather than
+    // after the animation: the menu is already `pointer-events: none` and on
+    // its way out, and delaying focus is what makes menus feel unresponsive.
+    if (restoreFocus) {
+      try { btn.focus({ preventScroll: true }); } catch (e) { btn.focus(); }
+    }
+
+    // Hide for real only once the exit has finished. The transitionend
+    // listener is the accurate path; the timer is the guarantee — it covers
+    // a dropped event, a background tab, and prefers-reduced-motion (where
+    // §19.10 zeroes every duration).
+    window.clearTimeout(closeTimer);
+    closeTimer = window.setTimeout(finishClose, exitDuration() + 60);
+  }
+
+  function toggle() {
+    if (isOpen) close(true); else open();
+  }
+
+  // The panel is the last layer to finish moving on the way out (§19.3 gives
+  // it delay 0 but the longest duration), so its transitionend is the signal
+  // that the close is visually complete. Guarded on the target and property
+  // so a child's opacity transition cannot end the sequence early.
+  if (panel) {
+    panel.addEventListener('transitionend', function (e) {
+      if (e.target !== panel || e.propertyName !== 'transform') return;
+      if (!isOpen) finishClose();
+    });
+  }
+
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+    toggle();
   });
 
-  // Close mobile menu when clicking a link inside
-  menu.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => {
-      menu.setAttribute('data-open', 'false');
-      menu.hidden = true;
-      btn.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
+  // Close button inside the panel.
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      close(true);
     });
+  }
+
+  // Tapping the dimmed backdrop closes too — the expected behaviour for a
+  // full-screen overlay. Bound to the scrim element itself rather than to the
+  // root, so a tap anywhere on the waves or the panel does NOT close.
+  if (scrim) {
+    scrim.addEventListener('click', function () { close(false); });
+  }
+
+  // Escape closes from anywhere on the page while the menu is open.
+  document.addEventListener('keydown', function (e) {
+    if (!isOpen) return;
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      close(true);
+    }
   });
+
+  // Close when a link inside the menu is followed. Focus is NOT restored to
+  // the hamburger here: the anchors are in-page (#hero / #guide / #account)
+  // and the user's attention belongs at the destination.
+  menu.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () { close(false); });
+  });
+
+  // If the viewport grows past the mobile breakpoint while the menu is open,
+  // drop it immediately. §19.8 hides it with `display: none` above 900px, and
+  // that would otherwise strand the open state (scroll still locked, the
+  // hamburger still marked expanded) with no visible way to undo it. The
+  // query is the exact complement §17.8c and §19.8 use — `not all and
+  // (max-width: 900px)` rather than `min-width: 901px`, because a fractional
+  // width like 900.5px satisfies neither of the naive pair.
+  const desktop = window.matchMedia('not all and (max-width: 900px)');
+  function onBreakpoint(e) {
+    if (!e.matches || !isOpen) return;
+    close(false);
+    finishClose();                          // no animation to wait for
+  }
+  if (typeof desktop.addEventListener === 'function') {
+    desktop.addEventListener('change', onBreakpoint);
+  } else if (typeof desktop.addListener === 'function') {
+    desktop.addListener(onBreakpoint);      // Safari < 14
+  }
+
+  // Normalise the initial state: closed, collapsed, unlocked.
+  if (!isOpen) {
+    menu.setAttribute('data-open', 'false');
+    menu.classList.remove('mm-in');
+    root.classList.remove('mm-open');
+  }
+  setExpanded(isOpen);
 })();
 
 // Auth tabs (login / signup)
