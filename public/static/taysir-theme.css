@@ -3619,3 +3619,146 @@ html:has(#mobile-menu.home-mobile-menu[data-open="true"]) .site-header {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+
+/* ==========================================================
+   §21 — HOME SUBJECT PEEK
+   ----------------------------------------------------------
+   The home page's quiet "peek" at the library: a short,
+   scrollable stack of folder cards, sitting where the old
+   decorative glimpse strip used to be.
+
+   Two very different weights are deliberately combined:
+
+     • THE FRAME (.subject-peek-list) is a WHISPER. One
+       hairline, generously rounded, nothing else — no fill,
+       no shadow, no inset, no second border, no dividers, no
+       header bar, no ::before/::after. Its line is derived
+       from the existing --border token through color-mix at a
+       low percentage, so it lands FAR below the weight of the
+       cards it contains and inherits both themes without a
+       single new colour literal. The eye should register the
+       grouping, never the line.
+
+     • THE CARDS (.subject-peek-item) keep the library look at
+       full strength: a faithful copy of `.gd-card.gd-folder`
+       from /static/library.css combined with the surface
+       treatment §17.8 already gives `.gd-card` here — same
+       --bg-elevated background, same 1px var(--border)
+       hairline, same var(--radius-card), same var(--shadow-sm).
+       They are NOT softened to match the frame.
+
+   The rows are inert decoration: no hover lift, no pointer
+   cursor, no transform, no transition, nothing focusable.
+
+   Append-only section. Nothing above it is modified.
+   ========================================================== */
+.subject-peek { padding: 40px 0; }
+
+/* ---- §21.1  The frame: one faint hairline, and nothing else ---- */
+.subject-peek-list {
+  box-sizing: border-box;
+
+  /* The whisper. 35% of --border — roughly a third of the weight
+     of the cards' own hairline, which use var(--border) neat. */
+  border: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+  border-radius: 24px;   /* clearly rounder than the cards' --radius-card (20px) */
+  padding: 12px;
+
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+
+  /* Reset the <ul> */
+  list-style: none;
+  margin: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  /* Exactly four rows are visible, the fifth is scrolled to:
+       4 rows  x 64px min-height = 256px
+       3 gaps  x 10px            =  30px
+       padding 12px top + bottom =  24px
+       border   1px top + bottom =   2px
+                                 -------
+                                    312px
+     border-box above makes the padding + border part of the
+     figure, so the fourth row ends flush with the frame. */
+  max-height: 312px;
+
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+
+  /* Soften the scroll edges rather than cutting them off: a short
+     ~18px fade to transparent at the top and bottom of the scroll
+     area. Pure CSS, no overlay element. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 18px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 18px),
+    transparent 100%
+  );
+}
+
+/* Dark mode gets the same treatment, on the same token. --border is
+   already redefined by the dark palette (§1), so the identical
+   color-mix at the identical 35% resolves against the dark hairline
+   — same whisper, no new literal. */
+html[data-theme="dark"] .subject-peek-list {
+  border-color: color-mix(in srgb, var(--border) 35%, transparent);
+}
+
+/* ---- §21.2  The rows: the library folder card, unsoftened ---- */
+.subject-peek-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 14px 18px;
+
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+
+  text-align: right;   /* RTL-friendly, as .gd-card */
+}
+
+/* Mirrors §17.8's `html[data-theme="dark"] .gd-card` exactly. */
+html[data-theme="dark"] .subject-peek-item { background: #171923; }
+
+/* ---- §21.3  The glyph tile ---- */
+.subject-peek-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+}
+.subject-peek-icon svg { width: 26px; height: 26px; }
+.subject-peek-icon svg path { fill: currentColor; }
+
+/* ---- §21.4  The name ---- */
+.subject-peek-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

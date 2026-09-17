@@ -313,11 +313,22 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="hero-illu">
-              <img src={`${PROTO}/assets/svg/book-lover.svg`} alt="طالب يقرأ كتاباً" width="480" height="480" className="float-illu float-a" data-reveal />
-            </div>
           </div>
         </section>
+
+        {/* ============ SUBJECT PEEK ============
+            Visual shell only. Renders the library's folder-card look
+            inside a soft, generously rounded scroll frame (§21 of
+            /static/taysir-theme.css).
+
+            The name list is intentionally EMPTY in this task: no
+            placeholder, no sample, no demo data. While it is empty the
+            whole section returns null, so nothing at all is rendered.
+            A later task supplies the real names.
+
+            The rows are purely decorative: not links, not buttons, not
+            focusable, no handlers, no identifiers, no network access. */}
+        <SubjectPeek />
 
 
         {/* ============ GUIDANCE ============ */}
@@ -509,5 +520,53 @@ export default function HomePage() {
         </div>
       </footer>
     </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SubjectPeek — VISUAL SHELL ONLY.
+//
+// A calm, generously rounded scroll frame (§21 of /static/taysir-theme.css)
+// holding rows that are a faithful copy of the library's folder card
+// (.gd-card.gd-folder in /static/library.css) — same surface, same hairline,
+// same radius, same soft elevation, same 44px purple-tinted glyph tile.
+//
+// The list of names is EMPTY by design in this task. There is deliberately
+// no sample, demo, mock or placeholder content of any kind, and no data
+// source at all: no network call, no effect, no backend, no route. While it is
+// empty the component returns null, so the section renders NOTHING at all.
+// That invisible outcome is the correct and expected result here; a later
+// task feeds it the real names.
+//
+// The rows are completely inert: plain <li> elements — not anchors, not
+// buttons, no handler, no link target, no tab stop, no data-* hook and no
+// identifier of any kind. Nothing is focusable and nothing is clickable.
+// ─────────────────────────────────────────────────────────────────────────
+function SubjectPeek() {
+  // Intentionally empty. Populated from real data in a later task.
+  const names: string[] = []
+
+  if (names.length === 0) return null
+
+  return (
+    <section className="subject-peek">
+      <div className="container">
+        <ul className="subject-peek-list">
+          {names.map((name, i) => (
+            <li className="subject-peek-item" key={i}>
+              <span className="subject-peek-icon" aria-hidden="true">
+                {/* Same solid-folder glyph as IC.folder in /static/library.js.
+                    The fill is left to CSS (`fill: currentColor`) so the tile
+                    colour comes from the theme token, not a literal. */}
+                <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+                </svg>
+              </span>
+              <span className="subject-peek-name">{name}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   )
 }
