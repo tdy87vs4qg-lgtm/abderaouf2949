@@ -313,6 +313,9 @@ export default function HomePage() {
               </div>
             </div>
 
+            <div className="hero-illu">
+              <img src={`${PROTO}/assets/svg/book-lover.svg`} alt="طالب يقرأ كتاباً" width="480" height="480" className="float-illu float-a" data-reveal />
+            </div>
           </div>
         </section>
 
