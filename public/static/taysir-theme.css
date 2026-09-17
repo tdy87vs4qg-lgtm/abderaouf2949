@@ -3624,45 +3624,103 @@ html:has(#mobile-menu.home-mobile-menu[data-open="true"]) .site-header {
    §21 — HOME SUBJECT PEEK
    ----------------------------------------------------------
    The home page's quiet "peek" at the library: a short,
-   scrollable stack of folder cards, sitting where the old
+   scrollable list of subject names, sitting where the old
    decorative glimpse strip used to be.
 
-   Two very different weights are deliberately combined:
+   THE CARD SURFACE IS GONE. The rows used to be faithful
+   copies of `.gd-card.gd-folder` — elevated background, 1px
+   hairline, 20px radius, --shadow-sm. Every one of those is
+   now removed. A row is nothing but the purple folder tile
+   and the subject name, floating directly on the page
+   background. Nothing that reads as a card or a chip remains.
 
-     • THE FRAME (.subject-peek-list) is a WHISPER. One
-       hairline, generously rounded, nothing else — no fill,
-       no shadow, no inset, no second border, no dividers, no
-       header bar, no ::before/::after. Its line is derived
-       from the existing --border token through color-mix at a
-       low percentage, so it lands FAR below the weight of the
-       cards it contains and inherits both themes without a
-       single new colour literal. The eye should register the
-       grouping, never the line.
+   That inverts the old weight balance, and the rest of the
+   section follows from it:
 
-     • THE CARDS (.subject-peek-item) keep the library look at
-       full strength: a faithful copy of `.gd-card.gd-folder`
-       from /static/library.css combined with the surface
-       treatment §17.8 already gives `.gd-card` here — same
-       --bg-elevated background, same 1px var(--border)
-       hairline, same var(--radius-card), same var(--shadow-sm).
-       They are NOT softened to match the frame.
+     • THE FRAME (.subject-peek-list) is now the ONLY thing
+       defining the area, so it can no longer be a whisper.
+       It is still exactly one 1px hairline at radius 24px —
+       no fill, no shadow, no inset, no second border, no
+       dividers, no header bar, no ::before/::after — but its
+       colour is derived from --text instead of --border.
+       --border is too weak a token to build a visible line
+       from: at 100% it is only 0.06 alpha in light, so any
+       percentage of it composites below the perception
+       threshold on a phone. --text is a strong token, so a
+       LOW percentage of it gives a clean thin line that is
+       comfortably visible without reading as a heavy box.
+       Still color-mix, still an existing token, still no new
+       colour literal — see §21.1 for the measured figures.
 
-   The rows are inert decoration: no hover lift, no pointer
+     • THE ROWS (.subject-peek-item) are compact. With the
+       surface gone, most of the old 74px row height was
+       padding around a card that no longer exists, so the
+       padding is cut to almost nothing and the icon defines
+       the height. See §21.2.
+
+     • THE GAP between rows is widened, because the rows no
+       longer have their own surface or a separating border
+       to hold them apart. No divider lines are added.
+
+   The rows stay inert decoration: no hover state, no pointer
    cursor, no transform, no transition, nothing focusable.
 
    Append-only section. Nothing above it is modified.
    ========================================================== */
 .subject-peek { padding: 40px 0; }
 
-/* ---- §21.1  The frame: one faint hairline, and nothing else ---- */
+/* ---- §21.1  The frame: one hairline, now actually visible ----
+
+   THE TOKEN CHANGED, NOT THE PERCENTAGE.
+
+   The frame used to be color-mix(var(--border) 35%). That path is
+   exhausted and cannot be rescued by raising the percentage, because
+   --border is simply too weak a token to build a visible line from:
+
+     light  --border = rgba(17,17,17,0.06)
+            x 35%  -> 0.0210 alpha -> rgb(250,250,250) on #FFFFFF
+                      L* 98.27 vs page L* 100.00  ->  dL* 1.73
+     dark   --border = rgba(255,255,255,0.07)
+            x 70%  -> 0.0490 alpha -> rgb(26,28,33) on #0E1016
+                      L* 10.15 vs page L*  4.71  ->  dL* 5.44
+
+   A dL* of 1.73 is below the perception threshold — on a phone at
+   arm's length the light frame is not merely faint, it is absent.
+   And even at 100% of --border the light line only reaches 0.06
+   alpha / dL* 4.9, still too weak. The ceiling of the token is the
+   problem, so the token has to change.
+
+   --text is a STRONG existing token (#111111 light, #F2F2F5 dark),
+   so a LOW percentage of it produces a clean thin line rather than
+   a heavy box. Measured, composited against the real page
+   background, not guessed:
+
+     light  color-mix(var(--text) 12%)
+            -> 0.12 alpha -> rgb(226,226,226) on #FFFFFF
+               L* 90.04 vs 100.00   ->  dL*  9.96
+     dark   color-mix(var(--text) 14%)
+            -> 0.14 alpha -> rgb( 46, 48, 53) on #0E1016
+               L* 19.73 vs   4.71   ->  dL* 15.02
+
+   Dark needs the higher percentage for the usual reason: the same
+   dL* costs more alpha low down the L* curve. Both land in the
+   "clearly and comfortably visible hairline" band — roughly 6x the
+   light contrast the old frame had, and well short of anything that
+   reads as a box. Still one 1px line, still color-mix, still an
+   existing token, still no colour literal.
+
+   This matters more than it used to: with §21.2's card surface
+   removed, this hairline is the ONLY thing defining the area. */
 .subject-peek-list {
   box-sizing: border-box;
 
-  /* The whisper. 35% of --border — roughly a third of the weight
-     of the cards' own hairline, which use var(--border) neat. */
-  border: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
-  border-radius: 24px;   /* clearly rounder than the cards' --radius-card (20px) */
-  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 24px;
+  /* 12px vertical as before. The horizontal padding is raised to 14px
+     to clear the 6px scrollbar of §21.5: the scrollbar gutter is
+     carved out of the padding box on the inline-start side, and 14px
+     keeps a comfortable channel between the thumb and the names. */
+  padding: 12px 14px;
 
   background: transparent;
   box-shadow: none;
@@ -3674,116 +3732,216 @@ html:has(#mobile-menu.home-mobile-menu[data-open="true"]) .site-header {
 
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /* Was 10px. The rows no longer have a surface or a border of their
+     own to hold them apart, so without a wider channel the names
+     crowd each other. 14px replaces the separation the card edges
+     used to provide — no divider lines are added. */
+  gap: 14px;
 
   /* Exactly four rows are visible, the fifth is scrolled to.
-     MEASURED, not assumed: `min-height: 64px` never decides the row
-     height, because the row's own content is taller than 64px —
-     14px top padding + a fixed 44px icon + 14px bottom padding = 72px
-     of content box, and the row is border-box with a 1px hairline top
-     and bottom, so each row renders at 74px:
+     RE-MEASURED after §21.2 stripped the surface. The old 352px was
+     derived from a 74px row that was mostly card padding plus the
+     card's own 1px top and bottom borders; that row is now 36px, so
+     352px would have shown four rows plus most of a fifth.
 
-       4 rows  x 74px measured    = 296px
-       3 gaps  x 10px             =  30px
-       padding 12px top + bottom  =  24px
-       border   1px top + bottom  =   2px
-                                  -------
-                                     352px
+     The row height is MEASURED in a browser, not inferred from
+     min-height — §21.2 zeroes min-height precisely so that the icon,
+     and nothing else, decides the height:
 
-     (The rows only measure 64px when the list is *under*-sized: they
-     are flex items and shrink to the min-height floor, which is
-     exactly the bug the old 312px figure caused — it clipped the
-     fourth row and squeezed all of them. Sizing the frame to the
-     intrinsic 74px lets the four rows sit at full height.)
-     border-box above makes the padding + border part of the
-     figure, so the fourth row ends flush with the frame. */
-  max-height: 352px;
+       4 rows  x 36px measured     = 144px
+       3 gaps  x 14px              =  42px
+       padding 12px top + bottom   =  24px
+       border   1px top + bottom   =   2px
+                                   -------
+                                      212px
+
+     box-sizing: border-box above folds the padding and border into
+     the figure, and flex-shrink: 0 on the rows (§21.2) stops them
+     collapsing when a fifth row exists, so the fourth row ends flush
+     with the frame. */
+  max-height: 212px;
 
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 
-  /* Soften the scroll edges rather than cutting them off: a short
-     ~18px fade to transparent at the top and bottom of the scroll
-     area. Pure CSS, no overlay element. */
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 18px,
-    #000 calc(100% - 18px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 18px,
-    #000 calc(100% - 18px),
-    transparent 100%
-  );
+  /* NO mask-image.
+     There used to be an 18px top/bottom fade here. A mask applies to
+     the element's BORDER box, so its transparent ends were erasing
+     the top and bottom edges of this very hairline — the frame was
+     being cut open by its own scroll fade. It also faded the
+     scrollbar thumb of §21.5 at both ends.
+
+     Fading only the CONTENT while sparing the 1px border cannot be
+     expressed on a single element: mask-clip: content-box does not
+     spare the border, it clips the border away entirely, and every
+     other route needs an extra wrapper or a ::before, both of which
+     this section forbids. So the mask is REMOVED rather than
+     reworked. The frame is now the thing that communicates the
+     boundary, and the §21.5 scrollbar communicates the overflow,
+     which is what the fade was standing in for. */
 }
 
-/* Dark mode needs a HIGHER percentage to land on the same whisper.
-   The token is not symmetric: --border is rgba(17,17,17,0.06) in light
-   but rgba(255,255,255,0.07) in dark, and a near-white line laid over
-   #0E1016 loses far more of itself than a near-black line laid over
-   #FFFFFF. At the light value of 35% the dark border composites to
-   ~0.0245 alpha — rgb(20,22,28) against a rgb(14,16,22) page, which is
-   effectively invisible. 70% composites to ~0.049 alpha → rgb(26,28,33):
-   just perceptible, and still clearly lighter than the cards' own
-   hairline (var(--border) neat) so the frame stays subordinate to its
-   contents. Still one hairline, still derived from the same token, no
-   new colour literal — only the mix percentage differs per theme. */
+/* Dark: 14% rather than light's 12%, for the reason measured in the
+   comment above — the same perceived hairline costs more alpha
+   against #0E1016 than against #FFFFFF. */
 html[data-theme="dark"] .subject-peek-list {
-  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  border-color: color-mix(in srgb, var(--text) 14%, transparent);
 }
 
-/* ---- §21.2  The rows: the library folder card, unsoftened ---- */
+/* ---- §21.2  The rows: NO SURFACE, and compact ----
+
+   The card is gone. A row is now the purple tile and the name,
+   floating directly on the page background, with nothing behind
+   them. Removed outright:
+
+     background: var(--bg-elevated)   -> none (transparent)
+     border: 1px solid var(--border)  -> none
+     border-radius: var(--radius-card) (20px) -> 0
+     box-shadow: var(--shadow-sm)     -> none
+
+   Nothing that reads as a card or a chip may remain, so the radius
+   is zeroed rather than merely reduced — on a surface-less row a
+   leftover radius has nothing to round anyway, but it is set to 0
+   explicitly so no cascade can reintroduce a chip shape.
+
+   Kept exactly as they were: the flex layout, align-items: center,
+   the icon-then-name source order, and the RTL text alignment.
+
+   And the row is now SMALL. With the surface gone, the old 74px was
+   almost entirely padding wrapped around a card that no longer
+   exists: 14px + 44px icon + 14px, plus the card's own 1px borders.
+   The padding is dropped to zero and min-height to zero, so the
+   icon — and only the icon — decides the height. Measured result:
+   74px -> 36px per row.
+
+   No hover state, no cursor, no transition: the rows stay inert. */
 .subject-peek-item {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 64px;
-  /* The rows are flex items in a height-capped column, so without this
-     they SHRINK to the 64px min-height floor as soon as a fifth row
-     exists — which is why the frame used to show ~4.5 squeezed rows.
-     Holding them at their intrinsic 74px is what makes the max-height
-     above resolve to exactly four rows. */
+
+  /* Was min-height: 64px. Zeroed so the measurement is honest: the
+     icon defines the row box, nothing floors it. */
+  min-height: 0;
+  /* Still required. The rows are flex items in a height-capped
+     column, so without this they shrink below their intrinsic
+     height as soon as a fifth row exists, and the four-row
+     max-height of §21.1 stops resolving to four rows. */
   flex-shrink: 0;
-  padding: 14px 18px;
+  /* Was 14px 18px. The row has no surface left to inset the content
+     from, so the padding goes entirely and the icon sets the height. */
+  padding: 0;
 
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 
-  text-align: right;   /* RTL-friendly, as .gd-card */
+  text-align: right;   /* RTL-friendly, unchanged */
 }
 
-/* Mirrors §17.8's `html[data-theme="dark"] .gd-card` exactly. */
-html[data-theme="dark"] .subject-peek-item { background: #171923; }
+/* ---- §21.3  The glyph tile ----
+   The purple treatment is UNCHANGED: same
+   color-mix(in srgb, var(--purple) 18%, transparent) fill, same
+   var(--purple) glyph colour. Only the box is scaled down, in
+   proportion, to match the compacted row:
 
-/* ---- §21.3  The glyph tile ---- */
+     width/height   44px -> 36px
+     border-radius  12px -> 10px   (12/44 = 0.273; 36 x 0.273 = 9.8)
+     svg            26px -> 21px   (26/44 = 0.591; 36 x 0.591 = 21.3)
+
+   The tile stays square and keeps its radius-to-size proportion, so
+   it reads as the same rounded folder tile, just smaller. */
 .subject-peek-icon {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--purple) 18%, transparent);
   color: var(--purple);
 }
-.subject-peek-icon svg { width: 26px; height: 26px; }
+.subject-peek-icon svg { width: 21px; height: 21px; }
 .subject-peek-icon svg path { fill: currentColor; }
 
 /* ---- §21.4  The name ---- */
 .subject-peek-name {
   flex: 1 1 auto;
   min-width: 0;
+  /* Was 16px (inherited). Eased down slightly to sit with the
+     smaller tile; the weight and colour are unchanged. */
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ---- §21.5  A scrollbar you can actually see ----
+
+   Four rows are shown and the rest are scrolled to, so there has to
+   be a visible indicator that the list continues. Both syntaxes are
+   given because they are not interchangeable: the standard
+   scrollbar-width / scrollbar-color pair covers Firefox, and the
+   ::-webkit-scrollbar pseudo-elements cover Chrome and the Android
+   WebView, which is what most visitors here are using. Chromium
+   honours the standard properties when present and ignores the
+   pseudo-elements in that case, so the two agree by construction —
+   same tokens, same percentages.
+
+   SIDE: the list is RTL (dir="rtl" on <html>), and a vertical
+   scrollbar renders on the INLINE-START edge, which in RTL is the
+   LEFT. Verified in the browser, not assumed: the names begin at
+   the right edge and the thumb sits at the left. §21.1 carries
+   14px of horizontal padding for exactly this reason — the 6px
+   gutter is taken out of the padding box on the left, leaving an
+   8px channel, so the thumb never overlaps a name. The names are
+   also ellipsised (§21.4), so the longest one ends before the
+   channel rather than running under it.
+
+   MASK: §21.1's 18px fade is gone. Had it stayed, it would have
+   clipped both ends of this thumb as well as the frame's own top
+   and bottom edges.
+
+   Thumb colour by color-mix from --text, measured composited
+   against the real page background:
+
+     light  28% -> 0.28 alpha -> rgb(188,188,188) on #FFFFFF
+                   L* 76.38 vs 100.00  ->  dL* 23.62
+     dark   26% -> 0.26 alpha -> rgb( 73, 75, 80) on #0E1016
+                   L* 31.82 vs   4.71  ->  dL* 27.11
+
+   Clearly visible in both themes while staying a thin indicator
+   rather than a UI element. The track is barely tinted at 5% so the
+   channel reads as a groove, not a bar. No hex, no rgb(), no named
+   colour, no new custom property. */
+.subject-peek-list {
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--text) 28%, transparent)
+    color-mix(in srgb, var(--text) 5%, transparent);
+}
+html[data-theme="dark"] .subject-peek-list {
+  scrollbar-color:
+    color-mix(in srgb, var(--text) 26%, transparent)
+    color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.subject-peek-list::-webkit-scrollbar {
+  width: 6px;
+}
+.subject-peek-list::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border-radius: 999px;
+}
+.subject-peek-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 28%, transparent);
+  border-radius: 999px;
+}
+html[data-theme="dark"] .subject-peek-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 26%, transparent);
 }
