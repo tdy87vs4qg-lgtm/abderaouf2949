@@ -6,6 +6,7 @@ import { shelfPage } from './pages/shelf'
 import { shelfFolderPage } from './pages/shelfFolder'
 import { adminPage } from './pages/admin'
 import { libraryApi } from './routes/library'
+import { publicApi } from './routes/public'
 import { authApi } from './routes/auth'
 import { adminApi } from './routes/admin'
 import type { Env } from './lib/drive'
@@ -152,6 +153,7 @@ app.get('/shelf/folder', (c) => c.html(shelfFolderPage))
 
 // Server-side Google Drive API (key + folder id live only in env/secrets)
 app.route('/api/library', libraryApi)
+app.route('/api/public', publicApi)
 
 // Auth API (Task 4A) — login / logout / me. Accounts are admin-provisioned in
 // D1; there is no public self-signup. Role-based route protection (Part B) and

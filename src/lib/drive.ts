@@ -1266,6 +1266,57 @@ async function writeCache(env: Env, key: string, data: FolderListing): Promise<v
   memoryCache.set(key, entry)
 }
 
+/**
+ * Read the ROOT folder's child folder NAMES out of the existing cache.
+ *
+ * Strictly read-only and names-only: it never calls Google, never widens what
+ * is cached, and never returns an id, link, thumbnail, mime type, size or
+ * breadcrumb — only plain strings. It exists so a public, credential-free
+ * surface can show what the library is *called* without exposing anything a
+ * logged-out visitor could use to reach file content.
+ *
+ * A cold cache is reported as `stale: true` (names empty) so the caller may
+ * decide to warm it in the background; it deliberately does NOT fetch here,
+ * because this runs on an unauthenticated path.
+ *
+ * This function never throws — any internal problem degrades to empty names
+ * with `stale: false`, which makes it structurally impossible for a broken
+ * cache to trigger a background-refresh storm.
+ */
+export async function readCachedRootFolderNames(
+  env: Env
+): Promise<{ names: string[]; stale: boolean }> {
+  try {
+    const rootId = driveRootId(env)
+    if (!rootId) return { names: [], stale: true }
+
+    const entry = await readCache(env, `drive:list:${rootId}`)
+    if (!entry) return { names: [], stale: true }
+
+    const listing = entry.data
+    const raw = [
+      ...(listing?.folders ?? []),
+      ...(listing?.files ?? []).filter((f) => f?.mimeType === DRIVE_FOLDER_MIME),
+    ].map((f) => f?.name)
+
+    const names: string[] = []
+    for (const name of raw) {
+      if (typeof name !== 'string') continue
+      const trimmed = name.trim()
+      if (!trimmed) continue
+      names.push(trimmed.slice(0, 120))
+      if (names.length >= 64) break
+    }
+
+    const stale =
+      names.length === 0 || Date.now() - entry.storedAt > CACHE_TTL_SECONDS * 1000
+
+    return { names, stale }
+  } catch {
+    return { names: [], stale: false }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Lock application — files are gated for non-subscribers
 // ---------------------------------------------------------------------------
