@@ -319,15 +319,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ============ GLIMPSE STRIP (small illustrations, no filler text) ============ */}
-        <section className="glimpse">
-          <div className="container glimpse-row">
-            <div className="glimpse-item"><img src={`${PROTO}/assets/svg/open-book.svg`} alt="" width="160" height="120" className="float-illu float-b" data-reveal /></div>
-            <div className="glimpse-item"><img src={`${PROTO}/assets/svg/notebook.svg`} alt="" width="160" height="120" className="float-illu float-c" data-reveal /></div>
-            <div className="glimpse-item"><img src={`${PROTO}/assets/svg/bookshelves.svg`} alt="" width="160" height="120" className="float-illu float-d" data-reveal /></div>
-            <div className="glimpse-item"><img src={`${PROTO}/assets/svg/reading-book.svg`} alt="" width="160" height="120" className="float-illu float-e" data-reveal /></div>
-          </div>
-        </section>
 
         {/* ============ GUIDANCE ============ */}
         <section className="guide" id="guide">
