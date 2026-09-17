@@ -3676,16 +3676,28 @@ html:has(#mobile-menu.home-mobile-menu[data-open="true"]) .site-header {
   flex-direction: column;
   gap: 10px;
 
-  /* Exactly four rows are visible, the fifth is scrolled to:
-       4 rows  x 64px min-height = 256px
-       3 gaps  x 10px            =  30px
-       padding 12px top + bottom =  24px
-       border   1px top + bottom =   2px
-                                 -------
-                                    312px
+  /* Exactly four rows are visible, the fifth is scrolled to.
+     MEASURED, not assumed: `min-height: 64px` never decides the row
+     height, because the row's own content is taller than 64px —
+     14px top padding + a fixed 44px icon + 14px bottom padding = 72px
+     of content box, and the row is border-box with a 1px hairline top
+     and bottom, so each row renders at 74px:
+
+       4 rows  x 74px measured    = 296px
+       3 gaps  x 10px             =  30px
+       padding 12px top + bottom  =  24px
+       border   1px top + bottom  =   2px
+                                  -------
+                                     352px
+
+     (The rows only measure 64px when the list is *under*-sized: they
+     are flex items and shrink to the min-height floor, which is
+     exactly the bug the old 312px figure caused — it clipped the
+     fourth row and squeezed all of them. Sizing the frame to the
+     intrinsic 74px lets the four rows sit at full height.)
      border-box above makes the padding + border part of the
      figure, so the fourth row ends flush with the frame. */
-  max-height: 312px;
+  max-height: 352px;
 
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -3710,12 +3722,19 @@ html:has(#mobile-menu.home-mobile-menu[data-open="true"]) .site-header {
   );
 }
 
-/* Dark mode gets the same treatment, on the same token. --border is
-   already redefined by the dark palette (§1), so the identical
-   color-mix at the identical 35% resolves against the dark hairline
-   — same whisper, no new literal. */
+/* Dark mode needs a HIGHER percentage to land on the same whisper.
+   The token is not symmetric: --border is rgba(17,17,17,0.06) in light
+   but rgba(255,255,255,0.07) in dark, and a near-white line laid over
+   #0E1016 loses far more of itself than a near-black line laid over
+   #FFFFFF. At the light value of 35% the dark border composites to
+   ~0.0245 alpha — rgb(20,22,28) against a rgb(14,16,22) page, which is
+   effectively invisible. 70% composites to ~0.049 alpha → rgb(26,28,33):
+   just perceptible, and still clearly lighter than the cards' own
+   hairline (var(--border) neat) so the frame stays subordinate to its
+   contents. Still one hairline, still derived from the same token, no
+   new colour literal — only the mix percentage differs per theme. */
 html[data-theme="dark"] .subject-peek-list {
-  border-color: color-mix(in srgb, var(--border) 35%, transparent);
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
 }
 
 /* ---- §21.2  The rows: the library folder card, unsoftened ---- */
@@ -3724,6 +3743,12 @@ html[data-theme="dark"] .subject-peek-list {
   align-items: center;
   gap: 14px;
   min-height: 64px;
+  /* The rows are flex items in a height-capped column, so without this
+     they SHRINK to the 64px min-height floor as soon as a fifth row
+     exists — which is why the frame used to show ~4.5 squeezed rows.
+     Holding them at their intrinsic 74px is what makes the max-height
+     above resolve to exactly four rows. */
+  flex-shrink: 0;
   padding: 14px 18px;
 
   background: var(--bg-elevated);
