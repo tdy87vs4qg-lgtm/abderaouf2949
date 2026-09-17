@@ -531,20 +531,44 @@ export default function HomePage() {
 // (.gd-card.gd-folder in /static/library.css) — same surface, same hairline,
 // same radius, same soft elevation, same 44px purple-tinted glyph tile.
 //
-// The list of names is EMPTY by design in this task. There is deliberately
-// no sample, demo, mock or placeholder content of any kind, and no data
-// source at all: no network call, no effect, no backend, no route. While it is
-// empty the component returns null, so the section renders NOTHING at all.
-// That invisible outcome is the correct and expected result here; a later
-// task feeds it the real names.
+// The names come from GET /api/public/subjects — a public, credential-free
+// endpoint that answers with a bare array of folder NAMES read out of the
+// Drive cache the library already maintains. It returns no id, no link and no
+// file data of any kind, so there is nothing here a logged-out visitor could
+// follow to reach content.
+//
+// The fetch is deliberately undemanding: no credentials, every failure
+// swallowed in silence, and no state written after unmount. If the array is
+// empty for ANY reason — still loading, cold cache, network error, Drive not
+// configured — the component returns null and the section renders NOTHING.
+// There is no empty frame, no skeleton, no spinner and no error text; that
+// invisible outcome is the correct result, exactly as before.
 //
 // The rows are completely inert: plain <li> elements — not anchors, not
 // buttons, no handler, no link target, no tab stop, no data-* hook and no
 // identifier of any kind. Nothing is focusable and nothing is clickable.
 // ─────────────────────────────────────────────────────────────────────────
 function SubjectPeek() {
-  // Intentionally empty. Populated from real data in a later task.
-  const names: string[] = []
+  const [names, setNames] = useState<string[]>([])
+
+  useEffect(() => {
+    let alive = true
+
+    fetch('/api/public/subjects', { credentials: 'omit' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!alive || !Array.isArray(data)) return
+        const clean = data.filter((n): n is string => typeof n === 'string' && n.trim() !== '')
+        if (clean.length > 0) setNames(clean)
+      })
+      .catch(() => {
+        /* silent by design — the section simply stays hidden */
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [])
 
   if (names.length === 0) return null
 
