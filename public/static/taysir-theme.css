@@ -3272,3 +3272,222 @@ html.mm-open body {
     transform: none;
   }
 }
+
+/* ==========================================================
+   20. MOBILE MENU — MOTION SMOOTHNESS PASS  (append-only)
+   ==========================================================
+
+   §19 built the staggered slide and it is CORRECT: the
+   geometry, the colours, the z-index ladder, the
+   `data-open` / `.mm-in` contract and the exit ladder all
+   stay exactly as they are. Not one byte of §5, §17.8c, §18
+   or §19 is edited; this section only appends, and it
+   appends only what a mid-range Android phone needs to
+   render that same gesture at a steady frame rate.
+
+   ── THE SYMPTOM ───────────────────────────────────────────
+   On a mid-range Android the slide reads as roughly 20fps:
+   fast and juddery rather than silky. The movement itself is
+   right, the FRAME DELIVERY is not.
+
+   ── THE FOUR CAUSES, AND WHAT IS DONE ABOUT EACH ──────────
+
+   1) SIX LARGE SURFACES COMPOSITE AT ONCE. The scrim, four
+      full-height 70vw wave layers and the panel all move or
+      fade in the same window. That per-frame compositing
+      cost is fixed by the design and is not being changed
+      here — instead the sequence is given MORE TIME to
+      absorb it (20.1) and the layers are handed to the
+      compositor BEFORE the first moving frame (20.2).
+
+   2) THE TIMINGS WERE TOO SHORT TO ABSORB A DROPPED FRAME.
+      §19.1's 340ms wave over a 55ms ladder leaves ~6 frames
+      per layer at 60fps, and barely 2 if the device is
+      actually delivering 20fps — so a single long frame eats
+      a third of the travel and the eye reads a jump rather
+      than a slide. 20.1 lengthens the travel and TIGHTENS
+      the stagger: a longer distance-per-layer spread over a
+      shorter interval means each layer has more frames to
+      itself while the fan still reads as one gesture.
+
+   3) THE EXIT EASE WAS ABRUPT. `cubic-bezier(0.55,0,1,0.45)`
+      ends at full speed, so on a phone that is already
+      dropping frames the close reads as a snap. 20.1
+      replaces it with a curve that decelerates into the
+      final position.
+
+   4) `will-change` WAS DECLARED ONLY IN THE `.mm-in` STATE.
+      The compositor layer was therefore being created on the
+      very frame the transform starts changing — the browser
+      pays for the promotion (layer allocation, one full
+      re-raster of a 70vw x 100vh surface) inside the first
+      animated frame, which is exactly the frame the user
+      sees judder on. 20.2 moves the promotion one frame
+      earlier, onto the PARKED state, which is applied when
+      `data-open` flips and one frame BEFORE `.mm-in` lands.
+
+   5) THE STICKY HEADER'S `backdrop-filter` KEPT RE-SAMPLING.
+      §5 gives `.site-header` `saturate(180%) blur(10px)`. A
+      backdrop-filter re-samples and re-blurs everything
+      painted behind it whenever those pixels change — and
+      six large surfaces sliding across the viewport change
+      them on EVERY frame. The header is covered by the menu
+      while it is open, so that blur is invisible work. 20.3
+      suspends it for exactly the duration of the gesture.
+
+   ── WHAT THIS SECTION DELIBERATELY DOES NOT DO ────────────
+   No `@keyframes`, no JS, no library, no new file. No new
+   colour value: §20 declares no colour at all. No geometry,
+   no z-index, no `display`, no `position`, no width. It does
+   NOT declare `transform` or `opacity` VALUES anywhere —
+   only durations, easings and compositor hints — which is
+   what keeps §19.10's `prefers-reduced-motion` block, which
+   appears ABOVE this section, fully authoritative: its
+   `transition-duration: 0s !important` /
+   `transition-delay: 0s !important` beat every normal
+   declaration below regardless of source order, and its
+   `transform: none` / `opacity: 1` resets have nothing here
+   to fight. Retiming through the tokens is therefore
+   automatically neutralised under reduced motion.
+
+   The 62x32 theme toggle, its Lottie host, `applyTheme` and
+   `themeBoot` are not referenced anywhere in §20.
+   ========================================================== */
+
+/* ---- 20.1  Retimed motion tokens ------------------------
+   Same selector as §19.1 (`#mobile-menu.home-mobile-menu`,
+   specificity 1-1-0) and later in source order, so these
+   values win on the cascade without `!important` and without
+   editing §19. Every rule in §19 reads the tokens, so
+   re-declaring them here re-times the ENTIRE sequence —
+   entrance, exit ladder, rows, close button — from one
+   place. Nothing else has to be restated.
+
+   --mm-dur-panel  380ms -> 460ms. At a real-world 20-30fps
+                   that is the difference between ~8 and
+                   ~12 frames of travel; enough that losing
+                   one or two no longer registers as a jump.
+   --mm-dur-wave   340ms -> 420ms, kept just under the panel
+                   so the waves still snap out from behind it
+                   exactly as §19.1 describes.
+   --mm-dur-scrim  260ms -> 300ms. The scrim is a full-screen
+                   cross-fade and is the cheapest surface to
+                   lengthen; matching it to the slide stops
+                   the backdrop finishing visibly early.
+   --mm-step        55ms ->  42ms. Counter-intuitive but
+                   deliberate: with the layer travel now
+                   longer, a SHORTER interval keeps the four
+                   waves overlapping heavily instead of
+                   arriving as four discrete events. Four
+                   layers x 42ms fans out over 126ms, still
+                   well inside the panel's own travel, so the
+                   whole thing still reads as ONE gesture —
+                   and each layer's own motion now occupies
+                   more frames than the gap between layers,
+                   which is what reads as silky.
+   --mm-ease-out   unchanged. The entrance deceleration was
+                   never the problem.
+   --mm-ease-in    (0.55,0,1,0.45) -> (0.4,0,0.2,1). The old
+                   curve is still travelling at full speed
+                   when it hits the end point, so a dropped
+                   frame near the end removes the only part
+                   of the exit the eye could have tracked.
+                   The replacement accelerates away just as
+                   promptly but settles instead of stopping
+                   dead.
+
+   --mm-exit-total is restated here in the SAME calc() form
+   §19.1 uses, so it remains the single source of truth for
+   "how long does the close take" and keeps resolving from
+   whichever values are in force. Under these tokens it is
+   460ms + (42ms x 3) = 586ms. prototype/script.js reads this
+   property at close time via getComputedStyle, so its
+   fallback timer follows this retime automatically and no JS
+   is touched. */
+#mobile-menu.home-mobile-menu {
+  --mm-dur-panel: 460ms;
+  --mm-dur-wave:  420ms;
+  --mm-dur-scrim: 300ms;
+  --mm-step:       42ms;
+  --mm-ease-in:  cubic-bezier(0.4, 0, 0.2, 1);
+  --mm-exit-total: calc(var(--mm-dur-panel) + var(--mm-step) * 3);
+}
+
+/* ---- 20.2  Pre-promotion — one frame earlier ------------
+   §19.4 declares `will-change` only under `.mm-in`. The
+   script sets `data-open="true"` on one frame and adds
+   `.mm-in` on the NEXT, so under §19 alone the compositor
+   layer for six large surfaces is allocated and rastered in
+   the same frame the transform first changes. That single
+   frame is where the judder is born, and because the layers
+   are full-height 70vw boxes the raster is not cheap.
+
+   Declaring the hint on the PARKED state moves the
+   promotion onto the earlier frame — the one where nothing
+   is moving yet and there is budget to spare — so the first
+   ANIMATED frame only has to hand an already-composited
+   layer a new transform matrix.
+
+   This does NOT reintroduce the leak §18.1 removed. The
+   selector still requires `[data-open="true"]`, so while the
+   menu is shut there is no hint and no retained layer;
+   §18.1's `will-change: auto` on the ROOT stands untouched.
+   The hint also correctly persists through the close (the
+   parked state is what the closing menu matches), which is
+   the other half of the same problem: previously the layer
+   was DROPPED the instant `.mm-in` was removed, i.e. on the
+   first frame of the exit.
+
+   `backface-visibility: hidden` is the long-standing hint
+   that keeps a promoted layer on the fast path on Android
+   GPUs; it paints nothing, moves nothing and changes no
+   geometry.
+
+   Specificity 1-2-1 — identical to the §19.2 rules it sits
+   beside, later in source order, and it declares only
+   compositor hints, so no transform, opacity, transition or
+   colour is affected. */
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-scrim {
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-wave,
+#mobile-menu.home-mobile-menu[data-open="true"] .mm-panel {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ---- 20.3  Suspend the header blur during the gesture ---
+   §5 gives `.site-header` `backdrop-filter: saturate(180%)
+   blur(10px)`. A backdrop-filter must re-sample the pixels
+   painted behind its box and re-blur them whenever those
+   pixels change. While the menu slides, six large surfaces
+   are moving across the viewport directly behind the sticky
+   header, so the blur is recomputed on EVERY frame of the
+   animation — on a mid-range Android that alone can cost
+   more per frame than the slide it is decorating.
+
+   The menu is a full-viewport fixed root that covers the
+   header, so this blur is invisible for the whole time it is
+   being recomputed. Suspending it is pure profit: nothing
+   the user can see changes, and a per-frame full-width blur
+   disappears from the budget.
+
+   `html.mm-open` is the scroll-lock class prototype/script.js
+   already toggles for §19.9 — no new contract, no new JS. It
+   is added as the open begins and removed as the close
+   begins, so the suspension covers exactly the animated
+   window and the frosted header returns the moment the
+   gesture is over.
+
+   Only the two filter properties are touched. The header's
+   background token, border, sticky position and z-index are
+   left exactly as §5 sets them, so the bar keeps its fill
+   and its hairline throughout. Specificity 0-2-0, above §5's
+   0-1-0 `.site-header`, and it can only apply while the menu
+   is open. */
+html.mm-open .site-header {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
