@@ -3491,3 +3491,22 @@ html.mm-open .site-header {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+
+/* ---- §20.4  Keep the blur suspended through the CLOSE too ----
+   §20.3 keys the suspension on html.mm-open, but script.js
+   drops that class on the FIRST line of close(), while the
+   exit still has --mm-exit-total (586ms) of motion left. The
+   blur therefore returned exactly when the heaviest part of
+   the gesture was still running, so the close stayed juddery
+   while the open got smoother.
+
+   #mobile-menu[data-open="true"] is true for the whole
+   on-screen lifetime — entrance, rest AND exit — so keying
+   the sibling header off it covers the window §20.3 misses.
+   :has() is supported by every browser that ships
+   backdrop-filter in 2026; where it is not, §20.3 still
+   covers the entrance. */
+html:has(#mobile-menu.home-mobile-menu[data-open="true"]) .site-header {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
