@@ -52,17 +52,42 @@
   const menu = document.getElementById('mobile-menu');
   if (!btn || !menu) return;
 
+  // DOUBLE-BIND GUARD. HomePage.tsx injects this file on mount, so a
+  // client-side navigation to /login and back can execute this IIFE a second
+  // time against the SAME #mobile-menu element. Every listener below would
+  // then exist twice and a single tap would call `toggle()` twice — open and
+  // instantly close — which looks exactly like "the hamburger does nothing".
+  // The flag lives on the element, not in a module variable, so it dies with
+  // the element: if React really does unmount and recreate the menu, the new
+  // node carries no flag and correctly gets a fresh set of listeners.
+  if (menu.dataset.mmBound === '1') return;
+  menu.dataset.mmBound = '1';
+
   const root = document.documentElement;
   const panel = menu.querySelector('.mm-panel');
   const scrim = menu.querySelector('.mm-scrim');
   const closeBtn = menu.querySelector('.mm-close');
 
-  // The old markup may still ship `hidden`. Drop it once: from here on the
-  // open state is expressed purely by `data-open`, so that `display: none`
-  // can never cut a closing animation off on its first frame.
-  menu.hidden = false;
-  menu.removeAttribute('hidden');
-  if (!menu.hasAttribute('data-open')) menu.setAttribute('data-open', 'false');
+  // The old markup may still ship `hidden`, and a React re-render can put it
+  // back at any time. Stripping it once at boot is therefore not enough — the
+  // attribute is `display: none` in the UA stylesheet, and a single re-render
+  // is all it takes to cut a closing animation off on its first frame or to
+  // make an opening menu invisible while the JS still believes it is open.
+  //
+  // So the strip lives in an idempotent helper that is safe to call as often
+  // as we like: it only writes when it actually has something to fix, which
+  // keeps it free of layout thrash and free of attribute-mutation loops if it
+  // is ever driven by an observer. From here on the open state is expressed
+  // purely by `data-open`.
+  function ensureNotHidden() {
+    if (menu.hasAttribute('hidden')) {
+      menu.hidden = false;
+      menu.removeAttribute('hidden');
+    }
+    if (!menu.hasAttribute('data-open')) menu.setAttribute('data-open', 'false');
+  }
+
+  ensureNotHidden();
 
   let isOpen = menu.getAttribute('data-open') === 'true';
   let closeTimer = 0;
@@ -91,6 +116,11 @@
     if (isOpen) return;
     isOpen = true;
     window.clearTimeout(closeTimer);
+
+    // Re-assert the strip: if a re-render re-added `hidden` since boot, the
+    // menu would open into `display: none` and the tap would appear to do
+    // nothing. Cheap, idempotent, and runs before any paint flag is set.
+    ensureNotHidden();
 
     // 1. Make the menu rendered and PARKED (§19.2 puts every layer
     //    off-canvas). `hidden` is never set, so this only flips paint on.
